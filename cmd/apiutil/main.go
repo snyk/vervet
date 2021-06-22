@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -37,7 +36,7 @@ func main() {
 				}
 				fmt.Printf(string(yamlBuf))
 
-				err = t.Validate(context.TODO())
+				err = t.Validate(ctx.Context)
 				if err != nil {
 					return fmt.Errorf("error: spec validation failed: %w", err)
 				}
