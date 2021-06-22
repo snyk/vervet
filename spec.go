@@ -7,7 +7,16 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/ghodss/yaml"
+	"github.com/google/uuid"
 )
+
+func init() {
+	// Necessary for `format: uuid` to validate.
+	openapi3.DefineStringFormatCallback("uuid", func(v string) error {
+		_, err := uuid.Parse(v)
+		return err
+	})
+}
 
 // LoadSpecFile loads an OpenAPI spec file from the given path,
 // returning a document object.
