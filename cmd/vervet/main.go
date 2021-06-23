@@ -14,12 +14,15 @@ import (
 
 func main() {
 	app := &cli.App{
-		Name: "vervet",
+		Name:        "vervet",
+		Description: "API endpoint versioning tool",
 		Commands: []*cli.Command{{
-			Name: "resolve",
+			Name:        "resolve",
+			Description: "Aggregate, render and validate OpenAPI specs",
 			Subcommands: []*cli.Command{{
-				Name:      "file",
-				ArgsUsage: "[spec.yaml file]",
+				Name:        "file",
+				Description: "Localize references and validate a single OpenAPI spec file",
+				ArgsUsage:   "[spec.yaml file]",
 				Action: func(ctx *cli.Context) error {
 					if ctx.Args().Len() < 1 {
 						return fmt.Errorf("missing spec.yaml file")
@@ -49,8 +52,9 @@ func main() {
 					return nil
 				},
 			}, {
-				Name:      "endpoint",
-				ArgsUsage: "[endpoint path]",
+				Name:        "endpoint",
+				Description: "Render and validate an endpoint at a particular version",
+				ArgsUsage:   "[endpoint path]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "at"},
 				},
@@ -84,8 +88,9 @@ func main() {
 		}, {
 			Name: "versions",
 			Subcommands: []*cli.Command{{
-				Name:      "show",
-				ArgsUsage: "[endpoint directory]",
+				Name:        "show",
+				Description: "Show all versioned OpenAPI specs for an endpoint",
+				ArgsUsage:   "[endpoint directory]",
 				Action: func(ctx *cli.Context) error {
 					if ctx.Args().Len() < 1 {
 						return fmt.Errorf("missing endpoint path")
@@ -107,8 +112,9 @@ func main() {
 					return nil
 				},
 			}, {
-				Name:      "list",
-				ArgsUsage: "[endpoint directory]",
+				Name:        "list",
+				Description: "List the available versions for an endpoint",
+				ArgsUsage:   "[endpoint directory]",
 				Action: func(ctx *cli.Context) error {
 					if ctx.Args().Len() < 1 {
 						return fmt.Errorf("missing endpoint path")
