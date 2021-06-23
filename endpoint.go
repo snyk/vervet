@@ -1,4 +1,4 @@
-package apiutil
+package vervet
 
 import (
 	"context"
@@ -32,13 +32,13 @@ func ParseVersion(s string) (Version, error) {
 
 type EndpointVersion struct {
 	*openapi3.T
+	Version Version
 	path    string
-	version Version
 }
 
-func (e *EndpointVersion) Validate() error {
+func (e *EndpointVersion) Validate(ctx context.Context) error {
 	// Validate the OpenAPI spec
-	err := e.T.Validate(context.TODO())
+	err := e.T.Validate(ctx)
 	if err != nil {
 		return err
 	}
@@ -60,18 +60,38 @@ type EndpointVersions struct {
 func (e *EndpointVersions) Versions() map[Version]*EndpointVersion {
 	m := map[Version]*EndpointVersion{}
 	for i := range e.versions {
-		m[e.versions[i].version] = e.versions[i]
+		m[e.versions[i].Version] = e.versions[i]
 	}
 	return m
 }
 
+func (e *EndpointVersions) VersionAt(vs string) (*EndpointVersion, error) {
+	if vs == "" {
+		vs = time.Now().UTC().Format("2006-01-02")
+	}
+	v, err := ParseVersion(vs)
+	if err != nil {
+		return nil, fmt.Errorf("invalid version %q: %w", vs, err)
+	}
+	for i := len(e.versions) - 1; i >= 0; i-- {
+		if e.versions[i].Version.Compare(v) <= 0 {
+			return e.versions[i], nil
+		}
+	}
+	return nil, fmt.Errorf("no available versions matching %q", vs)
+}
+
 type endpointVersionSlice []*EndpointVersion
 
-func (e endpointVersionSlice) Less(i, j int) bool {
+func (v Version) Compare(vr Version) int {
 	// Lexicographical compare actually works fine for this:
 	// YYYY-mm-dd < beta < experimental
-	// TODO: mere coincidence, fix this
-	return strings.Compare(string(e[i].version), string(e[j].version)) < 0
+	// FIXME: mere coincidence!
+	return strings.Compare(string(v), string(vr))
+}
+
+func (e endpointVersionSlice) Less(i, j int) bool {
+	return e[i].Version.Compare(e[j].Version) < 0
 }
 func (e endpointVersionSlice) Len() int      { return len(e) }
 func (e endpointVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
@@ -100,7 +120,7 @@ func LoadEndpointVersions(epPath string) (*EndpointVersions, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = ep.Validate()
+		err = ep.Validate(context.TODO())
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +145,9 @@ func loadEndpointVersion(specPath string, version Version) (*EndpointVersion, er
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}
 
-	ep := &EndpointVersion{T: t, version: version}
+	t.ExtensionProps.Extensions["x-snyk-api-version"] = string(version)
+
+	ep := &EndpointVersion{T: t, Version: version}
 	for path := range t.Paths {
 		ep.path = path
 		break

@@ -1,4 +1,4 @@
-module github.com/snyk/apiutil
+module github.com/snyk/vervet
 
 go 1.16
 

@@ -1,6 +1,7 @@
-package apiutil
+package vervet
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -44,8 +45,8 @@ func LoadSpecFile(specFile string) (*openapi3.T, error) {
 }
 
 // ToSpecYAML renders an OpenAPI document object as YAML.
-func ToSpecYAML(t *openapi3.T) ([]byte, error) {
-	jsonBuf, err := t.MarshalJSON()
+func ToSpecYAML(v interface{}) ([]byte, error) {
+	jsonBuf, err := json.Marshal(v)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
