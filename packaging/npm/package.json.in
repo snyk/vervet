@@ -1,7 +1,7 @@
 {
-  "name": "vervet",
+  "name": "@snyk/vervet",
   "version": "${VERSION}",
-  "description": "API endpoint versioning tool",
+  "description": "Snyk API endpoint versioning tool",
   "bin": {
     "vervet": "bin/vervet"
   },

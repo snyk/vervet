@@ -2,6 +2,8 @@
 set -eux
 cd $(dirname $0)/..
 
+rm -rf dist
+
 # TODO: get version from latest release tag, append short hash
 export VERSION=0.0.1
 
