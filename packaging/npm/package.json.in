@@ -1,0 +1,32 @@
+{
+  "name": "@snyk/vervet",
+  "version": "${VERSION}",
+  "description": "Snyk API endpoint versioning tool",
+  "bin": {
+    "vervet": "bin/vervet"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "engines": {
+    "node": ">=4.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snyk/vervet.git"
+  },
+  "author": "Casey Marshall <casey.marshall@snyk.io>",
+  "contributors": [
+    "Ian Livingstone <ian.livingstone@snyk.io>"
+  ],
+  "license": "Proprietary",
+  "dependencies": {},
+  "devDependencies": {},
+  "optionalDependencies": {
+    "kexec": "^3.0.0"
+  }
+}
