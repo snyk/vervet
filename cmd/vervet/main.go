@@ -67,7 +67,7 @@ func main() {
 					if err != nil {
 						return fmt.Errorf("failed to load end from %q: %w", specDir, err)
 					}
-					epVersion, err := epVersions.VersionAt(ctx.String("at"))
+					epVersion, err := epVersions.At(ctx.String("at"))
 					if err != nil {
 						return err
 					}

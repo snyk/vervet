@@ -65,7 +65,9 @@ func (e *EndpointVersions) Versions() map[Version]*EndpointVersion {
 	return m
 }
 
-func (e *EndpointVersions) VersionAt(vs string) (*EndpointVersion, error) {
+var ErrNoMatchingVersion = fmt.Errorf("no matching version")
+
+func (e *EndpointVersions) At(vs string) (*EndpointVersion, error) {
 	if vs == "" {
 		vs = time.Now().UTC().Format("2006-01-02")
 	}
@@ -78,10 +80,8 @@ func (e *EndpointVersions) VersionAt(vs string) (*EndpointVersion, error) {
 			return e.versions[i], nil
 		}
 	}
-	return nil, fmt.Errorf("no available versions matching %q", vs)
+	return nil, ErrNoMatchingVersion
 }
-
-type endpointVersionSlice []*EndpointVersion
 
 func (v Version) Compare(vr Version) int {
 	// Lexicographical compare actually works fine for this:
@@ -90,11 +90,21 @@ func (v Version) Compare(vr Version) int {
 	return strings.Compare(string(v), string(vr))
 }
 
+type endpointVersionSlice []*EndpointVersion
+
 func (e endpointVersionSlice) Less(i, j int) bool {
 	return e[i].Version.Compare(e[j].Version) < 0
 }
 func (e endpointVersionSlice) Len() int      { return len(e) }
 func (e endpointVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
+
+type versionSlice []Version
+
+func (vs versionSlice) Less(i, j int) bool {
+	return vs[i].Compare(vs[j]) < 0
+}
+func (vs versionSlice) Len() int      { return len(vs) }
+func (vs versionSlice) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }
 
 func LoadEndpointVersions(epPath string) (*EndpointVersions, error) {
 	specYamls, err := filepath.Glob(epPath + "/*/spec.yaml")
