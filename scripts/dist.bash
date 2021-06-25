@@ -5,7 +5,7 @@ cd $(dirname $0)/..
 rm -rf dist
 
 # TODO: get version from latest release tag, append short hash
-export VERSION=0.0.1
+export VERSION=0.0.3
 
 mkdir -p ./dist/bin
 

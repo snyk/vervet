@@ -1,0 +1,9 @@
+'500':
+  description: 'Internal Server Error: An error was encountered while attempting to process the request.'
+  headers:
+    snyk-version-requested: { $ref: '../headers/headers.yaml#/VersionRequestedResponseHeader' }
+    snyk-version-served: { $ref: '../headers/headers.yaml#/VersionServedResponseHeader' }
+    snyk-request-id: { $ref: '../headers/headers.yaml#/RequestIDResponseHeader' }
+  content:
+    application/vnd.api+json:
+      schema: { $ref: '../errors.yaml#/ErrorDocument' }

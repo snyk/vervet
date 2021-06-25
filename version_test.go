@@ -58,7 +58,6 @@ func TestVersionOrder(t *testing.T) {
 		l: "9999-12-31", r: "experimental", cmp: -1,
 	}, {
 		l: "experimental", r: "9999-12-31", cmp: 1,
-	}, {
 		// Compare special tags
 	}, {
 		l: "beta", r: "experimental", cmp: -1,
