@@ -1,0 +1,15 @@
+Pagination:
+  name: page
+  in: query
+  description: The parameters used to paginate through a list of results from the API.
+  schema:
+    type: object
+    properties:
+      size:
+        type: integer
+        format: int32
+      before:
+        type: string
+      after:
+        type: string
+    additionalProperties: false

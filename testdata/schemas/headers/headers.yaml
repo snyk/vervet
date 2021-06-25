@@ -1,0 +1,15 @@
+VersionRequestedResponseHeader:
+  description: A header containing the version of the endpoint requested by the caller.
+  schema: { $ref: '../version.yaml#/Version' }
+
+VersionServedResponseHeader:
+  description: A header containing the version of the endpoint that was served by the API.
+  schema: { $ref: '../version.yaml#/Version' }
+
+RequestIDResponseHeader:
+  description: >
+    A header containing a unique id used for tracking this request. If you
+    are reporting an issue to Snyk it's very helpful to provide this ID.
+  schema:
+    type: string
+    format: uuid
