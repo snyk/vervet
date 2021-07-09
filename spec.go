@@ -84,7 +84,7 @@ func (s *SpecVersions) At(vs string) (*Spec, error) {
 		if result == nil {
 			result = ep.T
 		} else {
-			mergeSpec(result, ep.T)
+			MergeSpec(result, ep.T)
 		}
 	}
 	if result == nil {
@@ -93,7 +93,7 @@ func (s *SpecVersions) At(vs string) (*Spec, error) {
 	return &Spec{T: result}, nil
 }
 
-// mergeSpec adds the paths and components from a source OpenAPI document root,
+// MergeSpec adds the paths and components from a source OpenAPI document root,
 // to a destination document root.
 //
 // TODO: This is a naive implementation that should be improved to detect and
@@ -101,7 +101,7 @@ func (s *SpecVersions) At(vs string) (*Spec, error) {
 // localized references with the same URIs but different content.
 // Content-addressible endpoint versions may further facilitate governance;
 // this also would facilitate detecting and relocating such conflicts.
-func mergeSpec(dst, src *openapi3.T) {
+func MergeSpec(dst, src *openapi3.T) {
 	for k, v := range src.Paths {
 		if _, ok := dst.Paths[k]; !ok {
 			dst.Paths[k] = v

@@ -52,6 +52,8 @@ Go >= 1.16 required.
 
 Vervet compiles a single OpenAPI spec from a collection of OpenAPI specs, defined per endpoint per version.
 
+See `vervet help` for a complete list and description of subcommands and options.
+
 ## Endpoint format
 
 An endpoint is simply a directory structure of the form:
@@ -88,11 +90,26 @@ and "experimental" is always newer than "beta".
 
 ## Compiling a versioned spec
 
-Vervet processes these endpoint spec directory structures into a single consumer-facing OpenAPI spec.
+Vervet processes endpoint spec directory structures described above into a
+single consumer-facing OpenAPI spec. As an example:
 
-    vervet resolve /path/to/specs
+    vervet compile -I common-includes.yaml /path/to/endpoints /path/to/output
 
-will output such an OpenAPI spec YAML file.
+will compile OpenAPI documents to `/path/to/output` at each distinct version
+defined across all source endpoints found under `/path/to/endpoints`. The
+optional `common-includes.yaml` is an OpenAPI document that is merged into each
+compiled output document.
 
-See `vervet help` for other useful commands.
+# Development
+
+vervet uses a reference set of OpenAPI documents in `testdata/resources` in
+tests. CLI tests compare runtime compiled output with pre-compiled, expected
+output in `testdata/output` to detect regressions.
+
+When introducing changes that intentionally change the content of compiled
+output:
+
+* Run `pre-commit.sh` to update the contents of `testdata/output`
+* Verify that the compiled output is correct
+* Commit the changes to `testdata/output` in your proposed branch
 
