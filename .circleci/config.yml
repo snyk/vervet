@@ -1,0 +1,57 @@
+version: 2.1
+
+defaults: &defaults
+  resource_class: small
+  docker:
+    - image: gcr.io/snyk-main/nsolid-ubuntu:erbium
+      auth:
+        username: _json_key
+        password: $GCLOUD_GCR_BUILDER
+  working_directory: ~/vervet
+
+private_cicd_repo_auth: &private_cicd_repo_auth
+  auth:
+    username: _json_key
+    password: $GCLOUD_GCR_BUILDER
+
+commands:
+  gcr_auth:
+    description: Auth GCR
+    steps:
+      - setup_remote_docker
+      - run:
+          name: GCR auth
+          command: echo $GCLOUD_GCR_BUILDER | docker login -u _json_key --password-stdin https://gcr.io/snyk-main
+
+jobs:
+  test:
+    <<: *defaults
+    docker:
+      - image: circleci/golang:1.16
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/vervet
+      - restore_cache:
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run:
+          name: Install Dependencies
+          command: go mod download
+      - save_cache:
+          key: go-mod-v4-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+      - run:
+          name: Verify testdata/output up to date
+          command: ./pre-commit.sh
+      - run:
+          name: Run tests
+          command: go test ./... -count=1
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test:
+          name: Test
