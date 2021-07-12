@@ -18,7 +18,7 @@ func Testdata(path string) string {
 	if !ok {
 		panic(fmt.Errorf("cannot locate caller"))
 	}
-	return filepath.Dir(thisFile) + "/testdata/" + path
+	return filepath.Dir(thisFile) + "/testdata/resources/" + path
 }
 
 func TestLoadSpecFile(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/ghodss/yaml"
 	"github.com/snyk/vervet"
 	"github.com/urfave/cli/v2"
@@ -28,7 +29,14 @@ var App = &cli.App{
 		Name:      "compile",
 		Usage:     "Compile versioned endpoints into versioned API specs",
 		ArgsUsage: "[input endpoints root] [output api root]",
-		Action:    Compile,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "include",
+				Aliases: []string{"I"},
+				Usage:   "OpenAPI specification to include in all compiled versions",
+			},
+		},
+		Action: Compile,
 	}, {
 		Name:      "localize",
 		Usage:     "Localize references and validate a single OpenAPI spec file",
@@ -47,6 +55,31 @@ func Compile(ctx *cli.Context) error {
 	if ctx.Args().Len() < 1 {
 		return fmt.Errorf("missing endpoints root")
 	}
+
+	var includeSpec *openapi3.T
+	var err error
+	if includePath := ctx.String("include"); includePath != "" {
+		includeSpec, err = vervet.LoadSpecFile(includePath)
+		if err != nil {
+			return fmt.Errorf("failed to load included spec %q: %w", includePath, err)
+		}
+		err = vervet.NewLocalizer(includeSpec).Localize()
+		if err != nil {
+			return fmt.Errorf("failed to localize included spec %q: %w", includePath, err)
+		}
+		// This marshal/unmarshal is needed to avoid local filesystem
+		// references from re-appearing in the merge below.
+		// TODO: Find out why, improve vervet.Localizer.
+		buf, err := vervet.ToSpecJSON(includeSpec)
+		if err != nil {
+			return err
+		}
+		includeSpec, err = openapi3.NewLoader().LoadFromData(buf)
+		if err != nil {
+			return err
+		}
+	}
+
 	inputDir, err := absPath(ctx.Args().Get(0))
 	if err != nil {
 		return err
@@ -70,9 +103,20 @@ func Compile(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		yamlBuf, err := vervet.ToSpecYAML(spec)
+		if includeSpec != nil {
+			vervet.MergeSpec(spec.T, includeSpec)
+		}
+		jsonBuf, err := vervet.ToSpecJSON(spec)
 		if err != nil {
-			return fmt.Errorf("failed to convert JSON to YAML: %w", err)
+			return fmt.Errorf("failed to convert to JSON: %w", err)
+		}
+		err = ioutil.WriteFile(versionDir+"/spec.json", jsonBuf, 0644)
+		if err != nil {
+			return err
+		}
+		yamlBuf, err := yaml.JSONToYAML(jsonBuf)
+		if err != nil {
+			return fmt.Errorf("failed to convert to YAML: %w", err)
 		}
 		err = ioutil.WriteFile(versionDir+"/spec.yaml", yamlBuf, 0644)
 		if err != nil {

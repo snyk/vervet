@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -13,7 +14,7 @@ import (
 func TestCompile(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.Mkdir()
-	err := cmd.App.Run([]string{"vervet", "compile", "../testdata", dstDir})
+	err := cmd.App.Run([]string{"vervet", "compile", "../testdata/resources", dstDir})
 	c.Assert(err, qt.IsNil)
 	tests := []struct {
 		version string
@@ -40,5 +41,34 @@ func TestCompile(t *testing.T) {
 				c.Assert(doc.Paths[path], qt.Not(qt.IsNil))
 			}
 		})
+	}
+}
+
+func TestCompileInclude(t *testing.T) {
+	c := qt.New(t)
+	dstDir := c.Mkdir()
+	err := cmd.App.Run([]string{"vervet", "compile", "-I", "../testdata/resources/include.yaml", "../testdata/resources", dstDir})
+	c.Assert(err, qt.IsNil)
+
+	tests := []struct {
+		version string
+	}{{
+		version: "2021-06-01",
+	}, {
+		version: "2021-06-07",
+	}, {
+		version: "beta",
+	}, {
+		version: "experimental",
+	}}
+	for _, test := range tests {
+		// Load just-compiled OpenAPI YAML file
+		doc, err := vervet.LoadSpecFile(dstDir + "/" + test.version + "/spec.yaml")
+		c.Assert(err, qt.IsNil)
+
+		expected, err := ioutil.ReadFile("../testdata/output/" + test.version + "/spec.json")
+		c.Assert(err, qt.IsNil)
+
+		c.Assert(expected, qt.JSONEquals, doc)
 	}
 }
