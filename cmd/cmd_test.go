@@ -72,3 +72,10 @@ func TestCompileInclude(t *testing.T) {
 		c.Assert(expected, qt.JSONEquals, doc)
 	}
 }
+
+func TestCompileConflict(t *testing.T) {
+	c := qt.New(t)
+	dstDir := c.Mkdir()
+	err := cmd.App.Run([]string{"vervet", "compile", "../testdata/conflict", dstDir})
+	c.Assert(err, qt.ErrorMatches, `conflict: .*`)
+}

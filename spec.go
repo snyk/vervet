@@ -18,7 +18,7 @@ type Spec struct {
 // SpecVersions defines an OpenAPI specification consisting of one or more
 // versioned endpoints.
 type SpecVersions struct {
-	paths map[string]*EndpointVersions
+	endpoints []*EndpointVersions
 }
 
 // LoadSpecVersions returns a SpecVersions loaded from a directory structure
@@ -28,28 +28,46 @@ func LoadSpecVersions(root string) (*SpecVersions, error) {
 	if err != nil {
 		return nil, err
 	}
-	svs := &SpecVersions{paths: map[string]*EndpointVersions{}}
+	svs := &SpecVersions{}
 	for i := range epPaths {
 		eps, err := LoadEndpointVersions(epPaths[i])
 		if err != nil {
 			return nil, fmt.Errorf("failed to load endpoint at %q: %w", epPaths[i], err)
 		}
-		path := eps.Path()
-		if path == "" {
-			continue
-		}
-		if _, ok := svs.paths[path]; ok {
-			return nil, fmt.Errorf("multiple conflicting endpoints found for path %q", path)
-		}
-		svs.paths[path] = eps
+		svs.endpoints = append(svs.endpoints, eps)
+	}
+	if err := svs.Validate(); err != nil {
+		return nil, err
 	}
 	return svs, nil
+}
+
+// Validate returns an error if there are conflicting endpoints at a spec version.
+func (s *SpecVersions) Validate() error {
+	for _, v := range s.Versions() {
+		endpointPaths := map[string]string{}
+		for _, eps := range s.endpoints {
+			ep, err := eps.At(string(v))
+			if err == ErrNoMatchingVersion {
+				continue
+			} else if err != nil {
+				return fmt.Errorf("validation failed: %w", err)
+			}
+			for path := range ep.Paths {
+				if conflict, ok := endpointPaths[path]; ok {
+					return fmt.Errorf("conflict: %q %q", conflict, ep.sourcePrefix)
+				}
+				endpointPaths[path] = ep.sourcePrefix
+			}
+		}
+	}
+	return nil
 }
 
 // Versions returns a slice containing each Version defined by an Endpoint in this specification.
 func (s *SpecVersions) Versions() []Version {
 	vset := map[Version]bool{}
-	for _, eps := range s.paths {
+	for _, eps := range s.endpoints {
 		for i := range eps.versions {
 			vset[eps.versions[i].Version] = true
 		}
@@ -74,7 +92,7 @@ func (s *SpecVersions) At(vs string) (*Spec, error) {
 		return nil, err
 	}
 	var result *openapi3.T
-	for _, eps := range s.paths {
+	for _, eps := range s.endpoints {
 		ep, err := eps.At(string(v))
 		if err == ErrNoMatchingVersion {
 			continue
