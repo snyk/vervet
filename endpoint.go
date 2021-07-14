@@ -55,12 +55,12 @@ func (v Version) Compare(vr Version) int {
 // OpenAPI specification document defining a single endpoint.
 type Endpoint struct {
 	*openapi3.T
-	Version Version
-	path    string
+	Version      Version
+	sourcePrefix string
 }
 
 // Validate returns whether the Endpoint is valid. The OpenAPI specification
-// must be valid, and must declare one and only one path.
+// must be valid, and must declare at least one path.
 func (e *Endpoint) Validate(ctx context.Context) error {
 	// Validate the OpenAPI spec
 	err := e.T.Validate(ctx)
@@ -71,9 +71,6 @@ func (e *Endpoint) Validate(ctx context.Context) error {
 	if len(e.Paths) < 1 {
 		return fmt.Errorf("spec contains no paths")
 	}
-	if len(e.Paths) > 1 {
-		return fmt.Errorf("spec contains more than one path; this is not allowed for a single endpoint version")
-	}
 	return nil
 }
 
@@ -81,15 +78,6 @@ func (e *Endpoint) Validate(ctx context.Context) error {
 // path.
 type EndpointVersions struct {
 	versions endpointVersionSlice
-}
-
-// Path returns the common path for this collection of Endpoint versions.  If
-// no Endpoint versions were defined, returns an empty string.
-func (e *EndpointVersions) Path() string {
-	if len(e.versions) == 0 {
-		return ""
-	}
-	return e.versions[0].path
 }
 
 // Versions returns a slice containing each Version defined for this endpoint.
@@ -175,12 +163,10 @@ func LoadEndpointVersions(epPath string) (*EndpointVersions, error) {
 		if ep == nil {
 			continue
 		}
+		ep.sourcePrefix = specYamls[i]
 		err = ep.Validate(context.TODO())
 		if err != nil {
 			return nil, err
-		}
-		if len(eps.versions) > 0 && eps.versions[0].path != ep.path {
-			return nil, fmt.Errorf("multiple conflicting paths (%q, %q) for endpoint versions at %q", eps.versions[0].path, ep.path, versionDir)
 		}
 		eps.versions = append(eps.versions, ep)
 	}
@@ -207,8 +193,6 @@ func loadEndpoint(specPath string, version Version) (*Endpoint, error) {
 	ep := &Endpoint{T: t, Version: version}
 	for path := range t.Paths {
 		t.Paths[path].ExtensionProps.Extensions["x-snyk-api-version"] = string(version)
-		ep.path = path
-		break
 	}
 	return ep, nil
 }

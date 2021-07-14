@@ -219,6 +219,67 @@ info:
   version: 3.0.0
 openapi: 3.0.3
 paths:
+  /examples/hello-world:
+    post:
+      description: Create a single result from the hello-world example
+      operationId: helloWorldCreate
+      parameters:
+      - $ref: '#/components/parameters/Version'
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              additionalProperties: false
+              properties:
+                attributes:
+                  additionalProperties: false
+                  properties:
+                    betaField:
+                      type: string
+                    message:
+                      type: string
+                  required:
+                  - message
+                  - betaField
+                  type: object
+              required:
+              - attributes
+              type: object
+      responses:
+        "201":
+          content:
+            application/vnd.api+json:
+              schema:
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: '#/components/schemas/HelloWorld'
+                  jsonapi:
+                    $ref: '#/components/schemas/JSONAPI'
+                  links:
+                    $ref: '#/components/schemas/Links'
+                required:
+                - jsonapi
+                - data
+                - links
+                type: object
+          description: A hello world entity being requested is returned
+          headers:
+            snyk-request-id:
+              $ref: '#/components/headers/RequestIDResponseHeader'
+            snyk-version-requested:
+              $ref: '#/components/headers/VersionRequestedResponseHeader'
+            snyk-version-served:
+              $ref: '#/components/headers/VersionServedResponseHeader'
+        "400":
+          $ref: '#/components/responses/400'
+        "401":
+          $ref: '#/components/responses/401'
+        "404":
+          $ref: '#/components/responses/404'
+        "500":
+          $ref: '#/components/responses/500'
+    x-snyk-api-version: beta
   /examples/hello-world/{id}:
     get:
       description: Get a single result from the hello-world example
