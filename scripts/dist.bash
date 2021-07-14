@@ -2,10 +2,17 @@
 set -eux
 cd $(dirname $0)/..
 
+if [ -z "${GOPATH:-}" ]; then
+    tmp_gopath=$(mktemp -d)
+    trap "rm -rf $tmp_gopath" EXIT
+    export GOPATH=$tmp_gopath
+fi
+
 rm -rf dist
 
-# TODO: get version from latest release tag, append short hash
-export VERSION=0.0.3
+NOW=$(date '+%Y%m%d%H%M')
+COMMIT=$(git rev-parse --short HEAD)
+export VERSION=$(git describe --abbrev=0)+${NOW}-${COMMIT}
 
 mkdir -p ./dist/bin
 
@@ -15,5 +22,7 @@ done
 GOOS=windows GOARCH=amd64 go build -a -o ./dist/bin/vervet.exe ./cmd/vervet
 
 cp packaging/npm/passthrough.js dist/bin/vervet
-envsubst < packaging/npm/package.json.in > dist/package.json
+
+go get github.com/a8m/envsubst/cmd/envsubst
+$GOPATH/bin/envsubst < packaging/npm/package.json.in > dist/package.json
 
