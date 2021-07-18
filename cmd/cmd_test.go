@@ -9,12 +9,13 @@ import (
 
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/cmd"
+	"github.com/snyk/vervet/testdata"
 )
 
 func TestCompile(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.Mkdir()
-	err := cmd.App.Run([]string{"vervet", "compile", "../testdata/resources", dstDir})
+	err := cmd.App.Run([]string{"vervet", "compile", testdata.Path("resources"), dstDir})
 	c.Assert(err, qt.IsNil)
 	tests := []struct {
 		version string
@@ -26,10 +27,10 @@ func TestCompile(t *testing.T) {
 		version: "2021-06-07",
 		paths:   []string{"/examples/hello-world/{id}"},
 	}, {
-		version: "beta",
-		paths:   []string{"/examples/hello-world/{id}"},
+		version: "2021-06-13~beta",
+		paths:   []string{"/examples/hello-world", "/examples/hello-world/{id}"},
 	}, {
-		version: "experimental",
+		version: "2021-06-04~experimental",
 		paths:   []string{"/examples/hello-world/{id}", "/orgs/{orgId}/projects"},
 	}}
 	for _, test := range tests {
@@ -47,7 +48,7 @@ func TestCompile(t *testing.T) {
 func TestCompileInclude(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.Mkdir()
-	err := cmd.App.Run([]string{"vervet", "compile", "-I", "../testdata/resources/include.yaml", "../testdata/resources", dstDir})
+	err := cmd.App.Run([]string{"vervet", "compile", "-I", testdata.Path("resources/include.yaml"), testdata.Path("resources"), dstDir})
 	c.Assert(err, qt.IsNil)
 
 	tests := []struct {
@@ -57,16 +58,18 @@ func TestCompileInclude(t *testing.T) {
 	}, {
 		version: "2021-06-07",
 	}, {
-		version: "beta",
+		version: "2021-06-13~beta",
 	}, {
-		version: "experimental",
+		version: "2021-06-04~experimental",
 	}}
 	for _, test := range tests {
+		v, err := vervet.ParseVersion(test.version)
+		c.Assert(err, qt.IsNil)
 		// Load just-compiled OpenAPI YAML file
-		doc, err := vervet.LoadSpecFile(dstDir + "/" + test.version + "/spec.yaml")
+		doc, err := vervet.LoadSpecFile(dstDir + "/" + v.DateString() + "/spec.yaml")
 		c.Assert(err, qt.IsNil)
 
-		expected, err := ioutil.ReadFile("../testdata/output/" + test.version + "/spec.json")
+		expected, err := ioutil.ReadFile(testdata.Path("output/" + v.DateString() + "/spec.json"))
 		c.Assert(err, qt.IsNil)
 
 		c.Assert(expected, qt.JSONEquals, doc)

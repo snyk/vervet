@@ -9,11 +9,12 @@ import (
 	qt "github.com/frankban/quicktest"
 
 	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/testdata"
 )
 
 func TestLocalize(t *testing.T) {
 	c := qt.New(t)
-	doc, err := vervet.LoadSpecFile(Testdata("_examples/hello-world/2021-06-01/spec.yaml"))
+	doc, err := vervet.LoadSpecFile(testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
 	c.Assert(err, qt.IsNil)
 	err = vervet.NewLocalizer(doc).Localize()
 	c.Assert(err, qt.IsNil)

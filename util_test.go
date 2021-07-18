@@ -2,28 +2,18 @@ package vervet_test
 
 import (
 	"context"
-	"fmt"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
 	"github.com/ghodss/yaml"
 
 	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/testdata"
 )
-
-func Testdata(path string) string {
-	_, thisFile, _, ok := runtime.Caller(0)
-	if !ok {
-		panic(fmt.Errorf("cannot locate caller"))
-	}
-	return filepath.Dir(thisFile) + "/testdata/resources/" + path
-}
 
 func TestLoadSpecFile(t *testing.T) {
 	c := qt.New(t)
-	doc, err := vervet.LoadSpecFile(Testdata("_examples/hello-world/2021-06-01/spec.yaml"))
+	doc, err := vervet.LoadSpecFile(testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
 	c.Assert(err, qt.IsNil)
 	c.Assert(doc.Paths, qt.HasLen, 1)
 	c.Assert(doc.Paths["/examples/hello-world/{id}"], qt.Not(qt.IsNil))
@@ -33,7 +23,7 @@ func TestLoadSpecFile(t *testing.T) {
 
 func TestToSpecYAML(t *testing.T) {
 	c := qt.New(t)
-	doc, err := vervet.LoadSpecFile(Testdata("_examples/hello-world/2021-06-01/spec.yaml"))
+	doc, err := vervet.LoadSpecFile(testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
 	c.Assert(err, qt.IsNil)
 	yamlBuf, err := vervet.ToSpecYAML(doc)
 	c.Assert(err, qt.IsNil)

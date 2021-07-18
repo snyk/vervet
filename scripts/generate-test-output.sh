@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-cd $(dirname $0)
+cd $(dirname $0)/..
 set -eu
 
 go run ./cmd/vervet compile -I ./testdata/resources/include.yaml ./testdata/resources/ ./testdata/output
