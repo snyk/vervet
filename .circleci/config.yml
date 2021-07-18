@@ -44,7 +44,7 @@ jobs:
             - "/go/pkg/mod"
       - run:
           name: Verify testdata/output up to date
-          command: ./pre-commit.sh
+          command: go generate ./testdata
       - run:
           name: Run tests
           command: go test ./... -count=1

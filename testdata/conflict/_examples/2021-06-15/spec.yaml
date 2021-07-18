@@ -1,4 +1,5 @@
 openapi: 3.0.3
+x-snyk-api-stability: beta
 info:
   title: Registry
   version: 3.0.0
@@ -10,8 +11,6 @@ paths:
     post:
       description: Create a single result from the hello-world example
       operationId: helloWorldCreate
-      parameters:
-        - { $ref: '../../../schemas/parameters/version.yaml#/Version' }
       requestBody:
         content:
           application/vnd.api+json:
@@ -30,24 +29,12 @@ paths:
               additionalProperties: false
               required: ['attributes']
       responses:
-        '400': { $ref: '../../../schemas/responses/400.yaml#/400' }
-        '401': { $ref: '../../../schemas/responses/401.yaml#/401' }
-        '404': { $ref: '../../../schemas/responses/404.yaml#/404' }
-        '500': { $ref: '../../../schemas/responses/500.yaml#/500' }
         '201':
           description: 'A hello world entity being requested is returned'
-          headers:
-            snyk-version-requested: { $ref: '../../../schemas/headers/headers.yaml#/VersionRequestedResponseHeader' }
-            snyk-version-served: { $ref: '../../../schemas/headers/headers.yaml#/VersionServedResponseHeader' }
-            snyk-request-id: { $ref: '../../../schemas/headers/headers.yaml#/RequestIDResponseHeader' }
           content:
             application/vnd.api+json:
               schema:
                 type: object
-                properties:
-                  jsonapi: { $ref: '../../../schemas/common.yaml#/JSONAPI'}
-                  links: { $ref: '../../../schemas/common.yaml#/Links'}
-                  data: { $ref: '#/components/schemas/HelloWorld'}
                 required: ['jsonapi', 'data', 'links']
                 additionalProperties: false
 
@@ -56,8 +43,6 @@ paths:
       description: Get a single result from the hello-world example
       operationId: helloWorldGetOne
       parameters:
-        - { $ref: '../../../schemas/parameters/version.yaml#/Version' }
-        - { $ref: '../../../schemas/parameters/pagination.yaml#/Pagination' }
         - name: id
           description: The id of the hello-world example entity to be retrieved.
           in: path
@@ -65,24 +50,12 @@ paths:
           schema:
             type: string
       responses:
-        '400': { $ref: '../../../schemas/responses/400.yaml#/400' }
-        '401': { $ref: '../../../schemas/responses/401.yaml#/401' }
-        '404': { $ref: '../../../schemas/responses/404.yaml#/404' }
-        '500': { $ref: '../../../schemas/responses/500.yaml#/500' }
         '200':
           description: 'A hello world entity being requested is returned'
-          headers:
-            snyk-version-requested: { $ref: '../../../schemas/headers/headers.yaml#/VersionRequestedResponseHeader' }
-            snyk-version-served: { $ref: '../../../schemas/headers/headers.yaml#/VersionServedResponseHeader' }
-            snyk-request-id: { $ref: '../../../schemas/headers/headers.yaml#/RequestIDResponseHeader' }
           content:
             application/vnd.api+json:
               schema:
                 type: object
-                properties:
-                  jsonapi: { $ref: '../../../schemas/common.yaml#/JSONAPI'}
-                  links: { $ref: '../../../schemas/common.yaml#/Links'}
-                  data: { $ref: '#/components/schemas/HelloWorld'}
                 required: ['jsonapi', 'data', 'links']
                 additionalProperties: false
 
