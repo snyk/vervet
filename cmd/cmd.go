@@ -1,3 +1,4 @@
+// Package cmd provides subcommands for the vervet CLI.
 package cmd
 
 import (
@@ -93,34 +94,45 @@ func Compile(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	for _, version := range versions {
-		versionDir := outputDir + "/" + string(version)
-		err := os.MkdirAll(versionDir, 0755)
-		if err != nil {
-			return err
-		}
-		spec, err := specVersions.At(string(version))
-		if err != nil {
-			return err
-		}
-		if includeSpec != nil {
-			vervet.MergeSpec(spec.T, includeSpec)
-		}
-		jsonBuf, err := vervet.ToSpecJSON(spec)
-		if err != nil {
-			return fmt.Errorf("failed to convert to JSON: %w", err)
-		}
-		err = ioutil.WriteFile(versionDir+"/spec.json", jsonBuf, 0644)
-		if err != nil {
-			return err
-		}
-		yamlBuf, err := yaml.JSONToYAML(jsonBuf)
-		if err != nil {
-			return fmt.Errorf("failed to convert to YAML: %w", err)
-		}
-		err = ioutil.WriteFile(versionDir+"/spec.yaml", yamlBuf, 0644)
-		if err != nil {
-			return err
+	versionDates := vervet.VersionDateStrings(versions)
+	stabilities := []string{"~experimental", "~beta", ""}
+	for _, versionDate := range versionDates {
+		for _, stabilitySuffix := range stabilities {
+			version, err := vervet.ParseVersion(versionDate + stabilitySuffix)
+			if err != nil {
+				return err
+			}
+			versionDir := outputDir + "/" + version.String()
+			err = os.MkdirAll(versionDir, 0755)
+			if err != nil {
+				return err
+			}
+			spec, err := specVersions.At(version.String())
+			if err == vervet.ErrNoMatchingVersion {
+				continue
+			} else if err != nil {
+				return err
+			}
+			if includeSpec != nil {
+				vervet.MergeSpec(spec.T, includeSpec)
+			}
+			jsonBuf, err := vervet.ToSpecJSON(spec)
+			if err != nil {
+				return fmt.Errorf("failed to convert to JSON: %w", err)
+			}
+			err = ioutil.WriteFile(versionDir+"/spec.json", jsonBuf, 0644)
+			if err != nil {
+				return err
+			}
+			yamlBuf, err := yaml.JSONToYAML(jsonBuf)
+			if err != nil {
+				return fmt.Errorf("failed to convert to YAML: %w", err)
+			}
+			yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
+			err = ioutil.WriteFile(versionDir+"/spec.yaml", yamlBuf, 0644)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

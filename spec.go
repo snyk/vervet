@@ -47,7 +47,7 @@ func (s *SpecVersions) Validate() error {
 	for _, v := range s.Versions() {
 		endpointPaths := map[string]string{}
 		for _, eps := range s.endpoints {
-			ep, err := eps.At(string(v))
+			ep, err := eps.At(v.String())
 			if err == ErrNoMatchingVersion {
 				continue
 			} else if err != nil {
@@ -65,17 +65,18 @@ func (s *SpecVersions) Validate() error {
 }
 
 // Versions returns a slice containing each Version defined by an Endpoint in this specification.
-func (s *SpecVersions) Versions() []Version {
+func (s *SpecVersions) Versions() []*Version {
 	vset := map[Version]bool{}
 	for _, eps := range s.endpoints {
 		for i := range eps.versions {
-			vset[eps.versions[i].Version] = true
+			vset[*eps.versions[i].Version] = true
 		}
 	}
-	versions := make([]Version, len(vset))
+	versions := make([]*Version, len(vset))
 	i := 0
 	for k := range vset {
-		versions[i] = k
+		v := k
+		versions[i] = &v
 		i++
 	}
 	sort.Sort(versionSlice(versions))
@@ -93,21 +94,35 @@ func (s *SpecVersions) At(vs string) (*Spec, error) {
 	}
 	var result *openapi3.T
 	for _, eps := range s.endpoints {
-		ep, err := eps.At(string(v))
+		ep, err := eps.At(v.String())
 		if err == ErrNoMatchingVersion {
 			continue
 		} else if err != nil {
 			return nil, err
 		}
 		if result == nil {
-			result = ep.T
-		} else {
-			MergeSpec(result, ep.T)
+			// Assign a clean copy of the contents of the first endpoint to the
+			// resulting spec. Marshaling is used to ensure that references in
+			// the source endpoint are dropped from the result, which could be
+			// modified on subsequent merges.
+			buf, err := ep.T.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			result = &openapi3.T{}
+			err = result.UnmarshalJSON(buf)
+			if err != nil {
+				return nil, err
+			}
 		}
+		MergeSpec(result, ep.T)
 	}
 	if result == nil {
 		return nil, ErrNoMatchingVersion
 	}
+	// Remove the API stability extension from the merged OpenAPI spec, this
+	// extension is only applicable to individual endpoint version specs.
+	delete(result.ExtensionProps.Extensions, ExtSnykApiStability)
 	return &Spec{T: result}, nil
 }
 
