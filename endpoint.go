@@ -182,7 +182,7 @@ func loadEndpoint(specPath string, versionStr string) (*Endpoint, error) {
 	}
 
 	// Localize all references, so we emit a completely self-contained OpenAPI document.
-	err = NewLocalizer(t).Localize()
+	err = Localize(t)
 	if err != nil {
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}

@@ -10,9 +10,15 @@ import (
 	"github.com/mitchellh/reflectwalk"
 )
 
-// Localizer rewrites references in an OpenAPI document object to local
+// Localize rewrites all references in an OpenAPI document to local references.
+func Localize(doc *openapi3.T) error {
+	l := newLocalizer(doc)
+	return l.localize()
+}
+
+// localizer rewrites references in an OpenAPI document object to local
 // references, so that the spec is self-contained.
-type Localizer struct {
+type localizer struct {
 	doc *openapi3.T
 
 	curRefType    reflect.Value
@@ -20,13 +26,13 @@ type Localizer struct {
 	curValueField reflect.Value
 }
 
-// NewLocalizer returns a new Localizer.
-func NewLocalizer(doc *openapi3.T) *Localizer {
-	return &Localizer{doc: doc}
+// newLocalizer returns a new localizer.
+func newLocalizer(doc *openapi3.T) *localizer {
+	return &localizer{doc: doc}
 }
 
-// Localize rewrites all references in the OpenAPI document to local references.
-func (l *Localizer) Localize() error {
+// localize rewrites all references in the OpenAPI document to local references.
+func (l *localizer) localize() error {
 	err := reflectwalk.Walk(l.doc, l)
 	if err != nil {
 		return err
@@ -38,13 +44,13 @@ func (l *Localizer) Localize() error {
 }
 
 // Struct implements reflectwalk.StructWalker
-func (l *Localizer) Struct(v reflect.Value) error {
+func (l *localizer) Struct(v reflect.Value) error {
 	l.curRefType, l.curRefField, l.curValueField = v, v.FieldByName("Ref"), v.FieldByName("Value")
 	return nil
 }
 
 // StructField implements reflectwalk.StructWalker
-func (l *Localizer) StructField(sf reflect.StructField, v reflect.Value) error {
+func (l *localizer) StructField(sf reflect.StructField, v reflect.Value) error {
 	if !l.curRefField.IsValid() || !l.curValueField.IsValid() {
 		return nil
 	}
