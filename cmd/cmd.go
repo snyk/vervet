@@ -64,13 +64,13 @@ func Compile(ctx *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to load included spec %q: %w", includePath, err)
 		}
-		err = vervet.NewLocalizer(includeSpec).Localize()
+		err = vervet.Localize(includeSpec)
 		if err != nil {
 			return fmt.Errorf("failed to localize included spec %q: %w", includePath, err)
 		}
 		// This marshal/unmarshal is needed to avoid local filesystem
 		// references from re-appearing in the merge below.
-		// TODO: Find out why, improve vervet.Localizer.
+		// TODO: Find out why, improve vervet.Localize.
 		buf, err := vervet.ToSpecJSON(includeSpec)
 		if err != nil {
 			return err
@@ -179,7 +179,7 @@ func Localize(ctx *cli.Context) error {
 	}
 
 	// Localize all references, so we emit a completely self-contained OpenAPI document.
-	err = vervet.NewLocalizer(t).Localize()
+	err = vervet.Localize(t)
 	if err != nil {
 		return fmt.Errorf("failed to localize refs: %w", err)
 	}

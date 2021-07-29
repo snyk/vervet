@@ -16,7 +16,7 @@ func TestLocalize(t *testing.T) {
 	c := qt.New(t)
 	doc, err := vervet.LoadSpecFile(testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
 	c.Assert(err, qt.IsNil)
-	err = vervet.NewLocalizer(doc).Localize()
+	err = vervet.Localize(doc)
 	c.Assert(err, qt.IsNil)
 	err = doc.Validate(context.TODO())
 	c.Assert(err, qt.IsNil)
