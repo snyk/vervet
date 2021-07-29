@@ -10,31 +10,26 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-// Spec defines a specific version of an OpenAPI document.
-type Spec struct {
-	*openapi3.T
-}
-
 // SpecVersions defines an OpenAPI specification consisting of one or more
-// versioned endpoints.
+// versioned resources.
 type SpecVersions struct {
-	endpoints []*EndpointVersions
+	resources []*ResourceVersions
 }
 
 // LoadSpecVersions returns a SpecVersions loaded from a directory structure
-// containing one or more Endpoint subdirectories.
+// containing one or more Resource subdirectories.
 func LoadSpecVersions(root string) (*SpecVersions, error) {
-	epPaths, err := findEndpoints(root)
+	epPaths, err := findResources(root)
 	if err != nil {
 		return nil, err
 	}
 	svs := &SpecVersions{}
 	for i := range epPaths {
-		eps, err := LoadEndpointVersions(epPaths[i])
+		eps, err := LoadResourceVersions(epPaths[i])
 		if err != nil {
-			return nil, fmt.Errorf("failed to load endpoint at %q: %w", epPaths[i], err)
+			return nil, fmt.Errorf("failed to load resource at %q: %w", epPaths[i], err)
 		}
-		svs.endpoints = append(svs.endpoints, eps)
+		svs.resources = append(svs.resources, eps)
 	}
 	if err := svs.Validate(); err != nil {
 		return nil, err
@@ -42,11 +37,11 @@ func LoadSpecVersions(root string) (*SpecVersions, error) {
 	return svs, nil
 }
 
-// Validate returns an error if there are conflicting endpoints at a spec version.
+// Validate returns an error if there are conflicting resources at a spec version.
 func (s *SpecVersions) Validate() error {
 	for _, v := range s.Versions() {
-		endpointPaths := map[string]string{}
-		for _, eps := range s.endpoints {
+		resourcePaths := map[string]string{}
+		for _, eps := range s.resources {
 			ep, err := eps.At(v.String())
 			if err == ErrNoMatchingVersion {
 				continue
@@ -54,20 +49,21 @@ func (s *SpecVersions) Validate() error {
 				return fmt.Errorf("validation failed: %w", err)
 			}
 			for path := range ep.Paths {
-				if conflict, ok := endpointPaths[path]; ok {
+				if conflict, ok := resourcePaths[path]; ok {
 					return fmt.Errorf("conflict: %q %q", conflict, ep.sourcePrefix)
 				}
-				endpointPaths[path] = ep.sourcePrefix
+				resourcePaths[path] = ep.sourcePrefix
 			}
 		}
 	}
 	return nil
 }
 
-// Versions returns a slice containing each Version defined by an Endpoint in this specification.
+// Versions returns a slice containing each Version defined by an Resource in
+// this specification. Versions are sorted in ascending order.
 func (s *SpecVersions) Versions() []*Version {
 	vset := map[Version]bool{}
-	for _, eps := range s.endpoints {
+	for _, eps := range s.resources {
 		for i := range eps.versions {
 			vset[*eps.versions[i].Version] = true
 		}
@@ -83,8 +79,8 @@ func (s *SpecVersions) Versions() []*Version {
 	return versions
 }
 
-// At returns the Spec matching a version string.
-func (s *SpecVersions) At(vs string) (*Spec, error) {
+// At returns the OpenAPI document matching a version string.
+func (s *SpecVersions) At(vs string) (*openapi3.T, error) {
 	if vs == "" {
 		vs = time.Now().UTC().Format("2006-01-02")
 	}
@@ -93,7 +89,7 @@ func (s *SpecVersions) At(vs string) (*Spec, error) {
 		return nil, err
 	}
 	var result *openapi3.T
-	for _, eps := range s.endpoints {
+	for _, eps := range s.resources {
 		ep, err := eps.At(v.String())
 		if err == ErrNoMatchingVersion {
 			continue
@@ -101,9 +97,9 @@ func (s *SpecVersions) At(vs string) (*Spec, error) {
 			return nil, err
 		}
 		if result == nil {
-			// Assign a clean copy of the contents of the first endpoint to the
+			// Assign a clean copy of the contents of the first resource to the
 			// resulting spec. Marshaling is used to ensure that references in
-			// the source endpoint are dropped from the result, which could be
+			// the source resource are dropped from the result, which could be
 			// modified on subsequent merges.
 			buf, err := ep.T.MarshalJSON()
 			if err != nil {
@@ -121,18 +117,18 @@ func (s *SpecVersions) At(vs string) (*Spec, error) {
 		return nil, ErrNoMatchingVersion
 	}
 	// Remove the API stability extension from the merged OpenAPI spec, this
-	// extension is only applicable to individual endpoint version specs.
+	// extension is only applicable to individual resource version specs.
 	delete(result.ExtensionProps.Extensions, ExtSnykApiStability)
-	return &Spec{T: result}, nil
+	return result, nil
 }
 
 // MergeSpec adds the paths and components from a source OpenAPI document root,
 // to a destination document root.
 //
 // TODO: This is a naive implementation that should be improved to detect and
-// resolve conflicts better. For example, distinct endpoints might have
+// resolve conflicts better. For example, distinct resources might have
 // localized references with the same URIs but different content.
-// Content-addressible endpoint versions may further facilitate governance;
+// Content-addressible resource versions may further facilitate governance;
 // this also would facilitate detecting and relocating such conflicts.
 func MergeSpec(dst, src *openapi3.T) {
 	for k, v := range src.Paths {
@@ -187,7 +183,7 @@ func MergeSpec(dst, src *openapi3.T) {
 	}
 }
 
-func findEndpoints(root string) ([]string, error) {
+func findResources(root string) ([]string, error) {
 	var paths []string
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
