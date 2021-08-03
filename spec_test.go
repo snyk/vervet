@@ -22,16 +22,16 @@ func TestSpecs(t *testing.T) {
 		mustParseVersion("2021-06-13~beta"),
 	})
 
-	type expectEndpointVersion struct {
+	type expectResourceVersion struct {
 		version string
 		path    string
 	}
 	tests := []struct {
 		query       string
-		hasVersions []expectEndpointVersion
+		hasVersions []expectResourceVersion
 	}{{
 		query: "2021-07-01~experimental",
-		hasVersions: []expectEndpointVersion{{
+		hasVersions: []expectResourceVersion{{
 			version: "2021-06-13~beta",
 			path:    "/examples/hello-world",
 		}, {
@@ -43,7 +43,7 @@ func TestSpecs(t *testing.T) {
 		}},
 	}, {
 		query: "2021-07-01~wip",
-		hasVersions: []expectEndpointVersion{{
+		hasVersions: []expectResourceVersion{{
 			version: "2021-06-13~beta",
 			path:    "/examples/hello-world",
 		}, {
@@ -55,7 +55,7 @@ func TestSpecs(t *testing.T) {
 		}},
 	}, {
 		query: "2021-07-01~beta",
-		hasVersions: []expectEndpointVersion{{
+		hasVersions: []expectResourceVersion{{
 			version: "2021-06-13~beta",
 			path:    "/examples/hello-world",
 		}, {
@@ -64,7 +64,7 @@ func TestSpecs(t *testing.T) {
 		}},
 	}, {
 		query: "2021-07-01",
-		hasVersions: []expectEndpointVersion{{
+		hasVersions: []expectResourceVersion{{
 			version: "2021-06-07",
 			path:    "/examples/hello-world/{id}",
 		}},
@@ -75,11 +75,11 @@ func TestSpecs(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		_, err = ExtensionString(spec.ExtensionProps, ExtSnykApiStability)
 		c.Assert(err, qt.ErrorMatches, `extension "x-snyk-api-stability" not found`)
-		m := map[expectEndpointVersion]bool{}
+		m := map[expectResourceVersion]bool{}
 		for path, pathItem := range spec.Paths {
 			pathVersionStr, err := ExtensionString(pathItem.ExtensionProps, ExtSnykApiVersion)
 			c.Assert(err, qt.IsNil)
-			m[expectEndpointVersion{version: pathVersionStr, path: path}] = true
+			m[expectResourceVersion{version: pathVersionStr, path: path}] = true
 		}
 		c.Assert(m, qt.HasLen, len(t.hasVersions))
 		for _, hasVersion := range t.hasVersions {

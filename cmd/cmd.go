@@ -17,19 +17,19 @@ import (
 // App is the vervet CLI application.
 var App = &cli.App{
 	Name:  "vervet",
-	Usage: "API endpoint versioning tool",
+	Usage: "OpenAPI resource versioning tool",
 	Commands: []*cli.Command{{
 		Name:      "resolve",
-		Usage:     "Aggregate, render and validate endpoint specs at a particular version",
-		ArgsUsage: "[endpoint root]",
+		Usage:     "Aggregate, render and validate resource specs at a particular version",
+		ArgsUsage: "[resource root]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "at"},
 		},
 		Action: Resolve,
 	}, {
 		Name:      "compile",
-		Usage:     "Compile versioned endpoints into versioned API specs",
-		ArgsUsage: "[input endpoints root] [output api root]",
+		Usage:     "Compile versioned resources into versioned OpenAPI specs",
+		ArgsUsage: "[input resources root] [output api root]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "include",
@@ -45,16 +45,16 @@ var App = &cli.App{
 		Action:    Localize,
 	}, {
 		Name:      "versions",
-		Usage:     "List all endpoint versions declared in a spec",
-		ArgsUsage: "[endpoint root]",
+		Usage:     "List all resource versions declared in a spec",
+		ArgsUsage: "[resource root]",
 		Action:    Versions,
 	}},
 }
 
-// Compile compiles versioned endpoints into versioned API specs.
+// Compile compiles versioned resources into versioned API specs.
 func Compile(ctx *cli.Context) error {
 	if ctx.Args().Len() < 1 {
-		return fmt.Errorf("missing endpoints root")
+		return fmt.Errorf("missing resources root")
 	}
 
 	var includeSpec *openapi3.T
@@ -64,13 +64,13 @@ func Compile(ctx *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to load included spec %q: %w", includePath, err)
 		}
-		err = vervet.NewLocalizer(includeSpec).Localize()
+		err = vervet.Localize(includeSpec)
 		if err != nil {
 			return fmt.Errorf("failed to localize included spec %q: %w", includePath, err)
 		}
 		// This marshal/unmarshal is needed to avoid local filesystem
 		// references from re-appearing in the merge below.
-		// TODO: Find out why, improve vervet.Localizer.
+		// TODO: Find out why, improve vervet.Localize.
 		buf, err := vervet.ToSpecJSON(includeSpec)
 		if err != nil {
 			return err
@@ -114,7 +114,7 @@ func Compile(ctx *cli.Context) error {
 				return err
 			}
 			if includeSpec != nil {
-				vervet.MergeSpec(spec.T, includeSpec)
+				vervet.MergeSpec(spec, includeSpec)
 			}
 			jsonBuf, err := vervet.ToSpecJSON(spec)
 			if err != nil {
@@ -138,7 +138,7 @@ func Compile(ctx *cli.Context) error {
 	return nil
 }
 
-// Resolve aggregates, renders and validates endpoint specs at a particular
+// Resolve aggregates, renders and validates resource specs at a particular
 // version.
 func Resolve(ctx *cli.Context) error {
 	specDir, err := absPath(ctx.Args().Get(0))
@@ -179,7 +179,7 @@ func Localize(ctx *cli.Context) error {
 	}
 
 	// Localize all references, so we emit a completely self-contained OpenAPI document.
-	err = vervet.NewLocalizer(t).Localize()
+	err = vervet.Localize(t)
 	if err != nil {
 		return fmt.Errorf("failed to localize refs: %w", err)
 	}
@@ -197,7 +197,7 @@ func Localize(ctx *cli.Context) error {
 	return nil
 }
 
-// Versions lists all endpoint versions declared in a spec.
+// Versions lists all resource versions declared in a spec.
 func Versions(ctx *cli.Context) error {
 	specDir, err := absPath(ctx.Args().Get(0))
 	if err != nil {
