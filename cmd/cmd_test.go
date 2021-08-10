@@ -35,7 +35,7 @@ func TestCompile(t *testing.T) {
 	}}
 	for _, test := range tests {
 		c.Run("compiled version "+test.version, func(c *qt.C) {
-			doc, err := vervet.LoadSpecFile(dstDir + "/" + test.version + "/spec.yaml")
+			doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + "/spec.yaml")
 			c.Assert(err, qt.IsNil)
 			c.Assert(doc.Validate(context.TODO()), qt.IsNil)
 			for _, path := range test.paths {
@@ -66,7 +66,7 @@ func TestCompileInclude(t *testing.T) {
 		v, err := vervet.ParseVersion(test.version)
 		c.Assert(err, qt.IsNil)
 		// Load just-compiled OpenAPI YAML file
-		doc, err := vervet.LoadSpecFile(dstDir + "/" + v.DateString() + "/spec.yaml")
+		doc, err := vervet.NewDocumentFile(dstDir + "/" + v.DateString() + "/spec.yaml")
 		c.Assert(err, qt.IsNil)
 
 		expected, err := ioutil.ReadFile(testdata.Path("output/" + v.DateString() + "/spec.json"))

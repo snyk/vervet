@@ -11,9 +11,13 @@ import (
 )
 
 // Localize rewrites all references in an OpenAPI document to local references.
-func Localize(doc *openapi3.T) error {
-	l := newLocalizer(doc)
-	return l.localize()
+func Localize(doc *Document) error {
+	l := newLocalizer(doc.T)
+	err := l.localize()
+	if err != nil {
+		return err
+	}
+	return doc.ResolveRefs()
 }
 
 // localizer rewrites references in an OpenAPI document object to local

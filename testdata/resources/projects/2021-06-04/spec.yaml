@@ -61,10 +61,7 @@ paths:
         '500': { $ref: '../../schemas/responses/500.yaml#/500' }
         '200':
           description: 'A list of projects is returned for the targeted org'
-          headers:
-            snyk-version-requested: { $ref: '../../schemas/headers/headers.yaml#/VersionRequestedResponseHeader' }
-            snyk-version-served: { $ref: '../../schemas/headers/headers.yaml#/VersionServedResponseHeader' }
-            snyk-request-id: { $ref: '../../schemas/headers/headers.yaml#/RequestIDResponseHeader' }
+          x-snyk-include-headers: { $ref: '../../schemas/headers/common-response.yaml#/Common' }
           content:
             application/vnd.api+json:
               schema:

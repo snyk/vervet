@@ -1,0 +1,4 @@
+Common:
+  snyk-version-requested: { $ref: './headers.yaml#/VersionRequestedResponseHeader' }
+  snyk-version-served: { $ref: './headers.yaml#/VersionServedResponseHeader' }
+  snyk-request-id: { $ref: './headers.yaml#/RequestIDResponseHeader' }
