@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/ghodss/yaml"
 	"github.com/snyk/vervet"
 	"github.com/urfave/cli/v2"
@@ -57,27 +56,16 @@ func Compile(ctx *cli.Context) error {
 		return fmt.Errorf("missing resources root")
 	}
 
-	var includeSpec *openapi3.T
+	var includeSpec *vervet.Document
 	var err error
 	if includePath := ctx.String("include"); includePath != "" {
-		includeSpec, err = vervet.LoadSpecFile(includePath)
+		includeSpec, err = vervet.NewDocumentFile(includePath)
 		if err != nil {
 			return fmt.Errorf("failed to load included spec %q: %w", includePath, err)
 		}
 		err = vervet.Localize(includeSpec)
 		if err != nil {
 			return fmt.Errorf("failed to localize included spec %q: %w", includePath, err)
-		}
-		// This marshal/unmarshal is needed to avoid local filesystem
-		// references from re-appearing in the merge below.
-		// TODO: Find out why, improve vervet.Localize.
-		buf, err := vervet.ToSpecJSON(includeSpec)
-		if err != nil {
-			return err
-		}
-		includeSpec, err = openapi3.NewLoader().LoadFromData(buf)
-		if err != nil {
-			return err
 		}
 	}
 
@@ -114,7 +102,7 @@ func Compile(ctx *cli.Context) error {
 				return err
 			}
 			if includeSpec != nil {
-				vervet.MergeSpec(spec, includeSpec)
+				vervet.MergeSpec(spec, includeSpec.T)
 			}
 			jsonBuf, err := vervet.ToSpecJSON(spec)
 			if err != nil {
@@ -173,7 +161,7 @@ func Localize(ctx *cli.Context) error {
 		return fmt.Errorf("missing spec.yaml file")
 	}
 	specFile, err := absPath(ctx.Args().Get(0))
-	t, err := vervet.LoadSpecFile(specFile)
+	t, err := vervet.NewDocumentFile(specFile)
 	if err != nil {
 		return fmt.Errorf("failed to load spec from %q: %v", specFile, err)
 	}

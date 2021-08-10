@@ -14,7 +14,7 @@ import (
 
 func TestLocalize(t *testing.T) {
 	c := qt.New(t)
-	doc, err := vervet.LoadSpecFile(testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
+	doc, err := vervet.NewDocumentFile(testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
 	c.Assert(err, qt.IsNil)
 	err = vervet.Localize(doc)
 	c.Assert(err, qt.IsNil)
@@ -29,7 +29,7 @@ func TestLocalize(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// This will fail to load if references have not been localized!
-	doc2, err := vervet.LoadSpecFile(tmpDir + "/spec.yaml")
+	doc2, err := vervet.NewDocumentFile(tmpDir + "/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(doc2.Validate(context.TODO()), qt.IsNil)
 
