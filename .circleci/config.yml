@@ -3,10 +3,7 @@ version: 2.1
 defaults: &defaults
   resource_class: small
   docker:
-    - image: gcr.io/snyk-main/nsolid-ubuntu:erbium
-      auth:
-        username: _json_key
-        password: $GCLOUD_GCR_BUILDER
+    - image: cimg/go:1.16
   working_directory: ~/vervet
 
 private_cicd_repo_auth: &private_cicd_repo_auth
@@ -41,7 +38,7 @@ jobs:
       - save_cache:
           key: go-mod-v4-{{ checksum "go.sum" }}
           paths:
-            - "/go/pkg/mod"
+            - '/go/pkg/mod'
       - run:
           name: Verify testdata/output up to date
           command: go generate ./testdata
