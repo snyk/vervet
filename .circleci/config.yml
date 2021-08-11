@@ -2,6 +2,8 @@ version: 2.1
 
 defaults: &defaults
   resource_class: small
+  docker:
+    - image: cimg/go:1.16
   working_directory: ~/vervet
 
 jobs:
@@ -22,7 +24,7 @@ jobs:
       - save_cache:
           key: go-mod-v4-{{ checksum "go.sum" }}
           paths:
-            - "/go/pkg/mod"
+            - '/go/pkg/mod'
       - run:
           name: Verify testdata/output up to date
           command: go generate ./testdata
