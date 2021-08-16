@@ -24,7 +24,7 @@ const (
 // schema, etc. While a resource spec may declare multiple paths, they should
 // all describe operations on a single conceptual resource.
 type Resource struct {
-	*openapi3.T
+	*Document
 	Version      *Version
 	sourcePrefix string
 }
@@ -33,7 +33,7 @@ type Resource struct {
 // must be valid, and must declare at least one path.
 func (e *Resource) Validate(ctx context.Context) error {
 	// Validate the OpenAPI spec
-	err := e.T.Validate(ctx)
+	err := e.Document.Validate(ctx)
 	if err != nil {
 		return err
 	}
@@ -162,12 +162,12 @@ func ExtensionString(extProps openapi3.ExtensionProps, key string) (string, erro
 }
 
 func loadResource(specPath string, versionStr string) (*Resource, error) {
-	t, err := LoadSpecFile(specPath)
+	doc, err := NewDocumentFile(specPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load spec from %q: %w", specPath, err)
 	}
 
-	stabilityStr, err := ExtensionString(t.ExtensionProps, ExtSnykApiStability)
+	stabilityStr, err := ExtensionString(doc.T.ExtensionProps, ExtSnykApiStability)
 	if err != nil {
 		return nil, err
 	}
@@ -179,19 +179,25 @@ func loadResource(specPath string, versionStr string) (*Resource, error) {
 		return nil, fmt.Errorf("invalid version %q", versionStr)
 	}
 
-	if len(t.Paths) == 0 {
+	if len(doc.Paths) == 0 {
 		return nil, nil
 	}
 
+	// Expand x-snyk-include-headers extensions
+	err = IncludeHeaders(doc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load x-snyk-include-headers extensions: %w", err)
+	}
+
 	// Localize all references, so we emit a completely self-contained OpenAPI document.
-	err = Localize(t)
+	err = Localize(doc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}
 
-	ep := &Resource{T: t, Version: version}
-	for path := range t.Paths {
-		t.Paths[path].ExtensionProps.Extensions[ExtSnykApiVersion] = version.String()
+	ep := &Resource{Document: doc, Version: version}
+	for path := range doc.T.Paths {
+		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiVersion] = version.String()
 	}
 	return ep, nil
 }

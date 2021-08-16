@@ -308,6 +308,8 @@ paths:
               $ref: '#/components/headers/VersionRequestedResponseHeader'
             snyk-version-served:
               $ref: '#/components/headers/VersionServedResponseHeader'
+          x-snyk-include-headers:
+            $ref: ../../../schemas/headers/common-response.yaml#/Common
         "400":
           $ref: '#/components/responses/400'
         "401":
@@ -456,6 +458,8 @@ paths:
               $ref: '#/components/headers/VersionRequestedResponseHeader'
             snyk-version-served:
               $ref: '#/components/headers/VersionServedResponseHeader'
+          x-snyk-include-headers:
+            $ref: ../../schemas/headers/common-response.yaml#/Common
         "400":
           $ref: '#/components/responses/400'
         "401":
