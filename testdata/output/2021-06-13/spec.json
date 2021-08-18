@@ -378,9 +378,6 @@
               "snyk-version-served": {
                 "$ref": "#/components/headers/VersionServedResponseHeader"
               }
-            },
-            "x-snyk-include-headers": {
-              "$ref": "../../../schemas/headers/common-response.yaml#/Common"
             }
           },
           "400": {
