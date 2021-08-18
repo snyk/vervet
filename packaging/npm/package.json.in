@@ -27,6 +27,6 @@
   "dependencies": {},
   "devDependencies": {},
   "optionalDependencies": {
-    "kexec": "^3.0.0"
+    "@jcoreio/kexec": "^4.0.0"
   }
 }
