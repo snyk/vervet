@@ -4,7 +4,7 @@ cd $(dirname $0)/..
 
 if [ -z "${GOPATH:-}" ]; then
     tmp_gopath=$(mktemp -d)
-    trap "rm -rf $tmp_gopath" EXIT
+    trap "chmod -R u+w $tmp_gopath; rm -rf $tmp_gopath" EXIT
     export GOPATH=$tmp_gopath
 fi
 

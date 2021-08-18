@@ -98,6 +98,8 @@ func (w *includeHeaders) applyOperation(op *openapi3.Operation) error {
 			headerRef.Ref = filepath.Join(relPath, headerRef.Ref)
 			resp.Headers[headerKey] = headerRef
 		}
+		// Remove the extension once it has been processed
+		delete(resp.ExtensionProps.Extensions, ExtSnykIncludeHeaders)
 	}
 	return nil
 }
