@@ -28,7 +28,7 @@ apis:
   test:
     resources:
       - linter: apitest-resource
-        root: testdata/resources
+        path: testdata/resources
         excludes:
           - testdata/resources/schemas/**
     overlays:
@@ -69,7 +69,7 @@ apis:
 				Name: "test",
 				Resources: []*config.ResourceSet{{
 					Linter:   "apitest-resource",
-					Root:     "testdata/resources",
+					Path:     "testdata/resources",
 					Excludes: []string{"testdata/resources/schemas/**"},
 				}},
 				Overlays: []*config.Overlay{{
@@ -111,7 +111,7 @@ version: "1"
 apis:
   testapi:
     resources:
-      - root: resources
+      - path: resources
         linter: foo`[1:],
 		err: `linter "foo" not found \(apis\.testapi\.resources\[0\]\.linter\)`,
 	}}

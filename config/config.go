@@ -63,7 +63,7 @@ type API struct {
 type ResourceSet struct {
 	Description string   `json:"description"`
 	Linter      string   `json:"linter"`
-	Root        string   `json:"root"`
+	Path        string   `json:"path"`
 	Excludes    []string `json:"excludes"`
 }
 
@@ -147,6 +147,8 @@ func (r *ResourceSet) validate() error {
 }
 
 func (l *Linter) validate() error {
+	// This can be a linter variant dispatch off non-nil if/when more linter
+	// types are supported.
 	if l.Spectral == nil {
 		return fmt.Errorf("missing spectral configuration (linters.%s)", l.Name)
 	}
