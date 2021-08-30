@@ -1,0 +1,25 @@
+linters:
+  resource-rules:
+    spectral:
+      rules:
+        - resource-rules.yaml
+  compiled-rules:
+    spectral:
+      rules:
+        - compiled-rules.yaml
+apis:
+  testdata:
+    resources:
+      - path: 'resources'
+        linter: resource-rules
+        excludes:
+          - 'resources/schemas/**'
+    overlays:
+      - include: 'resources/include.yaml'
+      - overlay:
+          servers:
+            - url: https://example.com/api/v3
+              description: Test API v3
+    output:
+      path: 'output'
+      linter: compiled-rules
