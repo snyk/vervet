@@ -118,7 +118,12 @@ func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 	if err != nil {
 		return nil, err
 	}
+	return LoadResourceVersionsFileset(specYamls)
+}
+
+func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) {
 	var eps ResourceVersions
+	var err error
 	for i := range specYamls {
 		specYamls[i], err = filepath.Abs(specYamls[i])
 		if err != nil {
