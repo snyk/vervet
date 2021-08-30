@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-cd $(dirname $0)/..
+cd $(dirname $0)/../testdata
 set -eu
 
-go run ./cmd/vervet compile -I ./testdata/resources/include.yaml ./testdata/resources/ ./testdata/output
+go run ../cmd/vervet compile "$@"
 
 output=$(git status --porcelain) && [ -z "$output" ] || (
     echo "working directory not clean; testdata/output may be out of sync"
