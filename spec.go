@@ -16,13 +16,19 @@ type SpecVersions struct {
 	resources []*ResourceVersions
 }
 
-// LoadSpecVersions returns a SpecVersions loaded from a directory structure
+// LoadSpecVersions returns SpecVersions loaded from a directory structure
 // containing one or more Resource subdirectories.
 func LoadSpecVersions(root string) (*SpecVersions, error) {
 	epPaths, err := findResources(root)
 	if err != nil {
 		return nil, err
 	}
+	return LoadSpecVersionsFileset(epPaths)
+}
+
+// LoadSpecVersionsFileset returns SpecVersions loaded from a set of spec
+// files.
+func LoadSpecVersionsFileset(epPaths []string) (*SpecVersions, error) {
 	svs := &SpecVersions{}
 	for i := range epPaths {
 		eps, err := LoadResourceVersions(epPaths[i])
