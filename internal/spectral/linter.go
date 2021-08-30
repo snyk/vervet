@@ -36,8 +36,15 @@ func New(ctx context.Context, rules []string) (*Spectral, error) {
 		return nil, fmt.Errorf("failed to create temp rules file: %w", err)
 	}
 	defer rulesFile.Close()
+	resolvedRules := make([]string, len(rules))
+	for i := range rules {
+		resolvedRules[i], err = filepath.Abs(rules[i])
+		if err != nil {
+			return nil, err
+		}
+	}
 	rulesDoc := map[string]interface{}{
-		"extends": rules,
+		"extends": resolvedRules,
 	}
 	rulesBuf, err := yaml.Marshal(&rulesDoc)
 	if err != nil {

@@ -4,13 +4,15 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
-	"github.com/snyk/vervet"
 	"github.com/urfave/cli/v2"
+
+	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/compiler"
 )
 
 // App is the vervet CLI application.
@@ -30,6 +32,11 @@ var App = &cli.App{
 		Usage:     "Compile versioned resources into versioned OpenAPI specs",
 		ArgsUsage: "[input resources root] [output api root]",
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "config",
+				Aliases: []string{"c", "conf"},
+				Usage:   "Project configuration file",
+			},
 			&cli.StringFlag{
 				Name:    "include",
 				Aliases: []string{"I"},
@@ -52,76 +59,59 @@ var App = &cli.App{
 
 // Compile compiles versioned resources into versioned API specs.
 func Compile(ctx *cli.Context) error {
-	if ctx.Args().Len() < 1 {
-		return fmt.Errorf("missing resources root")
+	var project *config.Project
+	if ctx.Args().Len() == 0 {
+		var configPath string
+		if s := ctx.String("config"); s != "" {
+			configPath = s
+		} else {
+			configPath = ".vervet.yaml"
+		}
+		f, err := os.Open(configPath)
+		if err != nil {
+			return fmt.Errorf("failed to open %q: %w", configPath, err)
+		}
+		defer f.Close()
+		project, err = config.Load(f)
+		if err != nil {
+			return err
+		}
+	} else {
+		api := &config.API{
+			Resources: []*config.ResourceSet{{
+				Path: ctx.Args().Get(0),
+			}},
+			Output: &config.Output{
+				Path: ctx.Args().Get(1),
+			},
+		}
+		if includePath := ctx.String("include"); includePath != "" {
+			api.Overlays = append(api.Overlays, &config.Overlay{
+				Include: includePath,
+			})
+		}
+		project = &config.Project{
+			APIs: map[string]*config.API{
+				"": api,
+			},
+		}
 	}
 
-	var includeSpec *vervet.Document
-	var err error
-	if includePath := ctx.String("include"); includePath != "" {
-		includeSpec, err = vervet.NewDocumentFile(includePath)
-		if err != nil {
-			return fmt.Errorf("failed to load included spec %q: %w", includePath, err)
-		}
-		err = vervet.Localize(includeSpec)
-		if err != nil {
-			return fmt.Errorf("failed to localize included spec %q: %w", includePath, err)
-		}
-	}
-
-	inputDir, err := absPath(ctx.Args().Get(0))
+	comp, err := compiler.New(ctx.Context, project)
 	if err != nil {
 		return err
 	}
-	specVersions, err := vervet.LoadSpecVersions(inputDir)
+	err = comp.LintResourcesAll(ctx.Context)
 	if err != nil {
 		return err
 	}
-	versions := specVersions.Versions()
-	outputDir, err := absPath(ctx.Args().Get(1))
+	err = comp.BuildAll(ctx.Context)
 	if err != nil {
 		return err
 	}
-	versionDates := vervet.VersionDateStrings(versions)
-	stabilities := []string{"~experimental", "~beta", ""}
-	for _, versionDate := range versionDates {
-		for _, stabilitySuffix := range stabilities {
-			version, err := vervet.ParseVersion(versionDate + stabilitySuffix)
-			if err != nil {
-				return err
-			}
-			versionDir := outputDir + "/" + version.String()
-			err = os.MkdirAll(versionDir, 0755)
-			if err != nil {
-				return err
-			}
-			spec, err := specVersions.At(version.String())
-			if err == vervet.ErrNoMatchingVersion {
-				continue
-			} else if err != nil {
-				return err
-			}
-			if includeSpec != nil {
-				vervet.MergeSpec(spec, includeSpec.T)
-			}
-			jsonBuf, err := vervet.ToSpecJSON(spec)
-			if err != nil {
-				return fmt.Errorf("failed to convert to JSON: %w", err)
-			}
-			err = ioutil.WriteFile(versionDir+"/spec.json", jsonBuf, 0644)
-			if err != nil {
-				return err
-			}
-			yamlBuf, err := yaml.JSONToYAML(jsonBuf)
-			if err != nil {
-				return fmt.Errorf("failed to convert to YAML: %w", err)
-			}
-			yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
-			err = ioutil.WriteFile(versionDir+"/spec.yaml", yamlBuf, 0644)
-			if err != nil {
-				return err
-			}
-		}
+	err = comp.LintOutputAll(ctx.Context)
+	if err != nil {
+		return err
 	}
 	return nil
 }

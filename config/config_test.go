@@ -87,6 +87,50 @@ servers:
 	})
 }
 
+func TestLoadNoLinters(t *testing.T) {
+	c := qt.New(t)
+	conf := bytes.NewBufferString(`
+version: "1"
+apis:
+  test:
+    resources:
+      - path: testdata/resources
+        excludes:
+          - testdata/resources/schemas/**
+    overlays:
+      - template: |-
+          servers:
+            - url: ${API_BASE_URL}
+              description: Test API
+    output:
+      path: testdata/output
+`)
+	proj, err := config.Load(conf)
+	c.Assert(err, qt.IsNil)
+	c.Assert(proj, qt.DeepEquals, &config.Project{
+		Version: "1",
+		Linters: map[string]*config.Linter{},
+		APIs: map[string]*config.API{
+			"test": &config.API{
+				Name: "test",
+				Resources: []*config.ResourceSet{{
+					Path:     "testdata/resources",
+					Excludes: []string{"testdata/resources/schemas/**"},
+				}},
+				Overlays: []*config.Overlay{{
+					Template: `
+servers:
+  - url: ${API_BASE_URL}
+    description: Test API`[1:],
+				}},
+				Output: &config.Output{
+					Path: "testdata/output",
+				},
+			},
+		},
+	})
+}
+
 func TestLoadErrors(t *testing.T) {
 	c := qt.New(t)
 	tests := []struct {

@@ -114,18 +114,22 @@ func (p *Project) validate() error {
 			return fmt.Errorf("no resources defined (apis.%s.resources)", api.Name)
 		}
 		for rcIndex, resource := range api.Resources {
-			if _, ok := p.Linters[resource.Linter]; !ok {
-				return fmt.Errorf("linter %q not found (apis.%s.resources[%d].linter)",
-					resource.Linter, api.Name, rcIndex)
+			if resource.Linter != "" {
+				if _, ok := p.Linters[resource.Linter]; !ok {
+					return fmt.Errorf("linter %q not found (apis.%s.resources[%d].linter)",
+						resource.Linter, api.Name, rcIndex)
+				}
 			}
 			if err := resource.validate(); err != nil {
 				return fmt.Errorf("%w (apis.%s.resources[%d])", err, api.Name, rcIndex)
 			}
 		}
 		if api.Output != nil && api.Output.Linter != "" {
-			if _, ok := p.Linters[api.Output.Linter]; !ok {
-				return fmt.Errorf("linter %q not found (apis.%s.output.linter)",
-					api.Output.Linter, api.Name)
+			if api.Output.Linter != "" {
+				if _, ok := p.Linters[api.Output.Linter]; !ok {
+					return fmt.Errorf("linter %q not found (apis.%s.output.linter)",
+						api.Output.Linter, api.Name)
+				}
 			}
 		}
 	}

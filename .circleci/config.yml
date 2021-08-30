@@ -10,8 +10,11 @@ jobs:
   test:
     <<: *defaults
     docker:
-      - image: circleci/golang:1.16
+      - image: circleci/golang:1.16-node
     steps:
+      - run:
+          name: Install spectral
+          command: sudo npm install -g @stoplight/spectral-cli
       - checkout
       - attach_workspace:
           at: ~/vervet

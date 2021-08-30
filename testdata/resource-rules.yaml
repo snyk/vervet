@@ -1,0 +1,11 @@
+extends:
+  - - spectral:oas
+    - all
+
+rules:
+  openapi-tags: off
+  operation-tags: off
+  info-contact: off
+  info-description: off
+  info-license: off
+  license-url: off
