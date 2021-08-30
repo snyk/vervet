@@ -3,12 +3,19 @@ package vervet
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"sort"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/getkin/kin-openapi/openapi3"
 )
+
+// SpecGlobPattern defines the expected directory structure for the versioned
+// OpenAPI specs of a single resource: subdirectories by date, of the form
+// YYYY-mm-dd, each containing a spec.yaml file.
+const SpecGlobPattern = "**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/spec.yaml"
 
 // SpecVersions defines an OpenAPI specification consisting of one or more
 // versioned resources.
@@ -29,11 +36,19 @@ func LoadSpecVersions(root string) (*SpecVersions, error) {
 // LoadSpecVersionsFileset returns SpecVersions loaded from a set of spec
 // files.
 func LoadSpecVersionsFileset(epPaths []string) (*SpecVersions, error) {
-	svs := &SpecVersions{}
+	resourceMap := map[string][]string{}
 	for i := range epPaths {
-		eps, err := LoadResourceVersions(epPaths[i])
+		resourcePath := filepath.Dir(filepath.Dir(epPaths[i]))
+		if resourcePath == "." {
+			continue
+		}
+		resourceMap[resourcePath] = append(resourceMap[resourcePath], epPaths[i])
+	}
+	svs := &SpecVersions{}
+	for resourcePath, specFiles := range resourceMap {
+		eps, err := LoadResourceVersionsFileset(specFiles)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load resource at %q: %w", epPaths[i], err)
+			return nil, fmt.Errorf("failed to load resource at %q: %w", resourcePath, err)
 		}
 		svs.resources = append(svs.resources, eps)
 	}
@@ -191,19 +206,13 @@ func MergeSpec(dst, src *openapi3.T) {
 
 func findResources(root string) ([]string, error) {
 	var paths []string
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		specYamls, err := filepath.Glob(path + "/*/spec.yaml")
-		if err != nil {
-			return err
-		}
-		if len(specYamls) > 0 {
-			paths = append(paths, path)
-			return fs.SkipDir
-		}
-		return nil
-	})
+	err := doublestar.GlobWalk(os.DirFS(root), SpecGlobPattern,
+		func(path string, d fs.DirEntry) error {
+			paths = append(paths, filepath.Join(root, path))
+			return nil
+		})
+	if err != nil {
+		return nil, err
+	}
 	return paths, err
 }
