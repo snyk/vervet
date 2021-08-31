@@ -157,6 +157,9 @@ func MergeSpec(dst, src *openapi3.T) {
 			dst.Paths[k] = v
 		}
 	}
+	if len(src.Servers) > 0 {
+		dst.Servers = src.Servers
+	}
 	for k, v := range src.Components.Schemas {
 		if _, ok := dst.Components.Schemas[k]; !ok {
 			dst.Components.Schemas[k] = v

@@ -394,5 +394,5 @@ paths:
         "500":
           $ref: '#/components/responses/500'
 servers:
-- description: Snyk Registry
-  url: /api/v3
+- description: Test API v3
+  url: https://example.com/api/v3

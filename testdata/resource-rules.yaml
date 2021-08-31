@@ -9,3 +9,5 @@ rules:
   info-description: off
   info-license: off
   license-url: off
+
+  oas3-server-not-example.com: off

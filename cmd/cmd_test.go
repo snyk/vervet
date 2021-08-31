@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/cmd"
@@ -71,6 +72,14 @@ func TestCompileInclude(t *testing.T) {
 
 		expected, err := ioutil.ReadFile(testdata.Path("output/" + v.DateString() + "/spec.json"))
 		c.Assert(err, qt.IsNil)
+
+		// Servers will differ between the fixture output and the above, since
+		// testdata/.vervet.yaml contains an overlay that modifies the servers:
+		// section. This patches the output to match expected.
+		doc.Servers = []*openapi3.Server{{
+			Description: "Test API v3",
+			URL:         "https://example.com/api/v3",
+		}}
 
 		c.Assert(expected, qt.JSONEquals, doc)
 	}

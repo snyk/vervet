@@ -466,5 +466,5 @@ paths:
           $ref: '#/components/responses/500'
     x-snyk-api-version: 2021-06-04~experimental
 servers:
-- description: Snyk Registry
-  url: /api/v3
+- description: Test API v3
+  url: https://example.com/api/v3
