@@ -10,6 +10,8 @@ rules:
   info-license: off
   license-url: off
 
+  oas3-server-not-example.com: off
+
   openapi-get-versions:
     description: APIs must list the available versioned OpenAPI specifications.
     severity: error
