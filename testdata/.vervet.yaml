@@ -16,7 +16,7 @@ apis:
           - 'resources/schemas/**'
     overlays:
       - include: 'resources/include.yaml'
-      - overlay:
+      - template: |-
           servers:
             - url: https://example.com/api/v3
               description: Test API v3
