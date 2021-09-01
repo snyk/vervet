@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"sort"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/ghodss/yaml"
@@ -81,6 +82,16 @@ type Overlay struct {
 type Output struct {
 	Path   string `json:"path"`
 	Linter string `json:"linter"`
+}
+
+// APINames returns the API names in deterministic ascending order.
+func (p *Project) APINames() []string {
+	var result []string
+	for k := range p.APIs {
+		result = append(result, k)
+	}
+	sort.Strings(result)
+	return result
 }
 
 func (p *Project) init() {
@@ -172,4 +183,14 @@ func Load(r io.Reader) (*Project, error) {
 	}
 	p.init()
 	return &p, p.validate()
+}
+
+// Save saves a Project configuration to YAML.
+func Save(w io.Writer, proj *Project) error {
+	buf, err := yaml.Marshal(proj)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(buf)
+	return err
 }

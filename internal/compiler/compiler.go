@@ -97,25 +97,11 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 
 		// Build resources
 		for rcIndex, rcConfig := range apiConfig.Resources {
-			excludes := rcConfig.Excludes
+			var err error
 			r := &resource{
 				linter: compiler.linters[rcConfig.Linter],
 			}
-			err := doublestar.GlobWalk(os.DirFS(rcConfig.Path),
-				vervet.SpecGlobPattern,
-				func(path string, d fs.DirEntry) error {
-					rcPath := filepath.Join(rcConfig.Path, path)
-					for i := range excludes {
-						if ok, err := doublestar.Match(excludes[i], rcPath); ok {
-							return nil
-						} else if err != nil {
-							// Shouldn't happen; pattern is validated on config.Load
-							panic(err)
-						}
-					}
-					r.matchedFiles = append(r.matchedFiles, rcPath)
-					return nil
-				})
+			r.matchedFiles, err = ResourceSpecFiles(rcConfig)
 			if err != nil {
 				return nil, fmt.Errorf("%w: (apis.%s.resources[%d].path)", err, apiName, rcIndex)
 			}
@@ -159,6 +145,26 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 		compiler.apis[apiName] = &a
 	}
 	return compiler, nil
+}
+
+// ResourceSpecFiles returns all matching spec files for a config.Resource.
+func ResourceSpecFiles(rcConfig *config.ResourceSet) ([]string, error) {
+	var result []string
+	err := doublestar.GlobWalk(os.DirFS(rcConfig.Path),
+		vervet.SpecGlobPattern,
+		func(path string, d fs.DirEntry) error {
+			rcPath := filepath.Join(rcConfig.Path, path)
+			for i := range rcConfig.Excludes {
+				if ok, err := doublestar.Match(rcConfig.Excludes[i], rcPath); ok {
+					return nil
+				} else if err != nil {
+					return err
+				}
+			}
+			result = append(result, rcPath)
+			return nil
+		})
+	return result, err
 }
 
 // LintResources checks the inputs of an API's resources with the configured linter.

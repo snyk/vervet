@@ -25,6 +25,7 @@ const (
 // all describe operations on a single conceptual resource.
 type Resource struct {
 	*Document
+	Name         string
 	Version      *Version
 	sourcePrefix string
 }
@@ -47,6 +48,13 @@ func (e *Resource) Validate(ctx context.Context) error {
 // ResourceVersions defines a collection of multiple versions of an Resource.
 type ResourceVersions struct {
 	versions resourceVersionSlice
+}
+
+func (e *ResourceVersions) Name() string {
+	for i := range e.versions {
+		return e.versions[i].Name
+	}
+	return ""
 }
 
 // Versions returns a slice containing each Version defined for this endpoint.
@@ -167,6 +175,7 @@ func ExtensionString(extProps openapi3.ExtensionProps, key string) (string, erro
 }
 
 func loadResource(specPath string, versionStr string) (*Resource, error) {
+	name := filepath.Base(filepath.Dir(filepath.Dir(specPath)))
 	doc, err := NewDocumentFile(specPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load spec from %q: %w", specPath, err)
@@ -200,7 +209,7 @@ func loadResource(specPath string, versionStr string) (*Resource, error) {
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}
 
-	ep := &Resource{Document: doc, Version: version}
+	ep := &Resource{Name: name, Document: doc, Version: version}
 	for path := range doc.T.Paths {
 		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiVersion] = version.String()
 	}

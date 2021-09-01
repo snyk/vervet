@@ -12,5 +12,6 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/urfave/cli/v2 v2.3.0
 )
