@@ -44,8 +44,14 @@ func LoadSpecVersionsFileset(epPaths []string) (*SpecVersions, error) {
 		}
 		resourceMap[resourcePath] = append(resourceMap[resourcePath], epPaths[i])
 	}
+	var resourceNames []string
+	for k := range resourceMap {
+		resourceNames = append(resourceNames, k)
+	}
+	sort.Strings(resourceNames)
 	svs := &SpecVersions{}
-	for resourcePath, specFiles := range resourceMap {
+	for _, resourcePath := range resourceNames {
+		specFiles := resourceMap[resourcePath]
 		eps, err := LoadResourceVersionsFileset(specFiles)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load resource at %q: %w", resourcePath, err)
@@ -78,6 +84,11 @@ func (s *SpecVersions) Validate() error {
 		}
 	}
 	return nil
+}
+
+// Resources returns a slice of each Resource contained in the spec.
+func (s *SpecVersions) Resources() []*ResourceVersions {
+	return s.resources
 }
 
 // Versions returns a slice containing each Version defined by an Resource in
