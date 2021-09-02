@@ -1,0 +1,289 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"text/template"
+	"time"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/urfave/cli/v2"
+
+	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/compiler"
+)
+
+// VersionList is a command that lists all the versions of matching resources.
+// It takes optional arguments to filter the output: api resource
+func VersionList(ctx *cli.Context) error {
+	projectDir, configFile, err := projectConfig(ctx)
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(configFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	proj, err := config.Load(f)
+	if err != nil {
+		return err
+	}
+	err = os.Chdir(projectDir)
+	if err != nil {
+		return err
+	}
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"API", "Resource", "Version", "Path", "Method", "Operation"})
+	for _, apiName := range proj.APINames() {
+		if apiArg := ctx.Args().Get(0); apiArg != "" && apiArg != apiName {
+			continue
+		}
+		api := proj.APIs[apiName]
+		for _, rcConfig := range api.Resources {
+			specFiles, err := compiler.ResourceSpecFiles(rcConfig)
+			if err != nil {
+				return err
+			}
+			specVersions, err := vervet.LoadSpecVersionsFileset(specFiles)
+			if err != nil {
+				return err
+			}
+			for _, rc := range specVersions.Resources() {
+				if rcArg := ctx.Args().Get(1); rcArg != "" && rcArg != rc.Name() {
+					continue
+				}
+				for _, version := range rc.Versions() {
+					doc, err := rc.At(version.String())
+					if err != nil {
+						return err
+					}
+					var pathNames []string
+					for k := range doc.Paths {
+						pathNames = append(pathNames, k)
+					}
+					sort.Strings(pathNames)
+					for _, pathName := range pathNames {
+						pathSpec := doc.Paths[pathName]
+						if pathSpec.Get != nil {
+							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "GET", pathSpec.Get.OperationID})
+						}
+						if pathSpec.Post != nil {
+							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "POST", pathSpec.Post.OperationID})
+						}
+						if pathSpec.Put != nil {
+							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "PUT", pathSpec.Put.OperationID})
+						}
+						if pathSpec.Patch != nil {
+							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "PATCH", pathSpec.Patch.OperationID})
+						}
+						if pathSpec.Delete != nil {
+							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "DELETE", pathSpec.Delete.OperationID})
+						}
+					}
+				}
+			}
+		}
+	}
+	table.Render()
+	return nil
+}
+
+// VersionFiles is a command that lists all versioned OpenAPI spec files of
+// matching resources.
+// It takes optional arguments to filter the output: api resource
+func VersionFiles(ctx *cli.Context) error {
+	projectDir, configFile, err := projectConfig(ctx)
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(configFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	proj, err := config.Load(f)
+	if err != nil {
+		return err
+	}
+	err = os.Chdir(projectDir)
+	if err != nil {
+		return err
+	}
+	for _, apiName := range proj.APINames() {
+		if apiArg := ctx.Args().Get(0); apiArg != "" && apiArg != apiName {
+			continue
+		}
+		api := proj.APIs[apiName]
+		for _, rcConfig := range api.Resources {
+			specFiles, err := compiler.ResourceSpecFiles(rcConfig)
+			if err != nil {
+				return err
+			}
+			sort.Strings(specFiles)
+			for i := range specFiles {
+				rcName := filepath.Base(filepath.Dir(filepath.Dir(specFiles[i])))
+				if rcArg := ctx.Args().Get(1); rcArg != "" && rcArg != rcName {
+					continue
+				}
+				fmt.Println(specFiles[i])
+			}
+		}
+	}
+	return nil
+}
+
+type specVersionKey struct {
+	API      string
+	Resource string
+	Version  vervet.Version
+}
+
+var (
+	templateFuncs = template.FuncMap{
+		"uncapitalize": func(s string) string {
+			if len(s) > 1 {
+				return strings.ToLower(s[0:1]) + s[1:]
+			}
+			return s
+		},
+		"capitalize": func(s string) string {
+			if len(s) > 1 {
+				return strings.ToUpper(s[0:1]) + s[1:]
+			}
+			return s
+		},
+	}
+
+	defaultVersionSpecTmpl = template.Must(template.New("spec.yaml").Funcs(templateFuncs).Parse(`
+openapi: 3.0.3
+{{ if .VersionStability -}}
+x-snyk-api-stability: {{ .VersionStability }}
+{{ end -}}
+info:
+  title: {{ .API.Name }}
+  version: 3.0.0
+servers:
+  - url: /api/{{ .API.Name }}
+    description: {{ .API.Name|capitalize }} API
+paths:
+  /{{ .Resource }}:
+    post:
+      description: Create a new {{ .Resource }}
+      operationId: create{{ .Resource|capitalize }}
+      responses:
+        '200':
+          description: Created {{ .Resource }} successfully
+    get:
+      description: List instances of {{ .Resource }}
+      operationId: list{{ .Resource|capitalize }}
+      responses:
+        '200':
+          description: Returns a list of {{ .Resource }} instances
+  /{{ .Resource }}/{{ "{" }}{{ .Resource|uncapitalize }}Id{{ "}" }}:
+    get:
+      description: Get an instance of {{ .Resource }}
+      operationId: get{{ .Resource|capitalize }}
+      parameters:
+        - { $ref: '#/components/parameters/{{ .Resource|capitalize }}Id' }
+      responses:
+        '200':
+          description: Returns an instance of {{ .Resource }}
+    patch:
+      description: Update an instance of {{ .Resource }}
+      operationId: update{{ .Resource|capitalize }}
+      parameters:
+        - { $ref: '#/components/parameters/{{ .Resource|capitalize }}Id' }
+      responses:
+        '200':
+          description: Instance of {{ .Resource }} is updated.
+    delete:
+      description: Delete an instance of {{ .Resource }}
+      operationId: delete{{ .Resource|capitalize }}
+      parameters:
+        - { $ref: '#/components/parameters/{{ .Resource|capitalize }}Id' }
+      responses:
+        '204':
+          description: Instance of {{ .Resource }} is deleted.
+components:
+  parameters:
+    {{ .Resource|capitalize }}Id:
+      name: {{ .Resource|uncapitalize }}Id
+      in: path
+      required: true
+      description: Unique identifier for {{ .Resource }} instances
+      schema:
+        type: string
+`[1:]))
+)
+
+// VersionNew creates a new resource spec file.
+func VersionNew(ctx *cli.Context) error {
+	projectDir, configFile, err := projectConfig(ctx)
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(configFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	proj, err := config.Load(f)
+	if err != nil {
+		return err
+	}
+	err = os.Chdir(projectDir)
+	if err != nil {
+		return err
+	}
+	apiName, resourceName := ctx.Args().Get(0), ctx.Args().Get(1)
+	if apiName == "" || resourceName == "" {
+		return fmt.Errorf("api and resource are required")
+	}
+	api, ok := proj.APIs[apiName]
+	if !ok && len(proj.APIs) > 0 {
+		var apiNames []string
+		for k := range proj.APIs {
+			apiNames = append(apiNames, k)
+		}
+		sort.Strings(apiNames)
+		return fmt.Errorf(`API %q not found. Choose an existing one (%s) or
+`+"`%s api new %s <resource path>`"+` to start a new API`,
+			apiName, strings.Join(apiNames, ", "), os.Args[0], apiName)
+	}
+	if len(api.Resources) == 0 {
+		return fmt.Errorf(`API %q does not seem to have a resource set defined.
+Please add a `+"`resources:`"+` section to
+%q and try again`, apiName, configFile)
+	}
+
+	version := time.Now().UTC().Format("2006-01-02")
+	resourceDir := api.Resources[0].Path
+	versionDir := filepath.Join(resourceDir, resourceName, version)
+	err = os.MkdirAll(versionDir, 0777)
+	if err != nil {
+		return fmt.Errorf("failed to create version path %q: %w", versionDir, err)
+	}
+
+	newSpecFile := filepath.Join(versionDir, "spec.yaml")
+	f, err = os.OpenFile(newSpecFile, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to create new version spec %q: %w", newSpecFile, err)
+	}
+	defer f.Close()
+	err = defaultVersionSpecTmpl.Execute(f, map[string]interface{}{
+		"API":              api,
+		"Resource":         resourceName,
+		"VersionStability": "wip",
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Created new resource version, spec written to %s\n", newSpecFile)
+	return nil
+}
