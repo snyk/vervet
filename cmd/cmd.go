@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/urfave/cli/v2"
 )
@@ -83,7 +84,28 @@ var App = &cli.App{
 			Name:      "new",
 			Usage:     "Create a new resource version",
 			ArgsUsage: "<api> <resource>",
-			Action:    VersionNew,
+			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f", "overwrite"},
+					Usage:   "Overwrite existing files",
+				},
+				&cli.BoolFlag{
+					Name:  "debug",
+					Usage: "Turn on debug logging to troubleshoot templates",
+				},
+				&cli.StringFlag{
+					Name:  "version",
+					Usage: "Set version date (defaults to today UTC)",
+					Value: time.Now().UTC().Format("2006-01-02"),
+				},
+				&cli.StringFlag{
+					Name:  "stability",
+					Usage: "Stability level of this version",
+					Value: "wip",
+				},
+			},
+			Action: VersionNew,
 		}},
 	}},
 }
