@@ -100,8 +100,8 @@ type ResourceSet struct {
 // that should be included in the aggregate API but are not versioned, or
 // top-level descriptions of the API itself.
 type Overlay struct {
-	Include  string `json:"include"`
-	Template string `json:"template"`
+	Include string `json:"include"`
+	Inline  string `json:"inline"`
 }
 
 // Output defines where the aggregate versioned OpenAPI specs should be created
