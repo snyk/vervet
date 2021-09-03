@@ -32,7 +32,7 @@ apis:
         excludes:
           - testdata/resources/schemas/**
     overlays:
-      - template: |-
+      - inline: |-
           servers:
             - url: ${API_BASE_URL}
               description: Test API
@@ -74,7 +74,7 @@ apis:
 					Excludes: []string{"testdata/resources/schemas/**"},
 				}},
 				Overlays: []*config.Overlay{{
-					Template: `
+					Inline: `
 servers:
   - url: ${API_BASE_URL}
     description: Test API`[1:],
@@ -99,7 +99,7 @@ apis:
         excludes:
           - testdata/resources/schemas/**
     overlays:
-      - template: |-
+      - inline: |-
           servers:
             - url: ${API_BASE_URL}
               description: Test API
@@ -120,7 +120,7 @@ apis:
 					Excludes: []string{"testdata/resources/schemas/**"},
 				}},
 				Overlays: []*config.Overlay{{
-					Template: `
+					Inline: `
 servers:
   - url: ${API_BASE_URL}
     description: Test API`[1:],

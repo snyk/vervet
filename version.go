@@ -34,6 +34,8 @@ func (v *Version) String() string {
 type Stability int
 
 const (
+	stabilityUndefined Stability = iota
+
 	// StabilityWIP means the API is a work-in-progress and not yet ready.
 	StabilityWIP Stability = iota
 
@@ -76,19 +78,27 @@ func ParseVersion(s string) (*Version, error) {
 	}
 	stab := StabilityGA
 	if len(parts) > 1 {
-		switch parts[1] {
-		// wip endpoints get aggregated as experimental
-		case "wip":
-			stab = StabilityWIP
-		case "experimental":
-			stab = StabilityExperimental
-		case "beta":
-			stab = StabilityBeta
-		default:
-			return nil, fmt.Errorf("invalid version %q", s)
+		stab, err = ParseStability(parts[1])
+		if err != nil {
+			return nil, err
 		}
 	}
 	return &Version{Date: d.UTC(), Stability: stab}, nil
+}
+
+// ParseStability parses a stability string into a Stability type, returning an
+// error if the string is invalid.
+func ParseStability(s string) (Stability, error) {
+	switch s {
+	case "wip":
+		return StabilityWIP, nil
+	case "experimental":
+		return StabilityExperimental, nil
+	case "beta":
+		return StabilityBeta, nil
+	default:
+		return stabilityUndefined, fmt.Errorf("invalid stability %q", s)
+	}
 }
 
 // Compare returns -1 if the given stability level is less than, 0 if equal to,

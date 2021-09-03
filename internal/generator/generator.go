@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/ghodss/yaml"
+	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
 )
 
@@ -158,6 +159,18 @@ type VersionScope struct {
 	Stability string
 }
 
+func (s *VersionScope) validate() error {
+	_, err := vervet.ParseVersion(s.Version)
+	if err != nil {
+		return err
+	}
+	_, err = vervet.ParseStability(s.Stability)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type versionScope struct {
 	*VersionScope
 	Data map[string]interface{}
@@ -166,6 +179,11 @@ type versionScope struct {
 // Run executes the Generator. If generated artifacts already exist, an error
 // is returned unless force is true.
 func (g *Generator) Run(scope *VersionScope) error {
+	err := scope.validate()
+	if err != nil {
+		return err
+	}
+
 	// Derive data
 	data := map[string]interface{}{}
 	for fieldName, tmpl := range g.data {

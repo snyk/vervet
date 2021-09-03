@@ -74,3 +74,20 @@ foo resource in API testdata.
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(contents), qt.Contains, `export const createFoo = async (`)
 }
+
+func TestVersionScope(t *testing.T) {
+	c := qt.New(t)
+	s := &VersionScope{
+		API:      "someapi",
+		Resource: "somerc",
+		Version:  "abc",
+	}
+	c.Assert(s.validate(), qt.ErrorMatches, `invalid version "abc"`)
+	s = &VersionScope{
+		API:       "someapi",
+		Resource:  "somerc",
+		Version:   "2021-07-01",
+		Stability: "shaky",
+	}
+	c.Assert(s.validate(), qt.ErrorMatches, `invalid stability "shaky"`)
+}

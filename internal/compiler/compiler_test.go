@@ -44,7 +44,7 @@ apis:
           - 'testdata/resources/schemas/**'
     overlays:
       - include: 'testdata/resources/include.yaml'
-      - template: |-
+      - inline: |-
           servers:
             - url: ${API_BASE_URL}
               description: Snyk API
@@ -82,7 +82,7 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(v3Api.resources[0].matchedFiles, qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
 	c.Assert(v3Api.overlayIncludes, qt.HasLen, 1)
 	c.Assert(v3Api.overlayIncludes[0].Paths, qt.HasLen, 2)
-	c.Assert(v3Api.overlayTemplates[0].Servers[0].URL, qt.Contains, "https://example.com/api/v3", qt.Commentf("environment variable interpolation"))
+	c.Assert(v3Api.overlayInlines[0].Servers[0].URL, qt.Contains, "https://example.com/api/v3", qt.Commentf("environment variable interpolation"))
 	c.Assert(v3Api.output, qt.Not(qt.IsNil))
 
 	// LintResources stage
