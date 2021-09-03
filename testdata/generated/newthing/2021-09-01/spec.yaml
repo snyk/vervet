@@ -1,0 +1,56 @@
+openapi: 3.0.3
+x-snyk-api-stability: beta
+info:
+  title: testdata
+  version: 3.0.0
+servers:
+  - url: /api/testdata
+    description: Testdata API
+paths:
+  /newthing:
+    post:
+      description: Create a new newthing
+      operationId: createNewthing
+      responses:
+        '200':
+          description: Created newthing successfully
+    get:
+      description: List instances of newthing
+      operationId: listNewthing
+      responses:
+        '200':
+          description: Returns a list of newthing instances
+  /newthing/{newthingId}:
+    get:
+      description: Get an instance of newthing
+      operationId: getNewthing
+      parameters:
+        - { $ref: '#/components/parameters/NewthingId' }
+      responses:
+        '200':
+          description: Returns an instance of newthing
+    patch:
+      description: Update an instance of newthing
+      operationId: updateNewthing
+      parameters:
+        - { $ref: '#/components/parameters/NewthingId' }
+      responses:
+        '200':
+          description: Instance of newthing is updated.
+    delete:
+      description: Delete an instance of newthing
+      operationId: deleteNewthing
+      parameters:
+        - { $ref: '#/components/parameters/NewthingId' }
+      responses:
+        '204':
+          description: Instance of newthing is deleted.
+components:
+  parameters:
+    NewthingId:
+      name: newthingId
+      in: path
+      required: true
+      description: Unique identifier for newthing instances
+      schema:
+        type: string

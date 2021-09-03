@@ -43,7 +43,8 @@ apis:
 	proj, err := config.Load(conf)
 	c.Assert(err, qt.IsNil)
 	c.Assert(proj, qt.DeepEquals, &config.Project{
-		Version: "1",
+		Version:    "1",
+		Generators: map[string]*config.Generator{},
 		Linters: map[string]*config.Linter{
 			"apitest-resource": &config.Linter{
 				Name:        "apitest-resource",
@@ -108,8 +109,9 @@ apis:
 	proj, err := config.Load(conf)
 	c.Assert(err, qt.IsNil)
 	c.Assert(proj, qt.DeepEquals, &config.Project{
-		Version: "1",
-		Linters: map[string]*config.Linter{},
+		Version:    "1",
+		Generators: map[string]*config.Generator{},
+		Linters:    map[string]*config.Linter{},
 		APIs: map[string]*config.API{
 			"test": &config.API{
 				Name: "test",

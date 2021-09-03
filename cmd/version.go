@@ -15,6 +15,7 @@ import (
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
 	"github.com/snyk/vervet/internal/compiler"
+	"github.com/snyk/vervet/internal/generator"
 )
 
 // VersionList is a command that lists all the versions of matching resources.
@@ -221,7 +222,7 @@ components:
 `[1:]))
 )
 
-// VersionNew creates a new resource spec file.
+// VersionNew generates a new resource.
 func VersionNew(ctx *cli.Context) error {
 	projectDir, configFile, err := projectConfig(ctx)
 	if err != nil {
@@ -233,6 +234,17 @@ func VersionNew(ctx *cli.Context) error {
 	}
 	defer f.Close()
 	proj, err := config.Load(f)
+	if err != nil {
+		return err
+	}
+	var options []generator.Option
+	if ctx.Bool("force") {
+		options = append(options, generator.Force(true))
+	}
+	if ctx.Bool("debug") {
+		options = append(options, generator.Debug(true))
+	}
+	generators, err := generator.NewMap(proj, options...)
 	if err != nil {
 		return err
 	}
@@ -261,7 +273,11 @@ Please add a `+"`resources:`"+` section to
 %q and try again`, apiName, configFile)
 	}
 
-	version := time.Now().UTC().Format("2006-01-02")
+	versionTime, err := time.Parse("2006-01-02", ctx.String("version"))
+	if err != nil {
+		return err
+	}
+	version := versionTime.Format("2006-01-02")
 	resourceDir := api.Resources[0].Path
 	versionDir := filepath.Join(resourceDir, resourceName, version)
 	err = os.MkdirAll(versionDir, 0777)
@@ -269,21 +285,18 @@ Please add a `+"`resources:`"+` section to
 		return fmt.Errorf("failed to create version path %q: %w", versionDir, err)
 	}
 
-	newSpecFile := filepath.Join(versionDir, "spec.yaml")
-	f, err = os.OpenFile(newSpecFile, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
-	if err != nil {
-		return fmt.Errorf("failed to create new version spec %q: %w", newSpecFile, err)
+	for _, genName := range api.Resources[0].Generators {
+		gen := generators[genName]
+		context := &generator.VersionScope{
+			API:       apiName,
+			Resource:  resourceName,
+			Version:   version,
+			Stability: ctx.String("stability"),
+		}
+		err := gen.Run(context)
+		if err != nil {
+			return fmt.Errorf("%w (generators.%s)", err, genName)
+		}
 	}
-	defer f.Close()
-	err = defaultVersionSpecTmpl.Execute(f, map[string]interface{}{
-		"API":              api,
-		"Resource":         resourceName,
-		"VersionStability": "wip",
-	})
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Created new resource version, spec written to %s\n", newSpecFile)
 	return nil
 }
