@@ -54,10 +54,10 @@ func defaultLinterFactory(ctx context.Context, lc *config.Linter) (Linter, error
 }
 
 type api struct {
-	resources        []*resource
-	overlayIncludes  []*vervet.Document
-	overlayTemplates []*openapi3.T
-	output           *output
+	resources       []*resource
+	overlayIncludes []*vervet.Document
+	overlayInlines  []*openapi3.T
+	output          *output
 }
 
 type resource struct {
@@ -122,15 +122,15 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 						overlayConfig.Include, err, apiName, overlayIndex)
 				}
 				a.overlayIncludes = append(a.overlayIncludes, doc)
-			} else if overlayConfig.Template != "" {
-				docString := os.ExpandEnv(overlayConfig.Template)
+			} else if overlayConfig.Inline != "" {
+				docString := os.ExpandEnv(overlayConfig.Inline)
 				l := openapi3.NewLoader()
 				doc, err := l.LoadFromData([]byte(docString))
 				if err != nil {
 					return nil, fmt.Errorf("failed to load template: %w (apis.%s.overlays[%d].template)",
 						err, apiName, overlayIndex)
 				}
-				a.overlayTemplates = append(a.overlayTemplates, doc)
+				a.overlayInlines = append(a.overlayInlines, doc)
 			}
 		}
 
@@ -244,7 +244,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 				for _, doc := range api.overlayIncludes {
 					vervet.MergeSpec(spec, doc.T)
 				}
-				for _, doc := range api.overlayTemplates {
+				for _, doc := range api.overlayInlines {
 					vervet.MergeSpec(spec, doc)
 				}
 

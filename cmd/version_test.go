@@ -88,10 +88,16 @@ func TestVersionNew(t *testing.T) {
 	copyToDir(c, testdata.Path(".vervet.yaml"), projectDir)
 	copyToDir(c, testdata.Path("compiled-rules.yaml"), projectDir)
 	copyToDir(c, testdata.Path("resource-rules.yaml"), projectDir)
+	versionTemplateDir := filepath.Join(projectDir, ".vervet", "resource", "version")
+	c.Assert(os.MkdirAll(versionTemplateDir, 0777), qt.IsNil)
+	copyToDir(c, testdata.Path(".vervet/resource/version/README.tmpl"), versionTemplateDir)
+	copyToDir(c, testdata.Path(".vervet/resource/version/controller.ts.tmpl"), versionTemplateDir)
+	copyToDir(c, testdata.Path(".vervet/resource/version/index.ts.tmpl"), versionTemplateDir)
+	copyToDir(c, testdata.Path(".vervet/resource/version/spec.yaml.tmpl"), versionTemplateDir)
 	cd(c, projectDir)
 	err := cmd.App.Run([]string{"vervet", "version", "new", "testdata", "foo"})
 	c.Assert(err, qt.IsNil)
-	versions, err := vervet.LoadResourceVersions(filepath.Join(projectDir, "resources", "foo"))
+	versions, err := vervet.LoadResourceVersions(filepath.Join(projectDir, "generated", "foo"))
 	c.Assert(err, qt.IsNil)
 	// Smoke test that a new spec was created
 	c.Assert(versions.Name(), qt.Equals, "foo")
@@ -99,5 +105,4 @@ func TestVersionNew(t *testing.T) {
 	rc, err := versions.At(versions.Versions()[0].String())
 	c.Assert(err, qt.IsNil)
 	c.Assert(rc.Paths, qt.HasLen, 2)
-	// TODO: fixture test here, once we have template configuration support.
 }

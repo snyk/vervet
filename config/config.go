@@ -12,21 +12,47 @@ import (
 
 // Project defines collection of APIs and the standards they adhere to.
 type Project struct {
-	Version string             `json:"version"`
-	Linters map[string]*Linter `json:"linters"`
-	APIs    map[string]*API    `json:"apis"`
+	Version    string                `json:"version"`
+	Linters    map[string]*Linter    `json:"linters,omitempty"`
+	Generators map[string]*Generator `json:"generators,omitempty"`
+	APIs       map[string]*API       `json:"apis"`
 }
 
 // Linter describes a set of standards and rules that an API should satisfy.
 type Linter struct {
 	Name        string          `json:"-"`
-	Description string          `json:"description"`
+	Description string          `json:"description,omitempty"`
 	Spectral    *SpectralLinter `json:"spectral"`
 }
 
 // SpectralLinter identifies a Linter as a collection of Spectral rulesets.
 type SpectralLinter struct {
 	Rules []string `json:"rules"`
+}
+
+// Generator describes how files are generated for a resource.
+type Generator struct {
+	Name     string                    `json:"-"`
+	Scope    GeneratorScope            `json:"scope"`
+	Filename string                    `json:"filename,omitempty"`
+	Template string                    `json:"template"`
+	Files    string                    `json:"files,omitempty"`
+	Data     map[string]*GeneratorData `json:"data,omitempty"`
+}
+
+type GeneratorScope string
+
+const (
+	GeneratorScopeDefault  = ""
+	GeneratorScopeVersion  = "version"
+	GeneratorScopeResource = "resource"
+)
+
+// GeneratorData describes an item that is added to a generator's template data
+// context.
+type GeneratorData struct {
+	FieldName string `json:"-"`
+	Include   string `json:"include"`
 }
 
 // An API defines how and where to build versioned OpenAPI documents from a
@@ -64,6 +90,7 @@ type API struct {
 type ResourceSet struct {
 	Description string   `json:"description"`
 	Linter      string   `json:"linter"`
+	Generators  []string `json:"generators"`
 	Path        string   `json:"path"`
 	Excludes    []string `json:"excludes"`
 }
@@ -73,8 +100,8 @@ type ResourceSet struct {
 // that should be included in the aggregate API but are not versioned, or
 // top-level descriptions of the API itself.
 type Overlay struct {
-	Include  string `json:"include"`
-	Template string `json:"template"`
+	Include string `json:"include"`
+	Inline  string `json:"inline"`
 }
 
 // Output defines where the aggregate versioned OpenAPI specs should be created
@@ -101,6 +128,15 @@ func (p *Project) init() {
 	for k, v := range p.Linters {
 		v.Name = k
 	}
+	if p.Generators == nil {
+		p.Generators = map[string]*Generator{}
+	}
+	for k, v := range p.Generators {
+		v.Name = k
+		if v.Scope == GeneratorScopeDefault {
+			v.Scope = GeneratorScopeVersion
+		}
+	}
 	if p.APIs == nil {
 		p.APIs = map[string]*API{}
 	}
@@ -119,7 +155,7 @@ func (p *Project) validate() error {
 	if len(p.APIs) == 0 {
 		return fmt.Errorf("no apis defined")
 	}
-	// Referenced linters all exist
+	// Referenced linters and generators all exist
 	for _, api := range p.APIs {
 		if len(api.Resources) == 0 {
 			return fmt.Errorf("no resources defined (apis.%s.resources)", api.Name)
@@ -129,6 +165,12 @@ func (p *Project) validate() error {
 				if _, ok := p.Linters[resource.Linter]; !ok {
 					return fmt.Errorf("linter %q not found (apis.%s.resources[%d].linter)",
 						resource.Linter, api.Name, rcIndex)
+				}
+			}
+			for genIndex, genName := range resource.Generators {
+				if _, ok := p.Generators[genName]; !ok {
+					return fmt.Errorf("generator %q not found (apis.%s.resources[%d].generator[%d])",
+						genName, api.Name, rcIndex, genIndex)
 				}
 			}
 			if err := resource.validate(); err != nil {
@@ -149,6 +191,11 @@ func (p *Project) validate() error {
 			return err
 		}
 	}
+	for _, gen := range p.Generators {
+		if err := gen.validate(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -166,6 +213,30 @@ func (l *Linter) validate() error {
 	// types are supported.
 	if l.Spectral == nil {
 		return fmt.Errorf("missing spectral configuration (linters.%s)", l.Name)
+	}
+	return nil
+}
+
+func (g *Generator) validate() error {
+	switch g.Scope {
+	case GeneratorScopeVersion:
+	//case GeneratorScopeResource:  // TODO: support resource scope
+	default:
+		return fmt.Errorf("invalid scope %q (generators.%s.scope)", g.Scope, g.Name)
+	}
+	if g.Template == "" {
+		return fmt.Errorf("required field not specified (generators.%s.contents)", g.Name)
+	}
+	if g.Filename == "" && g.Files == "" {
+		return fmt.Errorf("filename or files must be specified (generators.%s)", g.Name)
+	}
+	for k, v := range g.Data {
+		if k == "" {
+			return fmt.Errorf("empty key not allowed (generators.%s.data)", g.Name)
+		}
+		if v.Include == "" {
+			return fmt.Errorf("required field not specified (generators.%s.data.%s.include)", g.Name, k)
+		}
 	}
 	return nil
 }

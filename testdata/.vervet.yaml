@@ -7,16 +7,65 @@ linters:
     spectral:
       rules:
         - compiled-rules.yaml
+
+generators:
+  version-readme:
+    scope: version
+    filename: "generated/{{ .Resource }}/{{ .Version }}/README"
+    template: ".vervet/resource/version/README.tmpl"
+  version-spec:
+    scope: version
+    filename: "generated/{{ .Resource }}/{{ .Version }}/spec.yaml"
+    template: ".vervet/resource/version/spec.yaml.tmpl"
+  version-controller:
+    scope: version
+    files: |-
+      {{- $resource := .Resource -}}
+      {{- $version := .Version -}}
+      {{- range $path, $pathItem := .Data.Spec.paths -}}
+      {{- range $method, $operation := $pathItem -}}
+      {{- $operationId := $operation.operationId -}}
+      {{- $ctx := map "Context" . "OperationId" $operationId }}
+      generated/{{ $resource }}/{{ $version }}/{{ $operationId }}.ts: |-
+        {{ include "contents" $ctx | indent 2 }}
+      {{ end }}
+      {{- end -}}
+    template: ".vervet/resource/version/controller.ts.tmpl"
+    data:
+      Spec:
+        include: "generated/{{ .Resource }}/{{ .Version }}/spec.yaml"
+  version-index:
+    scope: version
+    filename: "generated/{{ .Resource }}/{{ .Version }}/index.ts"
+    template: ".vervet/resource/version/index.ts.tmpl"
+    data:
+      Spec:
+        include: "generated/{{ .Resource }}/{{ .Version }}/spec.yaml"
+# TODO: support resource-scoped generators
+#  resource-routes:
+#    scope: resource
+#    filename: "{{ .Resource }}/routes.ts":
+#    contents: ".vervet/resource/routes.ts.tmpl"
+#    data:
+#      Spec:
+#        include: "{{ .Resource }}/{{ .Version }}/spec.yaml":
+
 apis:
   testdata:
     resources:
       - path: 'resources'
         linter: resource-rules
+        generators:
+          - version-readme
+          - version-spec
+          - version-controller
+          - version-index
+          #- resource-routes
         excludes:
           - 'resources/schemas/**'
     overlays:
       - include: 'resources/include.yaml'
-      - template: |-
+      - inline: |-
           servers:
             - url: https://example.com/api/v3
               description: Test API v3
