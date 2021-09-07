@@ -176,8 +176,8 @@ type versionScope struct {
 	Data map[string]interface{}
 }
 
-// Run executes the Generator. If generated artifacts already exist, an error
-// is returned unless force is true.
+// Run executes the Generator. If generated artifacts already exist, a warning
+// is logged but the file is not overwritten, unless force is true.
 func (g *Generator) Run(scope *VersionScope) error {
 	err := scope.validate()
 	if err != nil {
