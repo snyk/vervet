@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
@@ -143,84 +142,6 @@ type specVersionKey struct {
 	Resource string
 	Version  vervet.Version
 }
-
-var (
-	templateFuncs = template.FuncMap{
-		"uncapitalize": func(s string) string {
-			if len(s) > 1 {
-				return strings.ToLower(s[0:1]) + s[1:]
-			}
-			return s
-		},
-		"capitalize": func(s string) string {
-			if len(s) > 1 {
-				return strings.ToUpper(s[0:1]) + s[1:]
-			}
-			return s
-		},
-	}
-
-	defaultVersionSpecTmpl = template.Must(template.New("spec.yaml").Funcs(templateFuncs).Parse(`
-openapi: 3.0.3
-{{ if .VersionStability -}}
-x-snyk-api-stability: {{ .VersionStability }}
-{{ end -}}
-info:
-  title: {{ .API.Name }}
-  version: 3.0.0
-servers:
-  - url: /api/{{ .API.Name }}
-    description: {{ .API.Name|capitalize }} API
-paths:
-  /{{ .Resource }}:
-    post:
-      description: Create a new {{ .Resource }}
-      operationId: create{{ .Resource|capitalize }}
-      responses:
-        '200':
-          description: Created {{ .Resource }} successfully
-    get:
-      description: List instances of {{ .Resource }}
-      operationId: list{{ .Resource|capitalize }}
-      responses:
-        '200':
-          description: Returns a list of {{ .Resource }} instances
-  /{{ .Resource }}/{{ "{" }}{{ .Resource|uncapitalize }}Id{{ "}" }}:
-    get:
-      description: Get an instance of {{ .Resource }}
-      operationId: get{{ .Resource|capitalize }}
-      parameters:
-        - { $ref: '#/components/parameters/{{ .Resource|capitalize }}Id' }
-      responses:
-        '200':
-          description: Returns an instance of {{ .Resource }}
-    patch:
-      description: Update an instance of {{ .Resource }}
-      operationId: update{{ .Resource|capitalize }}
-      parameters:
-        - { $ref: '#/components/parameters/{{ .Resource|capitalize }}Id' }
-      responses:
-        '200':
-          description: Instance of {{ .Resource }} is updated.
-    delete:
-      description: Delete an instance of {{ .Resource }}
-      operationId: delete{{ .Resource|capitalize }}
-      parameters:
-        - { $ref: '#/components/parameters/{{ .Resource|capitalize }}Id' }
-      responses:
-        '204':
-          description: Instance of {{ .Resource }} is deleted.
-components:
-  parameters:
-    {{ .Resource|capitalize }}Id:
-      name: {{ .Resource|uncapitalize }}Id
-      in: path
-      required: true
-      description: Unique identifier for {{ .Resource }} instances
-      schema:
-        type: string
-`[1:]))
-)
 
 // VersionNew generates a new resource.
 func VersionNew(ctx *cli.Context) error {
