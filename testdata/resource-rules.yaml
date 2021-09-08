@@ -11,3 +11,15 @@ rules:
   license-url: off
 
   oas3-server-not-example.com: off
+
+  parameter-names-snake-case:
+    description: Parameter names must be snake_case.
+    message: '{{description}}'
+    severity: error
+    given: $..parameters[*]
+    then:
+      field: 'name'
+      function: casing
+      functionOptions:
+        type: snake
+

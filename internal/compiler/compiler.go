@@ -15,21 +15,16 @@ import (
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
 	"github.com/snyk/vervet/internal/spectral"
+	"github.com/snyk/vervet/internal/types"
 )
-
-// A Linter checks that a set of files conform to some set of rules and
-// standards.
-type Linter interface {
-	Run(ctx context.Context, files ...string) error
-}
 
 // A Compiler checks and builds versioned API resource inputs into aggregated
 // OpenAPI versioned outputs, as determined by an API project configuration.
 type Compiler struct {
 	apis    map[string]*api
-	linters map[string]Linter
+	linters map[string]types.Linter
 
-	newLinter func(ctx context.Context, lc *config.Linter) (Linter, error)
+	newLinter func(ctx context.Context, lc *config.Linter) (types.Linter, error)
 }
 
 // CompilerOption applies a configuration option to a Compiler.
@@ -37,14 +32,14 @@ type CompilerOption func(*Compiler) error
 
 // LinterFactory configures a Compiler to use a custom factory function for
 // instantiating Linters.
-func LinterFactory(f func(ctx context.Context, lc *config.Linter) (Linter, error)) CompilerOption {
+func LinterFactory(f func(ctx context.Context, lc *config.Linter) (types.Linter, error)) CompilerOption {
 	return func(c *Compiler) error {
 		c.newLinter = f
 		return nil
 	}
 }
 
-func defaultLinterFactory(ctx context.Context, lc *config.Linter) (Linter, error) {
+func defaultLinterFactory(ctx context.Context, lc *config.Linter) (types.Linter, error) {
 	if lc.Spectral == nil {
 		return nil, fmt.Errorf("unsupported linter (linters.%s)", lc.Name)
 	}
@@ -61,20 +56,21 @@ type api struct {
 }
 
 type resource struct {
-	linter       Linter
-	matchedFiles []string
+	linter          types.Linter
+	linterOverrides map[string]map[string][]string
+	matchedFiles    []string
 }
 
 type output struct {
 	path   string
-	linter Linter
+	linter types.Linter
 }
 
 // New returns a new Compiler for a given project configuration.
 func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (*Compiler, error) {
 	compiler := &Compiler{
 		apis:      map[string]*api{},
-		linters:   map[string]Linter{},
+		linters:   map[string]types.Linter{},
 		newLinter: defaultLinterFactory,
 	}
 	for i := range options {
@@ -99,12 +95,25 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 		for rcIndex, rcConfig := range apiConfig.Resources {
 			var err error
 			r := &resource{
-				linter: compiler.linters[rcConfig.Linter],
+				linter:          compiler.linters[rcConfig.Linter],
+				linterOverrides: map[string]map[string][]string{},
 			}
 			r.matchedFiles, err = ResourceSpecFiles(rcConfig)
 			if err != nil {
 				return nil, fmt.Errorf("%w: (apis.%s.resources[%d].path)", err, apiName, rcIndex)
 			}
+			linterOverrides := map[string]map[string][]string{}
+			for rcName, versionMap := range rcConfig.LinterOverrides {
+				linterOverrides[rcName] = map[string][]string{}
+				for version, linter := range versionMap {
+					var overrideRules []string
+					for _, rule := range linter.Spectral.Rules {
+						overrideRules = append(overrideRules, rule)
+					}
+					linterOverrides[rcName][version] = overrideRules
+				}
+			}
+			r.linterOverrides = linterOverrides
 			a.resources = append(a.resources, r)
 		}
 
@@ -177,10 +186,48 @@ func (c *Compiler) LintResources(ctx context.Context, apiName string) error {
 		if rc.linter == nil {
 			continue
 		}
-		err := rc.linter.Run(ctx, rc.matchedFiles...)
-		if err != nil {
-			return fmt.Errorf("lint failed (apis.%s.resources[%d])", apiName, rcIndex)
+		if len(rc.linterOverrides) > 0 {
+			err := c.lintWithOverrides(ctx, rc, apiName, rcIndex)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := rc.linter.Run(ctx, rc.matchedFiles...)
+			if err != nil {
+				return fmt.Errorf("lint failed (apis.%s.resources[%d])", apiName, rcIndex)
+			}
 		}
+	}
+	return nil
+}
+
+func (c *Compiler) lintWithOverrides(ctx context.Context, rc *resource, apiName string, rcIndex int) error {
+	var pending []string
+	for _, matchedFile := range rc.matchedFiles {
+		versionDir := filepath.Dir(matchedFile)
+		rcDir := filepath.Dir(versionDir)
+		versionName := filepath.Base(versionDir)
+		rcName := filepath.Base(rcDir)
+		if rules, ok := rc.linterOverrides[rcName][versionName]; ok {
+			linter, err := rc.linter.NewRules(ctx, rules...)
+			if err != nil {
+				return fmt.Errorf("failed to apply overrides to linter: %w (apis.%s.resources[%d].linter-overrides.%s.%s)",
+					err, apiName, rcIndex, rcName, versionName)
+			}
+			err = linter.Run(ctx, matchedFile)
+			if err != nil {
+				return fmt.Errorf("lint failed on %q: %w (apis.%s.resources[%d])", matchedFile, err, apiName, rcIndex)
+			}
+		} else {
+			pending = append(pending, matchedFile)
+		}
+	}
+	if len(pending) == 0 {
+		return nil
+	}
+	err := rc.linter.Run(ctx, pending...)
+	if err != nil {
+		return fmt.Errorf("lint failed (apis.%s.resources[%d])", apiName, rcIndex)
 	}
 	return nil
 }

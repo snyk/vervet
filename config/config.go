@@ -88,11 +88,12 @@ type API struct {
 // in each version is a complete OpenAPI document describing the resource
 // at that version.
 type ResourceSet struct {
-	Description string   `json:"description"`
-	Linter      string   `json:"linter"`
-	Generators  []string `json:"generators"`
-	Path        string   `json:"path"`
-	Excludes    []string `json:"excludes"`
+	Description     string                        `json:"description"`
+	Linter          string                        `json:"linter"`
+	LinterOverrides map[string]map[string]*Linter `json:"linter-overrides"`
+	Generators      []string                      `json:"generators"`
+	Path            string                        `json:"path"`
+	Excludes        []string                      `json:"excludes"`
 }
 
 // An Overlay defines additional OpenAPI documents to merge into the aggregate
@@ -175,6 +176,15 @@ func (p *Project) validate() error {
 			}
 			if err := resource.validate(); err != nil {
 				return fmt.Errorf("%w (apis.%s.resources[%d])", err, api.Name, rcIndex)
+			}
+			for rcName, versionMap := range resource.LinterOverrides {
+				for version, linter := range versionMap {
+					err := linter.validate()
+					if err != nil {
+						return fmt.Errorf("%w: (apis.%s.resources[%d].linter-overrides.%s.%s)",
+							err, api.Name, rcIndex, rcName, version)
+					}
+				}
 			}
 		}
 		if api.Output != nil && api.Output.Linter != "" {
