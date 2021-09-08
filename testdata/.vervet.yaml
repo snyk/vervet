@@ -55,6 +55,13 @@ apis:
     resources:
       - path: 'resources'
         linter: resource-rules
+        linter-overrides:
+          projects:
+            2021-06-04:
+              spectral:
+                rules:
+                  - projects-override-rules.yaml
+
         generators:
           - version-readme
           - version-spec
