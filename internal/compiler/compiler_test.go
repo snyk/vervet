@@ -10,6 +10,7 @@ import (
 	qt "github.com/frankban/quicktest"
 
 	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/types"
 	"github.com/snyk/vervet/testdata"
 )
 
@@ -68,7 +69,7 @@ func TestCompilerSmoke(t *testing.T) {
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
 	c.Assert(err, qt.IsNil)
-	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (Linter, error) {
+	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (types.Linter, error) {
 		return &mockLinter{}, nil
 	}))
 	c.Assert(err, qt.IsNil)
@@ -106,11 +107,19 @@ func TestCompilerSmoke(t *testing.T) {
 }
 
 type mockLinter struct {
-	runs [][]string
-	err  error
+	runs  [][]string
+	rules []string
+	err   error
 }
 
 func (l *mockLinter) Run(ctx context.Context, paths ...string) error {
 	l.runs = append(l.runs, paths)
 	return l.err
+}
+
+func (l *mockLinter) NewRules(ctx context.Context, rules ...string) (types.Linter, error) {
+	nl := &mockLinter{
+		rules: append(l.rules, rules...),
+	}
+	return nl, nil
 }

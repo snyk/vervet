@@ -9,10 +9,14 @@ import (
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
+
+	"github.com/snyk/vervet/internal/types"
 )
 
 // Spectral runs spectral on collections of files with a set of rules.
 type Spectral struct {
+	rules []string
+
 	spectralPath string
 	rulesPath    string
 }
@@ -62,9 +66,15 @@ func New(ctx context.Context, rules []string) (*Spectral, error) {
 		}
 	}()
 	return &Spectral{
+		rules:        resolvedRules,
 		spectralPath: spectralPath,
 		rulesPath:    rulesPath,
 	}, nil
+}
+
+// NewRules returns a new Linter instance with additional rules appended.
+func (l *Spectral) NewRules(ctx context.Context, paths ...string) (types.Linter, error) {
+	return New(ctx, append([]string{l.rulesPath}, paths...))
 }
 
 // Run runs spectral on the given paths. Linting output is written to standard

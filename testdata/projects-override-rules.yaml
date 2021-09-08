@@ -1,0 +1,11 @@
+rules:
+  parameter-names-snake-case:
+    description: Parameter names should be snake_case.
+    message: '{{description}}'
+    severity: info
+    given: $..parameters[*]
+    then:
+      field: 'name'
+      function: casing
+      functionOptions:
+        type: snake
