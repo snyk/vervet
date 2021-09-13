@@ -143,7 +143,7 @@ func (s *SpecVersions) At(vs string) (*openapi3.T, error) {
 				return nil, err
 			}
 		}
-		MergeSpec(result, ep.T)
+		Merge(result, ep.T, false)
 	}
 	if result == nil {
 		return nil, ErrNoMatchingVersion
@@ -152,70 +152,6 @@ func (s *SpecVersions) At(vs string) (*openapi3.T, error) {
 	// extension is only applicable to individual resource version specs.
 	delete(result.ExtensionProps.Extensions, ExtSnykApiStability)
 	return result, nil
-}
-
-// MergeSpec adds the paths and components from a source OpenAPI document root,
-// to a destination document root.
-//
-// TODO: This is a naive implementation that should be improved to detect and
-// resolve conflicts better. For example, distinct resources might have
-// localized references with the same URIs but different content.
-// Content-addressible resource versions may further facilitate governance;
-// this also would facilitate detecting and relocating such conflicts.
-func MergeSpec(dst, src *openapi3.T) {
-	for k, v := range src.Paths {
-		if _, ok := dst.Paths[k]; !ok {
-			dst.Paths[k] = v
-		}
-	}
-	if len(src.Servers) > 0 {
-		dst.Servers = src.Servers
-	}
-	for k, v := range src.Components.Schemas {
-		if _, ok := dst.Components.Schemas[k]; !ok {
-			dst.Components.Schemas[k] = v
-		}
-	}
-	for k, v := range src.Components.Parameters {
-		if _, ok := dst.Components.Parameters[k]; !ok {
-			dst.Components.Parameters[k] = v
-		}
-	}
-	for k, v := range src.Components.Headers {
-		if _, ok := dst.Components.Headers[k]; !ok {
-			dst.Components.Headers[k] = v
-		}
-	}
-	for k, v := range src.Components.RequestBodies {
-		if _, ok := dst.Components.RequestBodies[k]; !ok {
-			dst.Components.RequestBodies[k] = v
-		}
-	}
-	for k, v := range src.Components.Responses {
-		if _, ok := dst.Components.Responses[k]; !ok {
-			dst.Components.Responses[k] = v
-		}
-	}
-	for k, v := range src.Components.SecuritySchemes {
-		if _, ok := dst.Components.SecuritySchemes[k]; !ok {
-			dst.Components.SecuritySchemes[k] = v
-		}
-	}
-	for k, v := range src.Components.Examples {
-		if _, ok := dst.Components.Examples[k]; !ok {
-			dst.Components.Examples[k] = v
-		}
-	}
-	for k, v := range src.Components.Links {
-		if _, ok := dst.Components.Links[k]; !ok {
-			dst.Components.Links[k] = v
-		}
-	}
-	for k, v := range src.Components.Callbacks {
-		if _, ok := dst.Components.Callbacks[k]; !ok {
-			dst.Components.Callbacks[k] = v
-		}
-	}
 }
 
 func findResources(root string) ([]string, error) {

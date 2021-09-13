@@ -1,0 +1,75 @@
+components:
+  schemas:
+    Foo:
+      type: object
+      properties:
+        color:
+          type: string
+          enum: ["red", "green", "blue"]
+        dimension:
+          type: array
+          items:
+            type: number
+        strange:
+          type: boolean
+    Baz:
+      type: object
+      properties:
+        other:
+          type: boolean
+  parameters:
+    Foo:
+      in: path
+      name: foo2
+      required: true
+      schema:
+        type: string
+    Baz:
+      in: path
+      name: baz
+      required: true
+      schema:
+        type: string
+  headers:
+    Foo:
+      schema:
+        type: string
+    Baz:
+      schema:
+        type: string
+  requestBodies:
+    Foo:
+     required: true
+     content:
+       application/json:
+        schema:
+          $ref: '#/components/schemas/Foo'
+    Baz:
+     required: true
+     content:
+       application/json:
+        schema:
+          $ref: '#/components/schemas/Baz'
+  responses:
+    '200':
+      content:
+        application/vnd.api+json:
+          schema:
+            $ref: '#/components/schemas/Foo'
+    '202':
+      content:
+        application/vnd.api+json:
+          schema:
+            $ref: '#/components/schemas/Baz'
+  securitySchemes:
+    Foo:
+     type: http
+     scheme: basic
+    Baz:
+     type: http
+     scheme: basic
+  examples:
+    Foo:
+     value: foo-natured
+    Baz:
+     value: bazil

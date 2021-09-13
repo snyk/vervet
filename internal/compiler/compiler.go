@@ -289,10 +289,10 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 
 				// Merge all overlays
 				for _, doc := range api.overlayIncludes {
-					vervet.MergeSpec(spec, doc.T)
+					vervet.Merge(spec, doc.T, true)
 				}
 				for _, doc := range api.overlayInlines {
-					vervet.MergeSpec(spec, doc)
+					vervet.Merge(spec, doc, true)
 				}
 
 				// Write the compiled spec to JSON and YAML
