@@ -1,0 +1,71 @@
+components:
+  schemas:
+    Foo:
+      type: object
+      properties:
+        color:
+          type: string
+          enum: ["red", "green", "blue", "alpha"]
+        quantity:
+          type: number
+    Bar:
+      type: object
+      properties:
+        newStuff:
+          type: string
+  parameters:
+    Foo:
+      in: path
+      name: foo
+      required: true
+      schema:
+        type: string
+    Bar:
+      in: path
+      name: bar
+      required: true
+      schema:
+        type: string
+  headers:
+    Foo:
+      schema:
+        type: string
+    Bar:
+      schema:
+        type: string
+  requestBodies:
+    Foo:
+     required: true
+     content:
+       application/json:
+        schema:
+          $ref: '#/components/schemas/Foo'
+    Bar:
+     required: true
+     content:
+       application/json:
+        schema:
+          $ref: '#/components/schemas/Bar'
+  responses:
+    '200':
+      content:
+        application/vnd.api+json:
+          schema:
+            $ref: '#/components/schemas/Foo'
+    '201':
+      content:
+        application/vnd.api+json:
+          schema:
+            $ref: '#/components/schemas/Bar'
+  securitySchemes:
+    Foo:
+     type: http
+     scheme: basic
+    Bar:
+     type: http
+     scheme: basic
+  examples:
+    Foo:
+     value: foo
+    Bar:
+     value: bar
