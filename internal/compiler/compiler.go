@@ -257,6 +257,14 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	if api.output == nil || api.output.path == "" {
 		return nil
 	}
+	err := os.RemoveAll(api.output.path)
+	if err != nil {
+		return fmt.Errorf("failed to clear output directory: %w", err)
+	}
+	err = os.Mkdir(api.output.path, 0777)
+	if err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
 	for rcIndex, rc := range api.resources {
 		specVersions, err := vervet.LoadSpecVersionsFileset(rc.matchedFiles)
 		if err != nil {
