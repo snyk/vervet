@@ -3,6 +3,7 @@ package compiler
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"os"
 	"testing"
 	"text/template"
@@ -67,6 +68,10 @@ func TestCompilerSmoke(t *testing.T) {
 	err := configTemplate.Execute(&configBuf, outputPath)
 	c.Assert(err, qt.IsNil)
 
+	// Create a file that should be removed prior to build
+	err = ioutil.WriteFile(outputPath+"/goof", []byte("goof"), 0777)
+	c.Assert(err, qt.IsNil)
+
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
 	c.Assert(err, qt.IsNil)
 	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (types.Linter, error) {
@@ -96,6 +101,10 @@ func TestCompilerSmoke(t *testing.T) {
 	// Build stage
 	err = compiler.BuildAll(ctx)
 	c.Assert(err, qt.IsNil)
+
+	// Build output was cleaned up
+	_, err = ioutil.ReadFile(outputPath + "/goof")
+	c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")
 
 	// LintOutput stage
 	err = compiler.LintOutputAll(ctx)
