@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -265,6 +266,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
+	log.Printf("compiling API %s to output versions", apiName)
 	for rcIndex, rc := range api.resources {
 		specVersions, err := vervet.LoadSpecVersionsFileset(rc.matchedFiles)
 		if err != nil {
@@ -308,19 +310,26 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 				if err != nil {
 					return buildErr(err)
 				}
-				err = ioutil.WriteFile(versionDir+"/spec.json", jsonBuf, 0644)
+				jsonSpecPath := versionDir + "/spec.json"
+				err = ioutil.WriteFile(jsonSpecPath, jsonBuf, 0644)
 				if err != nil {
 					return buildErr(err)
 				}
+				log.Println(jsonSpecPath)
 				yamlBuf, err := yaml.JSONToYAML(jsonBuf)
 				if err != nil {
 					return buildErr(err)
 				}
 				yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
-				err = ioutil.WriteFile(versionDir+"/spec.yaml", yamlBuf, 0644)
 				if err != nil {
 					return buildErr(err)
 				}
+				yamlSpecPath := versionDir + "/spec.yaml"
+				err = ioutil.WriteFile(yamlSpecPath, yamlBuf, 0644)
+				if err != nil {
+					return buildErr(err)
+				}
+				log.Println(yamlSpecPath)
 			}
 		}
 	}
