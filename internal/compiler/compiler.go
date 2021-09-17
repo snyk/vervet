@@ -261,7 +261,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to clear output directory: %w", err)
 	}
-	err = os.Mkdir(api.output.path, 0777)
+	err = os.MkdirAll(api.output.path, 0777)
 	if err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}

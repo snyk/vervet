@@ -3,6 +3,7 @@ module github.com/snyk/vervet
 go 1.16
 
 require (
+	github.com/a8m/envsubst v1.2.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.0.2
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/frankban/quicktest v1.13.0
