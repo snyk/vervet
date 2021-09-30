@@ -24,7 +24,9 @@
     "Ian Livingstone <ian.livingstone@snyk.io>"
   ],
   "license": "Proprietary",
-  "dependencies": {},
+  "dependencies": {
+    "@stoplight/spectral-cli": "^6.0.0"
+  },
   "devDependencies": {},
   "optionalDependencies": {
     "@jcoreio/kexec": "^4.0.0"
