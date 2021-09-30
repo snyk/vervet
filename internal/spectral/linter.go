@@ -15,14 +15,15 @@ import (
 
 // Spectral runs spectral on collections of files with a set of rules.
 type Spectral struct {
-	rules []string
+	rules     []string
+	extraArgs []string
 
 	spectralPath string
 	rulesPath    string
 }
 
 // New returns a new Spectral instance configured with the given rules.
-func New(ctx context.Context, rules []string) (*Spectral, error) {
+func New(ctx context.Context, rules []string, extraArgs []string) (*Spectral, error) {
 	if len(rules) == 0 {
 		return nil, fmt.Errorf("missing spectral rules")
 	}
@@ -69,18 +70,19 @@ func New(ctx context.Context, rules []string) (*Spectral, error) {
 		rules:        resolvedRules,
 		spectralPath: spectralPath,
 		rulesPath:    rulesPath,
+		extraArgs:    extraArgs,
 	}, nil
 }
 
 // NewRules returns a new Linter instance with additional rules appended.
 func (l *Spectral) NewRules(ctx context.Context, paths ...string) (types.Linter, error) {
-	return New(ctx, append([]string{l.rulesPath}, paths...))
+	return New(ctx, append([]string{l.rulesPath}, paths...), l.extraArgs)
 }
 
 // Run runs spectral on the given paths. Linting output is written to standard
 // output by spectral. Returns an error when lint fails configured rules.
 func (l *Spectral) Run(ctx context.Context, paths ...string) error {
-	cmd := exec.CommandContext(ctx, l.spectralPath, append([]string{"lint", "-r", l.rulesPath}, paths...)...)
+	cmd := exec.CommandContext(ctx, l.spectralPath, append(append([]string{"lint", "-r", l.rulesPath}, l.extraArgs...), paths...)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

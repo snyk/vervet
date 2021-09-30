@@ -27,7 +27,18 @@ type Linter struct {
 
 // SpectralLinter identifies a Linter as a collection of Spectral rulesets.
 type SpectralLinter struct {
+
+	// Rules are a list of Spectral ruleset file locations
 	Rules []string `json:"rules"`
+
+	// ExtraArgs may be used to pass extra arguments to `spectral lint`. If not
+	// specified, the default arguments `--format text` are used when running
+	// spectral. The `-r` flag must not be specified here, as this argument is
+	// automatically added from the Rules setting above.
+	//
+	// See https://meta.stoplight.io/docs/spectral/ZG9jOjI1MTg1-spectral-cli
+	// for the options supported.
+	ExtraArgs []string `json:"extraArgs"`
 }
 
 // Generator describes how files are generated for a resource.
@@ -200,6 +211,9 @@ func (p *Project) validate() error {
 		if err := linter.validate(); err != nil {
 			return err
 		}
+		if linter.Spectral != nil && len(linter.Spectral.ExtraArgs) == 0 {
+			linter.Spectral.ExtraArgs = defaultSpectralExtraArgs
+		}
 	}
 	for _, gen := range p.Generators {
 		if err := gen.validate(); err != nil {
@@ -208,6 +222,8 @@ func (p *Project) validate() error {
 	}
 	return nil
 }
+
+var defaultSpectralExtraArgs = []string{"--format", "text"}
 
 func (r *ResourceSet) validate() error {
 	for _, exclude := range r.Excludes {
