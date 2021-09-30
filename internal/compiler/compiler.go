@@ -46,7 +46,7 @@ func defaultLinterFactory(ctx context.Context, lc *config.Linter) (types.Linter,
 	}
 	// This can be a linter variant dispatch off non-nil if/when more linter
 	// types are supported.
-	return spectral.New(ctx, lc.Spectral.Rules)
+	return spectral.New(ctx, lc.Spectral.Rules, lc.Spectral.ExtraArgs)
 }
 
 type api struct {

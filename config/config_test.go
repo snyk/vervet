@@ -24,6 +24,7 @@ linters:
     spectral:
       rules:
         - compiled-rules.yaml
+      extraArgs: ['--format', 'json', '-v']
 apis:
   test:
     resources:
@@ -53,6 +54,7 @@ apis:
 					Rules: []string{
 						"resource-rules.yaml",
 					},
+					ExtraArgs: []string{"--format", "text"},
 				},
 			},
 			"apitest-compiled": &config.Linter{
@@ -62,6 +64,7 @@ apis:
 					Rules: []string{
 						"compiled-rules.yaml",
 					},
+					ExtraArgs: []string{"--format", "json", "-v"},
 				},
 			},
 		},
