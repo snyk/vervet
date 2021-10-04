@@ -1,0 +1,14 @@
+generators:
+  version-readme:
+    scope: version
+    filename: "v3/resources/{{ .Resource }}/{{ .Version }}/README"
+    template: ".vervet/README.tmpl"
+
+apis:
+  v3:
+    resources:
+      - path: 'v3/resources'
+        generators:
+          - version-readme
+    output:
+      path: 'v3/versions'
