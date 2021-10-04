@@ -23,6 +23,21 @@ var App = &cli.App{
 		},
 		Action: Resolve,
 	}, {
+		Name: "scaffold",
+		Subcommands: []*cli.Command{{
+			Name:      "init",
+			Usage:     "Initialize a new project from a scaffold",
+			ArgsUsage: "[path to scaffold directory]",
+			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f", "overwrite"},
+					Usage:   "Overwrite existing files",
+				},
+			},
+			Action: ScaffoldInit,
+		}},
+	}, {
 		Name:      "compile",
 		Usage:     "Compile versioned resources into versioned OpenAPI specs",
 		ArgsUsage: "[input resources root] [output api root]",
