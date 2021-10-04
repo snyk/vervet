@@ -16,6 +16,7 @@ import (
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
 	"github.com/snyk/vervet/internal/spectral"
+	"github.com/snyk/vervet/internal/sweatercomb"
 	"github.com/snyk/vervet/internal/types"
 )
 
@@ -41,12 +42,12 @@ func LinterFactory(f func(ctx context.Context, lc *config.Linter) (types.Linter,
 }
 
 func defaultLinterFactory(ctx context.Context, lc *config.Linter) (types.Linter, error) {
-	if lc.Spectral == nil {
-		return nil, fmt.Errorf("unsupported linter (linters.%s)", lc.Name)
+	if lc.Spectral != nil {
+		return spectral.New(ctx, lc.Spectral.Rules, lc.Spectral.ExtraArgs)
+	} else if lc.SweaterComb != nil {
+		return sweatercomb.New(ctx, lc.SweaterComb.Image, lc.SweaterComb.Rules, lc.SweaterComb.ExtraArgs)
 	}
-	// This can be a linter variant dispatch off non-nil if/when more linter
-	// types are supported.
-	return spectral.New(ctx, lc.Spectral.Rules, lc.Spectral.ExtraArgs)
+	return nil, fmt.Errorf("invalid linter (linters.%s)", lc.Name)
 }
 
 type api struct {
