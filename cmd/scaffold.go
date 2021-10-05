@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,26 +28,35 @@ func ScaffoldInit(ctx *cli.Context) error {
 		return err
 	}
 	force := ctx.Bool("force")
+	debug := ctx.Bool("debug")
 	err = copyFile(".vervet.yaml", filepath.Join(scaffoldDir, "vervet.yaml"), force)
 	if err != nil {
 		return err
 	}
 	err = filepath.WalkDir(scaffoldDir, func(path string, d fs.DirEntry, err error) error {
-		if strings.HasPrefix(d.Name(), ".") {
-			return fs.SkipDir
-		}
-		if d.IsDir() {
-			return nil
-		}
 		name, err := filepath.Rel(scaffoldDir, path)
 		if err != nil {
 			return err
+		}
+		src := filepath.Join(scaffoldDir, name)
+		if d.IsDir() {
+			if strings.HasPrefix(d.Name(), ".") {
+				if debug {
+					log.Printf("%s: skipped", src)
+				}
+				return fs.SkipDir
+			}
+			return nil
 		}
 		err = os.MkdirAll(filepath.Join(".vervet", filepath.Dir(name)), 0777)
 		if err != nil {
 			return err
 		}
-		err = copyFile(filepath.Join(".vervet", name), filepath.Join(scaffoldDir, name), force)
+		dst := filepath.Join(".vervet", name)
+		if debug {
+			log.Printf("%s: copying to %s, force=%v", src, dst, force)
+		}
+		err = copyFile(dst, src, force)
 		if err != nil {
 			return err
 		}
