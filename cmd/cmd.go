@@ -14,6 +14,12 @@ import (
 var App = &cli.App{
 	Name:  "vervet",
 	Usage: "OpenAPI resource versioning tool",
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Turn on debug logging to troubleshoot templates",
+		},
+	},
 	Commands: []*cli.Command{{
 		Name:      "resolve",
 		Usage:     "Aggregate, render and validate resource specs at a particular version",
@@ -104,10 +110,6 @@ var App = &cli.App{
 					Name:    "force",
 					Aliases: []string{"f", "overwrite"},
 					Usage:   "Overwrite existing files",
-				},
-				&cli.BoolFlag{
-					Name:  "debug",
-					Usage: "Turn on debug logging to troubleshoot templates",
 				},
 				&cli.StringFlag{
 					Name:  "version",
