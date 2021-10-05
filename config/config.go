@@ -20,9 +20,10 @@ type Project struct {
 
 // Linter describes a set of standards and rules that an API should satisfy.
 type Linter struct {
-	Name        string          `json:"-"`
-	Description string          `json:"description,omitempty"`
-	Spectral    *SpectralLinter `json:"spectral"`
+	Name        string             `json:"-"`
+	Description string             `json:"description,omitempty"`
+	Spectral    *SpectralLinter    `json:"spectral"`
+	SweaterComb *SweaterCombLinter `json:"sweater-comb"`
 }
 
 // SpectralLinter identifies a Linter as a collection of Spectral rulesets.
@@ -38,6 +39,25 @@ type SpectralLinter struct {
 	//
 	// See https://meta.stoplight.io/docs/spectral/ZG9jOjI1MTg1-spectral-cli
 	// for the options supported.
+	ExtraArgs []string `json:"extraArgs"`
+}
+
+const defaultSweaterCombImage = "gcr.io/snyk-main/sweater-comb:latest"
+
+// SweaterCombLinter identifies a Sweater Comb Linter, which is distributed as
+// a self-contained docker image.
+type SweaterCombLinter struct {
+	// Image identifies the Sweater Comb docker image to use for linting.
+	Image string
+
+	// Rules are a list of Spectral ruleset file locations
+	// These may be absolute paths to Sweater Comb rules, such as /rules/apinext.yaml.
+	// Or, they may be relative paths to files in this project.
+	Rules []string `json:"rules"`
+
+	// ExtraArgs may be used to pass extra arguments to `spectral lint`. The
+	// Sweater Comb image includes Spectral. This has the same function as
+	// SpectralLinter.ExtraArgs above.
 	ExtraArgs []string `json:"extraArgs"`
 }
 
@@ -214,6 +234,14 @@ func (p *Project) validate() error {
 		if linter.Spectral != nil && len(linter.Spectral.ExtraArgs) == 0 {
 			linter.Spectral.ExtraArgs = defaultSpectralExtraArgs
 		}
+		if linter.SweaterComb != nil {
+			if len(linter.SweaterComb.ExtraArgs) == 0 {
+				linter.SweaterComb.ExtraArgs = defaultSpectralExtraArgs
+			}
+			if linter.SweaterComb.Image == "" {
+				linter.SweaterComb.Image = defaultSweaterCombImage
+			}
+		}
 	}
 	for _, gen := range p.Generators {
 		if err := gen.validate(); err != nil {
@@ -237,8 +265,8 @@ func (r *ResourceSet) validate() error {
 func (l *Linter) validate() error {
 	// This can be a linter variant dispatch off non-nil if/when more linter
 	// types are supported.
-	if l.Spectral == nil {
-		return fmt.Errorf("missing spectral configuration (linters.%s)", l.Name)
+	if l.Spectral == nil && l.SweaterComb == nil {
+		return fmt.Errorf("missing configuration (linters.%s)", l.Name)
 	}
 	return nil
 }
