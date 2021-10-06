@@ -28,7 +28,7 @@ jobs:
     steps:
       - run:
           name: Install spectral
-          command: sudo npm install -g @stoplight/spectral-cli@6.0.0
+          command: sudo npm install -g @stoplight/spectral@6.0.0-alpha3
       - checkout
       - attach_workspace:
           at: ~/vervet
