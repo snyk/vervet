@@ -1,0 +1,5 @@
+version: "1"
+organize:
+  .vervet/templates/README.tmpl: README.tmpl
+  .vervet.yaml: vervet.yaml
+  .vervet/extras: extras
