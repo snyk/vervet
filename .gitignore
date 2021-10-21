@@ -2,3 +2,5 @@
 /dist
 /vervet
 .idea
+.dccache
+.vscode
