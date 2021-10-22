@@ -23,7 +23,7 @@
   "contributors": [
     "Ian Livingstone <ian.livingstone@snyk.io>"
   ],
-  "license": "Proprietary",
+  "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {},
   "optionalDependencies": {
