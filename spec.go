@@ -93,21 +93,21 @@ func (s *SpecVersions) Resources() []*ResourceVersions {
 
 // Versions returns a slice containing each Version defined by an Resource in
 // this specification. Versions are sorted in ascending order.
-func (s *SpecVersions) Versions() []*Version {
+func (s *SpecVersions) Versions() []Version {
 	vset := map[Version]bool{}
 	for _, eps := range s.resources {
 		for i := range eps.versions {
-			vset[*eps.versions[i].Version] = true
+			vset[eps.versions[i].Version] = true
 		}
 	}
-	versions := make([]*Version, len(vset))
+	versions := make([]Version, len(vset))
 	i := 0
 	for k := range vset {
 		v := k
-		versions[i] = &v
+		versions[i] = v
 		i++
 	}
-	sort.Sort(versionSlice(versions))
+	sort.Sort(VersionSlice(versions))
 	return versions
 }
 
