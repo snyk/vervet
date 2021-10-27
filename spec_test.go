@@ -15,7 +15,7 @@ func TestSpecs(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	versions := specs.Versions()
 	c.Assert(versions, qt.HasLen, 4)
-	c.Assert(versions, qt.ContentEquals, []*Version{
+	c.Assert(versions, qt.ContentEquals, []Version{
 		mustParseVersion("2021-06-01"),
 		mustParseVersion("2021-06-04~experimental"),
 		mustParseVersion("2021-06-07"),

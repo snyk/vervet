@@ -115,19 +115,30 @@ func (s Stability) Compare(sr Stability) int {
 // Compare returns -1 if the given version is less than, 0 if equal to, and 1
 // if greater than the caller target version.
 func (v *Version) Compare(vr *Version) int {
+	dateCmp, stabilityCmp := v.compareDateStability(vr)
+	if dateCmp != 0 {
+		return dateCmp
+	}
+	return stabilityCmp
+}
+
+// compareDateStability returns the comparison of both the date and stability
+// between two versions. Used internally where these need to be evaluated
+// independently, such as when searching for the best matching version.
+func (v *Version) compareDateStability(vr *Version) (int, int) {
+	dateCmp := 0
 	if v.Date.Before(vr.Date) {
-		return -1
+		dateCmp = -1
+	} else if v.Date.After(vr.Date) {
+		dateCmp = 1
 	}
-	if v.Date.After(vr.Date) {
-		return 1
-	}
-	// Dates are equal
-	return 0 - v.Stability.Compare(vr.Stability)
+	stabilityCmp := v.Stability.Compare(vr.Stability)
+	return dateCmp, stabilityCmp
 }
 
 // VersionDateStrings returns a slice of distinct version date strings for a
 // slice of Versions. Consecutive duplicate dates are removed.
-func VersionDateStrings(vs []*Version) []string {
+func VersionDateStrings(vs []Version) []string {
 	var result []string
 	for i := range vs {
 		ds := vs[i].DateString()
@@ -137,3 +148,53 @@ func VersionDateStrings(vs []*Version) []string {
 	}
 	return result
 }
+
+// VersionSlice is a sortable, searchable slice of Versions.
+type VersionSlice []Version
+
+// Resolve returns the most recent Version in the slice with equal or greater
+// stability.
+//
+// This method requires that the VersionSlice has already been sorted with
+// sort.Sort, otherwise behavior is undefined.
+func (vs VersionSlice) Resolve(q Version) (*Version, error) {
+	lower, curr, upper := 0, len(vs)/2, len(vs)
+	if upper == 0 {
+		// Nothing matches an empty slice.
+		return nil, ErrNoMatchingVersion
+	}
+	for curr < upper && lower != upper-1 {
+		dateCmp, stabilityCmp := vs[curr].compareDateStability(&q)
+		if dateCmp > 0 {
+			// Current version is more recent than the query, so it's our new
+			// upper (exclusive) range limit to search.
+			upper = curr
+			curr = lower + (upper-lower)/2
+		} else if dateCmp <= 0 {
+			if stabilityCmp >= 0 {
+				// Matching version found, so it's our new lower (inclusive)
+				// range limit to search.
+				lower = curr
+			}
+			// The edge is somewhere between here and the upper limit.
+			curr = curr + (upper-curr)/2 + (upper-curr)%2
+		}
+	}
+	// Did we find a match?
+	dateCmp, stabilityCmp := vs[lower].compareDateStability(&q)
+	if dateCmp <= 0 && stabilityCmp >= 0 {
+		return &vs[lower], nil
+	}
+	return nil, ErrNoMatchingVersion
+}
+
+// Len implements sort.Interface.
+func (vs VersionSlice) Len() int { return len(vs) }
+
+// Less implements sort.Interface.
+func (vs VersionSlice) Less(i, j int) bool {
+	return vs[i].Compare(&vs[j]) < 0
+}
+
+// Swap implements sort.Interface.
+func (vs VersionSlice) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }

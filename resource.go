@@ -26,7 +26,7 @@ const (
 type Resource struct {
 	*Document
 	Name         string
-	Version      *Version
+	Version      Version
 	sourcePrefix string
 }
 
@@ -58,8 +58,8 @@ func (e *ResourceVersions) Name() string {
 }
 
 // Versions returns a slice containing each Version defined for this endpoint.
-func (e *ResourceVersions) Versions() []*Version {
-	result := make([]*Version, len(e.versions))
+func (e *ResourceVersions) Versions() []Version {
+	result := make([]Version, len(e.versions))
 	for i := range e.versions {
 		result[i] = e.versions[i].Version
 	}
@@ -84,7 +84,7 @@ func (e *ResourceVersions) At(vs string) (*Resource, error) {
 	}
 	for i := len(e.versions) - 1; i >= 0; i-- {
 		ev := e.versions[i].Version
-		if (ev.Date.Before(v.Date) || ev.Date.Equal(v.Date)) && v.Stability.Compare(ev.Stability) <= 0 {
+		if dateCmp, stabilityCmp := ev.compareDateStability(v); dateCmp <= 0 && stabilityCmp >= 0 {
 			return e.versions[i], nil
 		}
 	}
@@ -94,18 +94,10 @@ func (e *ResourceVersions) At(vs string) (*Resource, error) {
 type resourceVersionSlice []*Resource
 
 func (e resourceVersionSlice) Less(i, j int) bool {
-	return e[i].Version.Compare(e[j].Version) < 0
+	return e[i].Version.Compare(&e[j].Version) < 0
 }
 func (e resourceVersionSlice) Len() int      { return len(e) }
 func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
-
-type versionSlice []*Version
-
-func (vs versionSlice) Less(i, j int) bool {
-	return vs[i].Compare(vs[j]) < 0
-}
-func (vs versionSlice) Len() int      { return len(vs) }
-func (vs versionSlice) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }
 
 // LoadResourceVersions returns a ResourceVersions slice parsed from a
 // directory structure of resource specs. This directory will be of the form:
@@ -209,7 +201,7 @@ func loadResource(specPath string, versionStr string) (*Resource, error) {
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}
 
-	ep := &Resource{Name: name, Document: doc, Version: version}
+	ep := &Resource{Name: name, Document: doc, Version: *version}
 	for path := range doc.T.Paths {
 		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiVersion] = version.String()
 	}
