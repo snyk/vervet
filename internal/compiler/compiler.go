@@ -3,6 +3,7 @@ package compiler
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -268,6 +269,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 	log.Printf("compiling API %s to output versions", apiName)
+	var versionSpecFiles []string
 	for rcIndex, rc := range api.resources {
 		specVersions, err := vervet.LoadSpecVersionsFileset(rc.matchedFiles)
 		if err != nil {
@@ -312,6 +314,11 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 					return buildErr(err)
 				}
 				jsonSpecPath := versionDir + "/spec.json"
+				jsonEmbedPath, err := filepath.Rel(api.output.path, jsonSpecPath)
+				if err != nil {
+					return buildErr(err)
+				}
+				versionSpecFiles = append(versionSpecFiles, jsonEmbedPath)
 				err = ioutil.WriteFile(jsonSpecPath, jsonBuf, 0644)
 				if err != nil {
 					return buildErr(err)
@@ -326,6 +333,11 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 					return buildErr(err)
 				}
 				yamlSpecPath := versionDir + "/spec.yaml"
+				yamlEmbedPath, err := filepath.Rel(api.output.path, yamlSpecPath)
+				if err != nil {
+					return buildErr(err)
+				}
+				versionSpecFiles = append(versionSpecFiles, yamlEmbedPath)
 				err = ioutil.WriteFile(yamlSpecPath, yamlBuf, 0644)
 				if err != nil {
 					return buildErr(err)
@@ -334,8 +346,42 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 			}
 		}
 	}
+	err = c.writeEmbedGo(filepath.Base(api.output.path), api, versionSpecFiles)
+	if err != nil {
+		return fmt.Errorf("failed to create embed.go: %w", err)
+	}
 	return nil
 }
+
+func (c *Compiler) writeEmbedGo(pkgName string, a *api, versionSpecFiles []string) error {
+	f, err := os.Create(filepath.Join(a.output.path, "embed.go"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return embedGoTmpl.Execute(f, struct {
+		Package          string
+		API              *api
+		VersionSpecFiles []string
+	}{
+		Package:          pkgName,
+		API:              a,
+		VersionSpecFiles: versionSpecFiles,
+	})
+}
+
+var embedGoTmpl = template.Must(template.New("embed.go").Parse(`
+package {{ .Package }}
+
+import "embed"
+
+// Embed compiled OpenAPI specs in Go projects.
+
+{{ range .VersionSpecFiles -}}
+//go:embed {{ . }}
+{{ end -}}
+var Versions embed.FS
+`))
 
 // BuildAll builds all APIs in the project.
 func (c *Compiler) BuildAll(ctx context.Context) error {
