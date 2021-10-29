@@ -394,6 +394,7 @@
           }
         }
       },
+      "x-snyk-api-resource": "hello-world",
       "x-snyk-api-version": "2021-06-07"
     },
     "/openapi": {

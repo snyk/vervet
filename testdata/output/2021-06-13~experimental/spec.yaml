@@ -329,6 +329,7 @@ paths:
           $ref: '#/components/responses/404'
         "500":
           $ref: '#/components/responses/500'
+    x-snyk-api-resource: hello-world
     x-snyk-api-version: 2021-06-13~beta
   /examples/hello-world/{id}:
     get:
@@ -377,6 +378,7 @@ paths:
           $ref: '#/components/responses/404'
         "500":
           $ref: '#/components/responses/500'
+    x-snyk-api-resource: hello-world
     x-snyk-api-version: 2021-06-13~beta
   /openapi:
     get:
@@ -525,6 +527,7 @@ paths:
           $ref: '#/components/responses/404'
         "500":
           $ref: '#/components/responses/500'
+    x-snyk-api-resource: projects
     x-snyk-api-version: 2021-06-04~experimental
 servers:
 - description: Test API v3
