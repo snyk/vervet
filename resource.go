@@ -15,6 +15,9 @@ const (
 	// ExtSnykApiStability is used to annotate a top-level endpoint version spec with its API release stability level.
 	ExtSnykApiStability = "x-snyk-api-stability"
 
+	// ExtSnykApiResource is used to annotate a path in a compiled OpenAPI spec with its source resource name.
+	ExtSnykApiResource = "x-snyk-api-resource"
+
 	// ExtSnykApiVersion is used to annotate a path in a compiled OpenAPI spec with its resolved release version.
 	ExtSnykApiVersion = "x-snyk-api-version"
 )
@@ -203,6 +206,7 @@ func loadResource(specPath string, versionStr string) (*Resource, error) {
 
 	ep := &Resource{Name: name, Document: doc, Version: *version}
 	for path := range doc.T.Paths {
+		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiResource] = name
 		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiVersion] = version.String()
 	}
 	return ep, nil
