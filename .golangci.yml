@@ -1,0 +1,14 @@
+run:
+  concurrency: 4
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+linters-settings:
+  gci:
+    local-prefixes: github.com/snyk/vervet
+
+linters:
+  enable:
+    - gci
+    - gofmt

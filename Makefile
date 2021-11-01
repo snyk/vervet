@@ -1,8 +1,12 @@
+
+.PHONY: all
+all: lint test build
+
 .PHONY: build
 build:
 	go build -a -o vervet ./cmd/vervet
 
-# Run go mody tidy yourself
+# Run go mod tidy yourself
 
 #----------------------------------------------------------------------------------
 # Check for updates to packages in remote OSS repositories and update go.mod AND
@@ -14,6 +18,14 @@ update-deps:
 	go get -d -u ./...
 
 # go mod download yourself if you don't need to update
+
+.PHONY: lint
+lint:
+	golangci-lint run -v ./...
+
+.PHONY: lint-docker
+lint-docker:
+	docker run --rm -v $(shell pwd):/vervet -w /vervet golangci/golangci-lint:v1.42.1 golangci-lint run -v ./...
 
 #----------------------------------------------------------------------------------
 #  Ignores the test cache and forces a full test suite execution

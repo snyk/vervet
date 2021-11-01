@@ -24,7 +24,7 @@ func TestLocalize(t *testing.T) {
 	// OpenAPI DOM should be fully localized and relocatable now.
 	yamlBuf, err := vervet.ToSpecYAML(doc)
 	c.Assert(err, qt.IsNil)
-	tmpDir := c.Mkdir()
+	tmpDir := c.TempDir()
 	err = ioutil.WriteFile(tmpDir+"/spec.yaml", yamlBuf, 0644)
 	c.Assert(err, qt.IsNil)
 

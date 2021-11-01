@@ -47,7 +47,7 @@ apis:
 		Version:    "1",
 		Generators: map[string]*config.Generator{},
 		Linters: map[string]*config.Linter{
-			"apitest-resource": &config.Linter{
+			"apitest-resource": {
 				Name:        "apitest-resource",
 				Description: "Test resource rules",
 				Spectral: &config.SpectralLinter{
@@ -57,7 +57,7 @@ apis:
 					ExtraArgs: []string{"--format", "text"},
 				},
 			},
-			"apitest-compiled": &config.Linter{
+			"apitest-compiled": {
 				Name:        "apitest-compiled",
 				Description: "Test compiled rules",
 				Spectral: &config.SpectralLinter{
@@ -69,7 +69,7 @@ apis:
 			},
 		},
 		APIs: map[string]*config.API{
-			"test": &config.API{
+			"test": {
 				Name: "test",
 				Resources: []*config.ResourceSet{{
 					Linter:   "apitest-resource",
@@ -116,7 +116,7 @@ apis:
 		Generators: map[string]*config.Generator{},
 		Linters:    map[string]*config.Linter{},
 		APIs: map[string]*config.API{
-			"test": &config.API{
+			"test": {
 				Name: "test",
 				Resources: []*config.ResourceSet{{
 					Path:     "testdata/resources",

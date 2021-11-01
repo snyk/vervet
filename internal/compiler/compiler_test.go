@@ -63,7 +63,7 @@ func TestCompilerSmoke(t *testing.T) {
 	c := qt.New(t)
 	setup(c)
 	ctx := context.Background()
-	outputPath := c.Mkdir()
+	outputPath := c.TempDir()
 	var configBuf bytes.Buffer
 	err := configTemplate.Execute(&configBuf, outputPath)
 	c.Assert(err, qt.IsNil)

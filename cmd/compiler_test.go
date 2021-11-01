@@ -15,7 +15,7 @@ import (
 
 func TestCompile(t *testing.T) {
 	c := qt.New(t)
-	dstDir := c.Mkdir()
+	dstDir := c.TempDir()
 	err := cmd.App.Run([]string{"vervet", "compile", testdata.Path("resources"), dstDir})
 	c.Assert(err, qt.IsNil)
 	tests := []struct {
@@ -48,7 +48,7 @@ func TestCompile(t *testing.T) {
 
 func TestCompileInclude(t *testing.T) {
 	c := qt.New(t)
-	dstDir := c.Mkdir()
+	dstDir := c.TempDir()
 	err := cmd.App.Run([]string{"vervet", "compile", "-I", testdata.Path("resources/include.yaml"), testdata.Path("resources"), dstDir})
 	c.Assert(err, qt.IsNil)
 
@@ -87,7 +87,7 @@ func TestCompileInclude(t *testing.T) {
 
 func TestCompileConflict(t *testing.T) {
 	c := qt.New(t)
-	dstDir := c.Mkdir()
+	dstDir := c.TempDir()
 	err := cmd.App.Run([]string{"vervet", "compile", "../testdata/conflict", dstDir})
 	c.Assert(err, qt.ErrorMatches, `failed to load spec versions: conflict: .*`)
 }

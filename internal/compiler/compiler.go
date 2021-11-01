@@ -110,9 +110,7 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 				linterOverrides[rcName] = map[string][]string{}
 				for version, linter := range versionMap {
 					var overrideRules []string
-					for _, rule := range linter.Spectral.Rules {
-						overrideRules = append(overrideRules, rule)
-					}
+					overrideRules = append(overrideRules, linter.Spectral.Rules...)
 					linterOverrides[rcName][version] = overrideRules
 				}
 			}

@@ -78,10 +78,8 @@ func New(ctx context.Context, image string, rules []string, extraArgs []string) 
 		return nil, fmt.Errorf("failed to marshal temp rules file: %w", err)
 	}
 	go func() {
-		select {
-		case <-ctx.Done():
-			os.RemoveAll(rulesDir)
-		}
+		<-ctx.Done()
+		os.RemoveAll(rulesDir)
 	}()
 	return &SweaterComb{
 		image:     image,

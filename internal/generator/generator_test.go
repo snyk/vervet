@@ -29,7 +29,7 @@ func TestGenerators(t *testing.T) {
 	c := qt.New(t)
 	setup(c)
 
-	generated := c.Mkdir()
+	generated := c.TempDir()
 	configBuf, err := ioutil.ReadFile(testdata.Path(".vervet.yaml"))
 	c.Assert(err, qt.IsNil)
 	configBuf = bytes.ReplaceAll(configBuf, []byte("generated/{{"), []byte(generated+"/{{"))

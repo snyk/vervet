@@ -13,7 +13,7 @@ import (
 
 func TestScaffold(t *testing.T) {
 	c := qt.New(t)
-	dstDir := c.Mkdir()
+	dstDir := c.TempDir()
 	cd(c, dstDir)
 	// Create an API project from a scaffold
 	err := cmd.App.Run([]string{"vervet", "scaffold", "init", testdata.Path("test-scaffold")})

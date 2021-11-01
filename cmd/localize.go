@@ -14,6 +14,9 @@ func Localize(ctx *cli.Context) error {
 		return fmt.Errorf("missing spec.yaml file")
 	}
 	specFile, err := absPath(ctx.Args().Get(0))
+	if err != nil {
+		return fmt.Errorf("failed to resolve %q", ctx.Args().Get(0))
+	}
 	t, err := vervet.NewDocumentFile(specFile)
 	if err != nil {
 		return fmt.Errorf("failed to load spec from %q: %v", specFile, err)
@@ -29,7 +32,7 @@ func Localize(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to convert JSON to YAML: %w", err)
 	}
-	fmt.Printf(string(yamlBuf))
+	fmt.Println(string(yamlBuf))
 
 	err = t.Validate(ctx.Context)
 	if err != nil {

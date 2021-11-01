@@ -147,6 +147,9 @@ func (s *Scaffold) copyItem(dstPath, srcPath string) error {
 
 func (s *Scaffold) copyDir(dstPath, srcPath string) error {
 	return filepath.WalkDir(srcPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
 		name, err := filepath.Rel(srcPath, path)
 		if err != nil {
 			return err

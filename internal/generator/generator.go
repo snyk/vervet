@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/ghodss/yaml"
+
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
 )
