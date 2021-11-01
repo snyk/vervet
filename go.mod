@@ -6,7 +6,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.0.2
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/frankban/quicktest v1.13.0
-	github.com/getkin/kin-openapi v0.76.0
+	github.com/getkin/kin-openapi v0.80.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/google/go-cmp v0.5.5

@@ -87,3 +87,20 @@ func TestVersionRangesProjects(t *testing.T) {
 		}
 	}
 }
+
+func TestIsExtensionNotFound(t *testing.T) {
+	c := qt.New(t)
+	eps, err := LoadResourceVersions(testdata.Path("resources/_examples/hello-world"))
+	c.Assert(err, qt.IsNil)
+	resource, err := eps.At("2021-06-04~experimental")
+	c.Assert(err, qt.IsNil)
+
+	_, err = ExtensionString(resource.ExtensionProps, ExtSnykApiVersion)
+	c.Assert(IsExtensionNotFound(err), qt.IsTrue)
+
+	_, err = ExtensionString(resource.ExtensionProps, "some-bogus-value")
+	c.Assert(IsExtensionNotFound(err), qt.IsTrue)
+
+	_, err = ExtensionString(resource.ExtensionProps, ExtSnykApiStability)
+	c.Assert(IsExtensionNotFound(err), qt.IsFalse)
+}
