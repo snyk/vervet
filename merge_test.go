@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/snyk/vervet"
-	. "github.com/snyk/vervet"
 	"github.com/snyk/vervet/testdata"
 )
 
@@ -20,7 +19,7 @@ func TestMergeComponents(t *testing.T) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
 		dstOrig := mustLoadFile(c, "merge_test_dst.yaml")
 		dst := mustLoadFile(c, "merge_test_dst.yaml")
-		Merge(dst, src, false)
+		vervet.Merge(dst, src, false)
 
 		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, dstOrig.Components.Schemas["Foo"])
 		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
@@ -54,7 +53,7 @@ func TestMergeComponents(t *testing.T) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
 		dstOrig := mustLoadFile(c, "merge_test_dst.yaml")
 		dst := mustLoadFile(c, "merge_test_dst.yaml")
-		Merge(dst, src, true)
+		vervet.Merge(dst, src, true)
 
 		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, src.Components.Schemas["Foo"])
 		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
@@ -105,7 +104,7 @@ tags:
 	c.Run("tags without replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
-		Merge(dst, src, false)
+		vervet.Merge(dst, src, false)
 		c.Assert(dst.Tags, qt.DeepEquals, openapi3.Tags{{
 			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
 			Name:           "bar",
@@ -123,7 +122,7 @@ tags:
 	c.Run("tags with replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
-		Merge(dst, src, true)
+		vervet.Merge(dst, src, true)
 		c.Assert(dst.Tags, qt.DeepEquals, openapi3.Tags{{
 			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
 			Name:           "bar",
@@ -177,7 +176,7 @@ servers:
 	c.Run("servers without replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
-		Merge(dst, src, false)
+		vervet.Merge(dst, src, false)
 		c.Assert(dst.Info, qt.DeepEquals, &openapi3.Info{
 			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
 			Title:          "Dst",
@@ -201,7 +200,7 @@ servers:
 	c.Run("servers with replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
-		Merge(dst, src, true)
+		vervet.Merge(dst, src, true)
 		c.Assert(dst.Info, qt.DeepEquals, &openapi3.Info{
 			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
 			Title:          "Src",

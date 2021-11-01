@@ -29,8 +29,7 @@ func IncludeHeaders(doc *Document) error {
 }
 
 type includeHeaders struct {
-	relPath string
-	doc     *Document
+	doc *Document
 }
 
 func (w *includeHeaders) apply() error {

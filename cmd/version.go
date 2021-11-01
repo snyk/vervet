@@ -137,12 +137,6 @@ func VersionFiles(ctx *cli.Context) error {
 	return nil
 }
 
-type specVersionKey struct {
-	API      string
-	Resource string
-	Version  vervet.Version
-}
-
 // VersionNew generates a new resource.
 func VersionNew(ctx *cli.Context) error {
 	projectDir, configFile, err := projectConfig(ctx)

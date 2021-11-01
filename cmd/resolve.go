@@ -28,7 +28,7 @@ func Resolve(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to convert JSON to YAML: %w", err)
 	}
-	fmt.Printf(string(yamlBuf))
+	fmt.Println(string(yamlBuf))
 
 	err = specVersion.Validate(ctx.Context)
 	if err != nil {

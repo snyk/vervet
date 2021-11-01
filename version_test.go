@@ -198,6 +198,17 @@ func TestVersionSlice(t *testing.T) {
 			match: "2021-01-30",
 			err:   "no matching version",
 		}},
+	}, {
+		versions: VersionSlice{
+			mustParseVersion("2021-09-06"),
+			mustParseVersion("2021-10-06"),
+		},
+		first: "2021-09-06",
+		last:  "2021-10-06",
+		matchTests: []matchTest{{
+			match:  "2021-10-12~wip",
+			result: "2021-10-06",
+		}},
 	}}
 	c := qt.New(t)
 	for _, t := range tests {

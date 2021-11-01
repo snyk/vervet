@@ -33,7 +33,7 @@ func copyToDir(c *qt.C, srcFile, dstDir string) {
 
 func TestVersionFiles(t *testing.T) {
 	c := qt.New(t)
-	tmp := c.Mkdir()
+	tmp := c.TempDir()
 	tmpFile := filepath.Join(tmp, "out")
 	c.Run("cmd", func(c *qt.C) {
 		output, err := os.Create(tmpFile)
@@ -56,7 +56,7 @@ resources/projects/2021-06-04/spec.yaml
 
 func TestVersionList(t *testing.T) {
 	c := qt.New(t)
-	tmp := c.Mkdir()
+	tmp := c.TempDir()
 	tmpFile := filepath.Join(tmp, "out")
 	c.Run("cmd", func(c *qt.C) {
 		output, err := os.Create(tmpFile)
@@ -84,7 +84,7 @@ func TestVersionList(t *testing.T) {
 
 func TestVersionNew(t *testing.T) {
 	c := qt.New(t)
-	projectDir := c.Mkdir()
+	projectDir := c.TempDir()
 	copyToDir(c, testdata.Path(".vervet.yaml"), projectDir)
 	copyToDir(c, testdata.Path("compiled-rules.yaml"), projectDir)
 	copyToDir(c, testdata.Path("resource-rules.yaml"), projectDir)

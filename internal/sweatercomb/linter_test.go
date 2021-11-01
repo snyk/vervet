@@ -38,7 +38,7 @@ extends:
 	// container paths with the current working directory in spectral's output.
 	cwd, err := os.Getwd()
 	c.Assert(err, qt.IsNil)
-	tempDir := c.Mkdir()
+	tempDir := c.TempDir()
 	tempFile, err := os.Create(tempDir + "/stdout")
 	c.Assert(err, qt.IsNil)
 	c.Patch(&os.Stdout, tempFile)

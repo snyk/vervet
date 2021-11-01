@@ -61,10 +61,8 @@ func New(ctx context.Context, rules []string, extraArgs []string) (*Spectral, er
 	}
 	rulesPath = rulesFile.Name()
 	go func() {
-		select {
-		case <-ctx.Done():
-			os.Remove(rulesPath)
-		}
+		<-ctx.Done()
+		os.Remove(rulesPath)
 	}()
 	return &Spectral{
 		rules:        resolvedRules,

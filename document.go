@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -31,13 +32,21 @@ type Document struct {
 
 // NewDocumentFile loads an OpenAPI spec file from the given file path,
 // returning a document object.
-func NewDocumentFile(specFile string) (*Document, error) {
+func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 	// Restore current working directory upon returning
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
-	defer os.Chdir(cwd)
+	defer func() {
+		err := os.Chdir(cwd)
+		if err != nil {
+			log.Println("warning: failed to restore working directory: %w", err)
+			if returnErr == nil {
+				returnErr = err
+			}
+		}
+	}()
 
 	specFile, err = filepath.Abs(specFile)
 	if err != nil {
@@ -98,12 +107,20 @@ func (d *Document) ResolveRefs() error {
 // LoadReference loads a reference from refPath, relative to relPath, into
 // target. The relative path of the reference is returned, so that references
 // may be chain-loaded with successive calls.
-func (d *Document) LoadReference(relPath, refPath string, target interface{}) (string, error) {
+func (d *Document) LoadReference(relPath, refPath string, target interface{}) (_ string, returnErr error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
-	defer os.Chdir(cwd)
+	defer func() {
+		err := os.Chdir(cwd)
+		if err != nil {
+			log.Println("warning: failed to restore working directory: %w", err)
+			if returnErr == nil {
+				returnErr = err
+			}
+		}
+	}()
 	err = os.Chdir(relPath)
 	if err != nil {
 		return "", err

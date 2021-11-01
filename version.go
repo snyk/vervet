@@ -183,7 +183,8 @@ func (vs VersionSlice) Resolve(q Version) (*Version, error) {
 	// Did we find a match?
 	dateCmp, stabilityCmp := vs[lower].compareDateStability(&q)
 	if dateCmp <= 0 && stabilityCmp >= 0 {
-		return &vs[lower], nil
+		v := &vs[lower]
+		return v, nil
 	}
 	return nil, ErrNoMatchingVersion
 }

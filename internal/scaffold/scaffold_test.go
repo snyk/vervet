@@ -13,7 +13,7 @@ import (
 
 func TestScaffold(t *testing.T) {
 	c := qt.New(t)
-	dstDir := c.Mkdir()
+	dstDir := c.TempDir()
 	s, err := scaffold.New(dstDir, testdata.Path("test-scaffold"))
 	c.Assert(err, qt.IsNil)
 	err = s.Organize()

@@ -2,8 +2,6 @@ version: 2.1
 
 defaults: &defaults
   resource_class: small
-  docker:
-    - image: cimg/go:1.16
   working_directory: ~/vervet
 
 jobs:
@@ -35,9 +33,23 @@ jobs:
           name: Run tests
           command: go test ./... -count=1
 
+  lint:
+    docker:
+      - image: golangci/golangci-lint:v1.42.1
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/vervet
+      - run:
+          command: golangci-lint run -v ./...
+
 workflows:
   version: 2
   test:
     jobs:
       - test:
           name: Test
+  lint:
+    jobs:
+      - lint:
+          name: Lint

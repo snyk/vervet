@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -38,26 +37,6 @@ func ScaffoldInit(ctx *cli.Context) error {
 		return err
 	}
 	err = sc.Init()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func copyFile(dst, src string, force bool) error {
-	srcf, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	flags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
-	if !force {
-		flags = flags | os.O_EXCL
-	}
-	dstf, err := os.OpenFile(dst, flags, 0666)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(dstf, srcf)
 	if err != nil {
 		return err
 	}
