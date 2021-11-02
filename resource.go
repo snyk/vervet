@@ -3,6 +3,7 @@ package vervet
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -31,6 +32,19 @@ type Resource struct {
 	Name         string
 	Version      Version
 	sourcePrefix string
+}
+
+type extensionNotFoundError struct {
+	extension string
+}
+
+func (e *extensionNotFoundError) Error() string {
+	return fmt.Sprintf("extension \"%s\" not found", e.extension)
+}
+
+func (e *extensionNotFoundError) Is(err error) bool {
+	_, ok := err.(*extensionNotFoundError)
+	return ok
 }
 
 // Validate returns whether the Resource is valid. The OpenAPI specification
@@ -163,10 +177,15 @@ func ExtensionString(extProps openapi3.ExtensionProps, key string) (string, erro
 		return m, nil
 	default:
 		if m == nil {
-			return "", fmt.Errorf("extension %q not found", key)
+			return "", &extensionNotFoundError{key}
 		}
 		return "", fmt.Errorf("unexpected extension %v type %T", m, m)
 	}
+}
+
+// IsExtensionNotFound returns bool whether error from ExtensionString is not found versus unexpected.
+func IsExtensionNotFound(err error) bool {
+	return errors.Is(err, &extensionNotFoundError{})
 }
 
 func loadResource(specPath string, versionStr string) (*Resource, error) {

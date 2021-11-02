@@ -75,10 +75,12 @@ func TestSpecs(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		_, err = ExtensionString(spec.ExtensionProps, ExtSnykApiStability)
 		c.Assert(err, qt.ErrorMatches, `extension "x-snyk-api-stability" not found`)
+		c.Assert(IsExtensionNotFound(err), qt.IsTrue)
 		m := map[expectResourceVersion]bool{}
 		for path, pathItem := range spec.Paths {
 			pathVersionStr, err := ExtensionString(pathItem.ExtensionProps, ExtSnykApiVersion)
 			c.Assert(err, qt.IsNil)
+			c.Assert(IsExtensionNotFound(err), qt.IsFalse)
 			m[expectResourceVersion{version: pathVersionStr, path: path}] = true
 		}
 		c.Assert(m, qt.HasLen, len(t.hasVersions))
