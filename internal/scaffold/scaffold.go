@@ -12,6 +12,9 @@ import (
 	"github.com/ghodss/yaml"
 )
 
+// ErrAlreadyInitialized is used when scaffolding is being run on a project that is already setup.
+var ErrAlreadyInitialized = fmt.Errorf("project files already exist")
+
 // Scaffold defines a Vervet API project scaffold.
 type Scaffold struct {
 	dst, src string
@@ -85,6 +88,19 @@ func New(dst, src string, options ...Option) (*Scaffold, error) {
 func (s *Scaffold) Organize() error {
 	for dstItem, srcItem := range s.manifest.Organize {
 		dstPath := filepath.Join(s.dst, dstItem)
+		// If we're not force overwriting, check if files already exist.
+		if !s.force {
+			_, err := os.Stat(dstPath)
+			if err == nil {
+				// Project files already exist.
+				return ErrAlreadyInitialized
+			}
+			if !os.IsNotExist(err) {
+				// Something else went wrong; the file not existing is the desired
+				// state.
+				return err
+			}
+		}
 		srcPath := filepath.Join(s.src, srcItem)
 		err := s.copyItem(dstPath, srcPath)
 		if err != nil {

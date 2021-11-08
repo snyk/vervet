@@ -2,12 +2,16 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
 )
 
@@ -16,12 +20,28 @@ type VervetParams struct {
 	Stdin  io.ReadCloser
 	Stdout io.WriteCloser
 	Stderr io.WriteCloser
+	Prompt VervetPrompt
 }
 
 // VervetApp contains the cli Application.
 type VervetApp struct {
 	App    *cli.App
 	Params VervetParams
+}
+
+// VervetPrompt defines the interface for interactive prompts in vervet.
+type VervetPrompt interface {
+	Confirm(label string) (bool, error)
+}
+
+type runKey string
+
+var vervetKey = runKey("vervet")
+
+// Run runs the cli.App with the Vervet config params.
+func (v *VervetApp) Run(args []string) error {
+	context := context.WithValue(context.Background(), vervetKey, v)
+	return v.App.RunContext(context, args)
 }
 
 // NewApp returns a new VervetApp with the provided params.
@@ -149,11 +169,35 @@ func NewApp(vp VervetParams) *VervetApp {
 	}
 }
 
+// Prompt is the default interactive prompt for vervet.
+type Prompt struct{}
+
+// Confirm implements VervetPrompt.Confirm
+func (p Prompt) Confirm(label string) (bool, error) {
+	prompt := promptui.Prompt{
+		Label:   fmt.Sprintf("%v (y/N)?", label),
+		Default: "N",
+		Validate: func(input string) error {
+			input = strings.ToLower(input)
+			if input != "n" && input != "y" {
+				return errors.New("you must pick y or n")
+			}
+			return nil
+		},
+	}
+	result, err := prompt.Run()
+	if err != nil {
+		return false, err
+	}
+	return (result == "y"), nil
+}
+
 // Vervet is the vervet application with the CLI application.
 var Vervet = NewApp(VervetParams{
 	Stdin:  os.Stdin,
 	Stdout: os.Stdout,
 	Stderr: os.Stderr,
+	Prompt: Prompt{},
 })
 
 func absPath(path string) (string, error) {

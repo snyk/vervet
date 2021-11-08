@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	err := cmd.Vervet.App.Run(os.Args)
+	err := cmd.Vervet.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
