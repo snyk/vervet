@@ -86,6 +86,16 @@ func ParseVersion(s string) (*Version, error) {
 	return &Version{Date: d.UTC(), Stability: stab}, nil
 }
 
+// MustParseVersion parses a version string into a Version type, panicking if
+// the string is invalid.
+func MustParseVersion(s string) Version {
+	v, err := ParseVersion(s)
+	if err != nil {
+		panic(err)
+	}
+	return *v
+}
+
 // ParseStability parses a stability string into a Stability type, returning an
 // error if the string is invalid.
 func ParseStability(s string) (Stability, error) {
@@ -99,6 +109,16 @@ func ParseStability(s string) (Stability, error) {
 	default:
 		return stabilityUndefined, fmt.Errorf("invalid stability %q", s)
 	}
+}
+
+// MustParseStability parses a stability string into a Stability type,
+// panicking if the string is invalid.
+func MustParseStability(s string) Stability {
+	stab, err := ParseStability(s)
+	if err != nil {
+		panic(err)
+	}
+	return stab
 }
 
 // Compare returns -1 if the given stability level is less than, 0 if equal to,
