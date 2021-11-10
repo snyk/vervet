@@ -37,19 +37,12 @@ func TestParseVersion(t *testing.T) {
 		v, err := ParseVersion(tests[i].vs)
 		if tests[i].err != "" {
 			c.Assert(err, qt.ErrorMatches, tests[i].err)
+			c.Assert(func() { MustParseVersion(tests[i].vs) }, qt.PanicMatches, tests[i].err)
 		} else {
 			c.Assert(v.Date.Format("2006-01-02"), qt.Equals, tests[i].d)
 			c.Assert(v.Stability, qt.Equals, tests[i].stab)
 		}
 	}
-}
-
-func mustParseVersion(s string) Version {
-	v, err := ParseVersion(s)
-	if err != nil {
-		panic(err)
-	}
-	return *v
 }
 
 func TestVersionOrder(t *testing.T) {
@@ -98,13 +91,13 @@ func TestVersionOrder(t *testing.T) {
 func TestVersionDateStrings(t *testing.T) {
 	c := qt.New(t)
 	c.Assert(VersionDateStrings([]Version{
-		mustParseVersion("2021-06-01~wip"),
-		mustParseVersion("2021-06-01~beta"),
-		mustParseVersion("2021-06-10~beta"),
-		mustParseVersion("2021-06-10"),
-		mustParseVersion("2021-07-12~wip"),
-		mustParseVersion("2021-07-12~experimental"),
-		mustParseVersion("2021-07-12~beta"),
+		MustParseVersion("2021-06-01~wip"),
+		MustParseVersion("2021-06-01~beta"),
+		MustParseVersion("2021-06-10~beta"),
+		MustParseVersion("2021-06-10"),
+		MustParseVersion("2021-07-12~wip"),
+		MustParseVersion("2021-07-12~experimental"),
+		MustParseVersion("2021-07-12~beta"),
 	}), qt.ContentEquals, []string{"2021-06-01", "2021-06-10", "2021-07-12"})
 }
 
@@ -121,13 +114,13 @@ func TestVersionSlice(t *testing.T) {
 		matchTests []matchTest
 	}{{
 		versions: VersionSlice{
-			mustParseVersion("2021-07-12~experimental"),
-			mustParseVersion("2021-06-01~beta"),
-			mustParseVersion("2021-07-12~beta"),
-			mustParseVersion("2021-06-10"),
-			mustParseVersion("2021-06-01~wip"),
-			mustParseVersion("2021-07-12~wip"),
-			mustParseVersion("2021-06-10~beta"),
+			MustParseVersion("2021-07-12~experimental"),
+			MustParseVersion("2021-06-01~beta"),
+			MustParseVersion("2021-07-12~beta"),
+			MustParseVersion("2021-06-10"),
+			MustParseVersion("2021-06-01~wip"),
+			MustParseVersion("2021-07-12~wip"),
+			MustParseVersion("2021-06-10~beta"),
 		},
 		first: "2021-06-01~wip",
 		last:  "2021-07-12~beta",
@@ -155,7 +148,7 @@ func TestVersionSlice(t *testing.T) {
 		}},
 	}, {
 		versions: VersionSlice{
-			mustParseVersion("2021-06-10~beta"),
+			MustParseVersion("2021-06-10~beta"),
 		},
 		first: "2021-06-10~beta",
 		last:  "2021-06-10~beta",
@@ -180,8 +173,8 @@ func TestVersionSlice(t *testing.T) {
 		}},
 	}, {
 		versions: VersionSlice{
-			mustParseVersion("2021-06-10~beta"),
-			mustParseVersion("2022-01-10~experimental"),
+			MustParseVersion("2021-06-10~beta"),
+			MustParseVersion("2022-01-10~experimental"),
 		},
 		first: "2021-06-10~beta",
 		last:  "2022-01-10~experimental",
@@ -200,8 +193,8 @@ func TestVersionSlice(t *testing.T) {
 		}},
 	}, {
 		versions: VersionSlice{
-			mustParseVersion("2021-09-06"),
-			mustParseVersion("2021-10-06"),
+			MustParseVersion("2021-09-06"),
+			MustParseVersion("2021-10-06"),
 		},
 		first: "2021-09-06",
 		last:  "2021-10-06",
@@ -216,7 +209,7 @@ func TestVersionSlice(t *testing.T) {
 		c.Assert(t.versions[0].String(), qt.Equals, t.first)
 		c.Assert(t.versions[len(t.versions)-1].String(), qt.Equals, t.last)
 		for _, mt := range t.matchTests {
-			match := mustParseVersion(mt.match)
+			match := MustParseVersion(mt.match)
 			result, err := t.versions.Resolve(match)
 			if err != nil {
 				c.Assert(err, qt.ErrorMatches, mt.err)
@@ -229,6 +222,6 @@ func TestVersionSlice(t *testing.T) {
 
 func TestVersionSliceResolveEmpty(t *testing.T) {
 	c := qt.New(t)
-	_, err := VersionSlice{}.Resolve(mustParseVersion("2021-10-31"))
+	_, err := VersionSlice{}.Resolve(MustParseVersion("2021-10-31"))
 	c.Assert(err, qt.ErrorMatches, "no matching version")
 }

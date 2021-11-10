@@ -16,10 +16,10 @@ func TestSpecs(t *testing.T) {
 	versions := specs.Versions()
 	c.Assert(versions, qt.HasLen, 4)
 	c.Assert(versions, qt.ContentEquals, []Version{
-		mustParseVersion("2021-06-01"),
-		mustParseVersion("2021-06-04~experimental"),
-		mustParseVersion("2021-06-07"),
-		mustParseVersion("2021-06-13~beta"),
+		MustParseVersion("2021-06-01"),
+		MustParseVersion("2021-06-04~experimental"),
+		MustParseVersion("2021-06-07"),
+		MustParseVersion("2021-06-13~beta"),
 	})
 
 	type expectResourceVersion struct {
