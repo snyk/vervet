@@ -16,10 +16,10 @@ func TestScaffold(t *testing.T) {
 	dstDir := c.TempDir()
 	cd(c, dstDir)
 	// Create an API project from a scaffold
-	err := cmd.App.Run([]string{"vervet", "scaffold", "init", testdata.Path("test-scaffold")})
+	err := cmd.Vervet.App.Run([]string{"vervet", "scaffold", "init", testdata.Path("test-scaffold")})
 	c.Assert(err, qt.IsNil)
 	// Generate a new resource version in the project
-	err = cmd.App.Run([]string{"vervet", "version", "new", "--version", "2021-10-01", "v3", "foo"})
+	err = cmd.Vervet.App.Run([]string{"vervet", "version", "new", "--version", "2021-10-01", "v3", "foo"})
 	c.Assert(err, qt.IsNil)
 	for _, item := range []string{".vervet/templates/README.tmpl", ".vervet.yaml", ".vervet/extras/foo", ".vervet/extras/bar/bar"} {
 		_, err = os.Stat(item)
