@@ -16,9 +16,9 @@ func TestSpecs(t *testing.T) {
 	versions := specs.Versions()
 	c.Assert(versions, qt.HasLen, 4)
 	c.Assert(versions, qt.ContentEquals, []Version{
-		MustParseVersion("2021-06-01"),
+		MustParseVersion("2021-06-01~experimental"),
 		MustParseVersion("2021-06-04~experimental"),
-		MustParseVersion("2021-06-07"),
+		MustParseVersion("2021-06-07~experimental"),
 		MustParseVersion("2021-06-13~beta"),
 	})
 
@@ -60,12 +60,6 @@ func TestSpecs(t *testing.T) {
 			path:    "/examples/hello-world",
 		}, {
 			version: "2021-06-13~beta",
-			path:    "/examples/hello-world/{id}",
-		}},
-	}, {
-		query: "2021-07-01",
-		hasVersions: []expectResourceVersion{{
-			version: "2021-06-07",
 			path:    "/examples/hello-world/{id}",
 		}},
 	}}

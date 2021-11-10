@@ -73,8 +73,8 @@ func TestVersionList(t *testing.T) {
 +----------+-------------+-------------------------+----------------------------+--------+------------------+
 |   API    |  RESOURCE   |         VERSION         |            PATH            | METHOD |    OPERATION     |
 +----------+-------------+-------------------------+----------------------------+--------+------------------+
-| testdata | hello-world | 2021-06-01              | /examples/hello-world/{id} | GET    | helloWorldGetOne |
-| testdata | hello-world | 2021-06-07              | /examples/hello-world/{id} | GET    | helloWorldGetOne |
+| testdata | hello-world | 2021-06-01~experimental | /examples/hello-world/{id} | GET    | helloWorldGetOne |
+| testdata | hello-world | 2021-06-07~experimental | /examples/hello-world/{id} | GET    | helloWorldGetOne |
 | testdata | hello-world | 2021-06-13~beta         | /examples/hello-world      | POST   | helloWorldCreate |
 | testdata | hello-world | 2021-06-13~beta         | /examples/hello-world/{id} | GET    | helloWorldGetOne |
 | testdata | projects    | 2021-06-04~experimental | /orgs/{orgId}/projects     | GET    | getOrgsProjects  |

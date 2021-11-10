@@ -22,10 +22,10 @@ func TestCompile(t *testing.T) {
 		version string
 		paths   []string
 	}{{
-		version: "2021-06-01",
+		version: "2021-06-01~experimental",
 		paths:   []string{"/examples/hello-world/{id}"},
 	}, {
-		version: "2021-06-07",
+		version: "2021-06-07~experimental",
 		paths:   []string{"/examples/hello-world/{id}"},
 	}, {
 		version: "2021-06-13~beta",
@@ -55,22 +55,21 @@ func TestCompileInclude(t *testing.T) {
 	tests := []struct {
 		version string
 	}{{
-		version: "2021-06-01",
+		version: "2021-06-01~experimental",
 	}, {
-		version: "2021-06-07",
+		version: "2021-06-07~experimental",
 	}, {
 		version: "2021-06-13~beta",
 	}, {
 		version: "2021-06-04~experimental",
 	}}
 	for _, test := range tests {
-		v, err := vervet.ParseVersion(test.version)
 		c.Assert(err, qt.IsNil)
 		// Load just-compiled OpenAPI YAML file
-		doc, err := vervet.NewDocumentFile(dstDir + "/" + v.DateString() + "/spec.yaml")
+		doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + "/spec.yaml")
 		c.Assert(err, qt.IsNil)
 
-		expected, err := ioutil.ReadFile(testdata.Path("output/" + v.DateString() + "/spec.json"))
+		expected, err := ioutil.ReadFile(testdata.Path("output/" + test.version + "/spec.json"))
 		c.Assert(err, qt.IsNil)
 
 		// Servers will differ between the fixture output and the above, since
