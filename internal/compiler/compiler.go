@@ -286,16 +286,22 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 				if err != nil {
 					return buildErr(err)
 				}
-				versionDir := api.output.path + "/" + version.String()
-				err = os.MkdirAll(versionDir, 0755)
-				if err != nil {
-					return buildErr(err)
-				}
+
 				spec, err := specVersions.At(version.String())
 				if err == vervet.ErrNoMatchingVersion {
 					continue
 				} else if err != nil {
 					return buildErr(err)
+				}
+
+				// Create the directories, but only if a spec file exists for it.
+				versionDir := api.output.path + "/" + version.String()
+
+				if spec != nil {
+					err = os.MkdirAll(versionDir, 0755)
+					if err != nil {
+						return buildErr(err)
+					}
 				}
 
 				// Merge all overlays

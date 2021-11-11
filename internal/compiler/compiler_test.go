@@ -102,6 +102,15 @@ func TestCompilerSmoke(t *testing.T) {
 	err = compiler.BuildAll(ctx)
 	c.Assert(err, qt.IsNil)
 
+	// Verify created files/folders are as expected
+	// Look for existence of /2021-06-01~experimental
+	_, err = os.Stat(outputPath + "/2021-06-01~experimental")
+	c.Assert(err, qt.IsNil)
+
+	// Look for absence of /2021-06-01 folder (ga)
+	_, err = os.Stat(outputPath + "/2021-06-01")
+	c.Assert(os.IsNotExist(err), qt.IsTrue)
+
 	// Build output was cleaned up
 	_, err = ioutil.ReadFile(outputPath + "/goof")
 	c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")

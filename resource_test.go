@@ -17,10 +17,10 @@ func TestResource(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(eps.Versions(), qt.DeepEquals, []Version{{
 		Date:      time.Date(2021, time.June, 1, 0, 0, 0, 0, time.UTC),
-		Stability: StabilityGA,
+		Stability: StabilityExperimental,
 	}, {
 		Date:      time.Date(2021, time.June, 7, 0, 0, 0, 0, time.UTC),
-		Stability: StabilityGA,
+		Stability: StabilityExperimental,
 	}, {
 		Date:      time.Date(2021, time.June, 13, 0, 0, 0, 0, time.UTC),
 		Stability: StabilityBeta,
@@ -40,9 +40,6 @@ func TestVersionRangesHelloWorld(t *testing.T) {
 	tests := []struct {
 		query, match string
 	}{{
-		query: "2021-07-01",
-		match: "2021-06-07",
-	}, {
 		query: "2021-07-01~experimental",
 		match: "2021-06-13~beta",
 	}, {
@@ -50,7 +47,7 @@ func TestVersionRangesHelloWorld(t *testing.T) {
 		match: "2021-06-13~beta",
 	}, {
 		query: "2021-06-08~experimental",
-		match: "2021-06-07",
+		match: "2021-06-07~experimental",
 	}}
 	for _, t := range tests {
 		e, err := eps.At(t.query)
