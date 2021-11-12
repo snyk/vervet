@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,7 +34,28 @@ func ScaffoldInit(ctx *cli.Context) error {
 		return err
 	}
 	err = sc.Organize()
-	if err != nil {
+	if err == scaffold.ErrAlreadyInitialized {
+		// If the project files already exist, prompt the user to see if they want to overwrite them.
+		// TODO: replace using Context.Value directly with a helper func to be used in other commands.
+		vervetApp, ok := ctx.Context.Value(vervetKey).(*VervetApp)
+		if !ok {
+			return errors.New("could not retrieve vervet app from context")
+		}
+		prompt := vervetApp.Params.Prompt
+		overwrite, err := prompt.Confirm("Scaffold already initialized; do you want to overwrite")
+		if err != nil {
+			return err
+		}
+		if overwrite {
+			forceFn := scaffold.Force(true)
+			forceFn(sc)
+			// If an error happens with --force enabled, something new has gone wrong.
+			if err = sc.Organize(); err != nil {
+				return err
+			}
+		}
+		return nil
+	} else if err != nil {
 		return err
 	}
 	err = sc.Init()
