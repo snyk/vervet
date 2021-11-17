@@ -15,11 +15,21 @@ import (
 var vervetConfigFile = "./.vervet.yaml"
 
 type testPrompt struct {
-	ReturnVal bool
+	ReturnConfirm bool
+	ReturnSelect  string
+	ReturnEntry   string
 }
 
 func (tp *testPrompt) Confirm(label string) (bool, error) {
-	return tp.ReturnVal, nil
+	return tp.ReturnConfirm, nil
+}
+
+func (tp *testPrompt) Entry(label string) (string, error) {
+	return tp.ReturnEntry, nil
+}
+
+func (tp *testPrompt) Select(label string, items []string) (string, error) {
+	return tp.ReturnSelect, nil
 }
 
 var filemark = "bad wolf"
@@ -69,7 +79,7 @@ func TestScaffold(t *testing.T) {
 
 	// Rerunning init asks the user if they want to overwrite; if they say no
 	// the command ends...
-	prompt.ReturnVal = false
+	prompt.ReturnConfirm = false
 	err = markTestFile(vervetConfigFile)
 	c.Assert(err, qt.IsNil)
 	err = testApp.Run([]string{"vervet", "scaffold", "init", testdata.Path("test-scaffold")})
@@ -79,7 +89,7 @@ func TestScaffold(t *testing.T) {
 	c.Assert(fileMarked, qt.IsTrue)
 
 	// ...if the user selects yes, it will overwrite the project files.
-	prompt.ReturnVal = true
+	prompt.ReturnConfirm = true
 	err = testApp.Run([]string{"vervet", "scaffold", "init", testdata.Path("test-scaffold")})
 	c.Assert(err, qt.IsNil)
 	fileMarked, err = markInFile(vervetConfigFile)
@@ -87,7 +97,7 @@ func TestScaffold(t *testing.T) {
 	c.Assert(fileMarked, qt.IsFalse)
 
 	// Rerunning init with the force option overwrites the project files.
-	prompt.ReturnVal = false
+	prompt.ReturnConfirm = false
 	err = markTestFile(vervetConfigFile)
 	c.Assert(err, qt.IsNil)
 	err = testApp.Run([]string{"vervet", "scaffold", "init", "--force", testdata.Path("test-scaffold")})

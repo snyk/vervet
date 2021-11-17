@@ -84,6 +84,8 @@ func TestVersionList(t *testing.T) {
 
 func TestVersionNew(t *testing.T) {
 	c := qt.New(t)
+
+	// Set up vervet project directory
 	projectDir := c.TempDir()
 	copyToDir(c, testdata.Path(".vervet.yaml"), projectDir)
 	copyToDir(c, testdata.Path("compiled-rules.yaml"), projectDir)
@@ -95,14 +97,42 @@ func TestVersionNew(t *testing.T) {
 	copyToDir(c, testdata.Path(".vervet/resource/version/index.ts.tmpl"), versionTemplateDir)
 	copyToDir(c, testdata.Path(".vervet/resource/version/spec.yaml.tmpl"), versionTemplateDir)
 	cd(c, projectDir)
-	err := cmd.Vervet.Run([]string{"vervet", "version", "new", "testdata", "foo"})
+
+	// Set up vervet app for testing.
+	prompt := testPrompt{}
+	testApp := cmd.NewApp(cmd.VervetParams{
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+		Prompt: &prompt,
+	})
+
+	// Test to ensure spec is created correctly.
+	checkVersion := func(c *qt.C, versionName string) {
+		versions, err := vervet.LoadResourceVersions(filepath.Join(projectDir, "generated", versionName))
+		c.Assert(err, qt.IsNil)
+		c.Assert(versions.Name(), qt.Equals, versionName)
+		c.Assert(versions.Versions(), qt.HasLen, 1)
+		rc, err := versions.At(versions.Versions()[0].String())
+		c.Assert(err, qt.IsNil)
+		c.Assert(rc.Paths, qt.HasLen, 2)
+	}
+
+	// Running it with all args creates the new spec.
+	err := testApp.Run([]string{"vervet", "version", "new", "testdata", "foo"})
 	c.Assert(err, qt.IsNil)
-	versions, err := vervet.LoadResourceVersions(filepath.Join(projectDir, "generated", "foo"))
+	checkVersion(c, "foo")
+
+	// Running it without resource prompts for resource name.
+	prompt.ReturnEntry = "baz"
+	err = testApp.Run([]string{"vervet", "version", "new", "testdata"})
 	c.Assert(err, qt.IsNil)
-	// Smoke test that a new spec was created
-	c.Assert(versions.Name(), qt.Equals, "foo")
-	c.Assert(versions.Versions(), qt.HasLen, 1)
-	rc, err := versions.At(versions.Versions()[0].String())
+	checkVersion(c, "baz")
+
+	// Running it with no args prompts for api and resource.
+	prompt.ReturnSelect = "testdata"
+	prompt.ReturnEntry = "bar"
+	err = testApp.Run([]string{"vervet", "version", "new"})
 	c.Assert(err, qt.IsNil)
-	c.Assert(rc.Paths, qt.HasLen, 2)
+	checkVersion(c, "bar")
 }

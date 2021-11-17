@@ -168,8 +168,27 @@ func VersionNew(ctx *cli.Context) error {
 		return err
 	}
 	apiName, resourceName := ctx.Args().Get(0), ctx.Args().Get(1)
-	if apiName == "" || resourceName == "" {
-		return fmt.Errorf("api and resource are required")
+	v, err := appFromContext(ctx.Context)
+	if err != nil {
+		return err
+	}
+	if apiName == "" {
+		i := 0
+		apis := make([]string, len(proj.APIs))
+		for k := range proj.APIs {
+			apis[i] = k
+			i++
+		}
+		apiName, err = v.Params.Prompt.Select("API for new version?", apis)
+		if err != nil {
+			return err
+		}
+	}
+	if resourceName == "" {
+		resourceName, err = v.Params.Prompt.Entry("Resource name?")
+		if err != nil {
+			return err
+		}
 	}
 	api, ok := proj.APIs[apiName]
 	if !ok && len(proj.APIs) > 0 {

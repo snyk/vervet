@@ -31,17 +31,31 @@ type VervetApp struct {
 
 // VervetPrompt defines the interface for interactive prompts in vervet.
 type VervetPrompt interface {
-	Confirm(label string) (bool, error)
+	Confirm(label string) (bool, error)                  // Confirm y/n an action
+	Entry(label string) (string, error)                  // Gather a freeform entry in response to a question
+	Select(label string, items []string) (string, error) // Select from a limited number of entries
 }
 
 type runKey string
 
 var vervetKey = runKey("vervet")
 
+func contextWithApp(ctx context.Context, v *VervetApp) context.Context {
+	return context.WithValue(ctx, vervetKey, v)
+}
+
+func appFromContext(ctx context.Context) (*VervetApp, error) {
+	v, ok := ctx.Value(vervetKey).(*VervetApp)
+	if !ok {
+		return nil, errors.New("could not retrieve vervet app from context")
+	}
+	return v, nil
+}
+
 // Run runs the cli.App with the Vervet config params.
 func (v *VervetApp) Run(args []string) error {
-	context := context.WithValue(context.Background(), vervetKey, v)
-	return v.App.RunContext(context, args)
+	ctx := contextWithApp(context.Background(), v)
+	return v.App.RunContext(ctx, args)
 }
 
 // NewApp returns a new VervetApp with the provided params.
@@ -190,6 +204,37 @@ func (p Prompt) Confirm(label string) (bool, error) {
 		return false, err
 	}
 	return (result == "y"), nil
+}
+
+// Entry implements VervetPrompt.Entry
+func (p Prompt) Entry(label string) (string, error) {
+	prompt := promptui.Prompt{
+		Label: label,
+		Validate: func(result string) error {
+			if result == "" {
+				return errors.New("you must provide a non-empty response")
+			}
+			return nil
+		},
+	}
+	result, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+// Select implements VervetPrompt.Select
+func (p Prompt) Select(label string, items []string) (string, error) {
+	prompt := promptui.Select{
+		Label: label,
+		Items: items,
+	}
+	_, result, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+	return result, nil
 }
 
 // Vervet is the vervet application with the CLI application.
