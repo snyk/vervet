@@ -16,6 +16,7 @@ import (
 
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/optic"
 	"github.com/snyk/vervet/internal/spectral"
 	"github.com/snyk/vervet/internal/sweatercomb"
 	"github.com/snyk/vervet/internal/types"
@@ -44,9 +45,11 @@ func LinterFactory(f func(ctx context.Context, lc *config.Linter) (types.Linter,
 
 func defaultLinterFactory(ctx context.Context, lc *config.Linter) (types.Linter, error) {
 	if lc.Spectral != nil {
-		return spectral.New(ctx, lc.Spectral.Rules, lc.Spectral.ExtraArgs)
+		return spectral.New(ctx, lc.Spectral)
 	} else if lc.SweaterComb != nil {
-		return sweatercomb.New(ctx, lc.SweaterComb.Image, lc.SweaterComb.Rules, lc.SweaterComb.ExtraArgs)
+		return sweatercomb.New(ctx, lc.SweaterComb)
+	} else if lc.OpticCI != nil {
+		return optic.New(ctx, lc.OpticCI)
 	}
 	return nil, fmt.Errorf("invalid linter (linters.%s)", lc.Name)
 }
@@ -60,7 +63,7 @@ type api struct {
 
 type resource struct {
 	linter          types.Linter
-	linterOverrides map[string]map[string][]string
+	linterOverrides map[string]map[string]config.Linter
 	matchedFiles    []string
 }
 
@@ -99,19 +102,17 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 			var err error
 			r := &resource{
 				linter:          compiler.linters[rcConfig.Linter],
-				linterOverrides: map[string]map[string][]string{},
+				linterOverrides: map[string]map[string]config.Linter{},
 			}
 			r.matchedFiles, err = ResourceSpecFiles(rcConfig)
 			if err != nil {
 				return nil, fmt.Errorf("%w: (apis.%s.resources[%d].path)", err, apiName, rcIndex)
 			}
-			linterOverrides := map[string]map[string][]string{}
+			linterOverrides := map[string]map[string]config.Linter{}
 			for rcName, versionMap := range rcConfig.LinterOverrides {
-				linterOverrides[rcName] = map[string][]string{}
+				linterOverrides[rcName] = map[string]config.Linter{}
 				for version, linter := range versionMap {
-					var overrideRules []string
-					overrideRules = append(overrideRules, linter.Spectral.Rules...)
-					linterOverrides[rcName][version] = overrideRules
+					linterOverrides[rcName][version] = *linter
 				}
 			}
 			r.linterOverrides = linterOverrides
@@ -209,8 +210,8 @@ func (c *Compiler) lintWithOverrides(ctx context.Context, rc *resource, apiName 
 		rcDir := filepath.Dir(versionDir)
 		versionName := filepath.Base(versionDir)
 		rcName := filepath.Base(rcDir)
-		if rules, ok := rc.linterOverrides[rcName][versionName]; ok {
-			linter, err := rc.linter.NewRules(ctx, rules...)
+		if linter, ok := rc.linterOverrides[rcName][versionName]; ok {
+			linter, err := rc.linter.WithOverride(ctx, &linter)
 			if err != nil {
 				return fmt.Errorf("failed to apply overrides to linter: %w (apis.%s.resources[%d].linter-overrides.%s.%s)",
 					err, apiName, rcIndex, rcName, versionName)

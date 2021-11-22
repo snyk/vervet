@@ -25,10 +25,17 @@ linters:
       rules:
         - compiled-rules.yaml
       extraArgs: ['--format', 'json', '-v']
+  ci-rules:
+    optic-ci:
+      original: target-branch
 apis:
   test:
     resources:
       - linter: apitest-resource
+        path: testdata/resources
+        excludes:
+          - testdata/resources/schemas/**
+      - linter: ci-rules
         path: testdata/resources
         excludes:
           - testdata/resources/schemas/**
@@ -45,8 +52,8 @@ apis:
 	c.Assert(err, qt.IsNil)
 	c.Assert(proj, qt.DeepEquals, &config.Project{
 		Version:    "1",
-		Generators: map[string]*config.Generator{},
-		Linters: map[string]*config.Linter{
+		Generators: config.Generators{},
+		Linters: config.Linters{
 			"apitest-resource": {
 				Name:        "apitest-resource",
 				Description: "Test resource rules",
@@ -67,12 +74,23 @@ apis:
 					ExtraArgs: []string{"--format", "json", "-v"},
 				},
 			},
+			"ci-rules": {
+				Name: "ci-rules",
+				OpticCI: &config.OpticCILinter{
+					Image:    "ghcr.io/snyk/sweater-comb:optic-main",
+					Original: "target-branch",
+				},
+			},
 		},
-		APIs: map[string]*config.API{
+		APIs: config.APIs{
 			"test": {
 				Name: "test",
 				Resources: []*config.ResourceSet{{
 					Linter:   "apitest-resource",
+					Path:     "testdata/resources",
+					Excludes: []string{"testdata/resources/schemas/**"},
+				}, {
+					Linter:   "ci-rules",
 					Path:     "testdata/resources",
 					Excludes: []string{"testdata/resources/schemas/**"},
 				}},
@@ -113,9 +131,9 @@ apis:
 	c.Assert(err, qt.IsNil)
 	c.Assert(proj, qt.DeepEquals, &config.Project{
 		Version:    "1",
-		Generators: map[string]*config.Generator{},
-		Linters:    map[string]*config.Linter{},
-		APIs: map[string]*config.API{
+		Generators: config.Generators{},
+		Linters:    config.Linters{},
+		APIs: config.APIs{
 			"test": {
 				Name: "test",
 				Resources: []*config.ResourceSet{{

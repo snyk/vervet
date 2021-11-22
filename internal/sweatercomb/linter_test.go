@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+
+	"github.com/snyk/vervet/config"
 )
 
 func TestLinter(t *testing.T) {
@@ -18,7 +20,11 @@ func TestLinter(t *testing.T) {
 	defer cancel()
 
 	// Sanity check constructor
-	l, err := New(ctx, "some-image", []string{"/sweater-comb/rules/rule1", "rule2"}, []string{"--some-flag"})
+	l, err := New(ctx, &config.SweaterCombLinter{
+		Image:     "some-image",
+		Rules:     []string{"/sweater-comb/rules/rule1", "rule2"},
+		ExtraArgs: []string{"--some-flag"},
+	})
 	c.Assert(err, qt.IsNil)
 	c.Assert(l.image, qt.Equals, "some-image")
 	c.Assert(l.rules, qt.DeepEquals, []string{"/sweater-comb/rules/rule1", "/sweater-comb/target/rule2"})

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
+	"github.com/snyk/vervet/config"
 	"github.com/snyk/vervet/internal/types"
 )
 
@@ -22,8 +23,9 @@ type Spectral struct {
 	rulesPath    string
 }
 
-// New returns a new Spectral instance configured with the given rules.
-func New(ctx context.Context, rules []string, extraArgs []string) (*Spectral, error) {
+// New returns a new Spectral instance.
+func New(ctx context.Context, cfg *config.SpectralLinter) (*Spectral, error) {
+	rules, extraArgs := cfg.Rules, cfg.ExtraArgs
 	if len(rules) == 0 {
 		return nil, fmt.Errorf("missing spectral rules")
 	}
@@ -72,9 +74,14 @@ func New(ctx context.Context, rules []string, extraArgs []string) (*Spectral, er
 	}, nil
 }
 
-// NewRules returns a new Linter instance with additional rules appended.
-func (l *Spectral) NewRules(ctx context.Context, paths ...string) (types.Linter, error) {
-	return New(ctx, append([]string{l.rulesPath}, paths...), l.extraArgs)
+// WithOverride implements types.Linter.
+func (s *Spectral) WithOverride(ctx context.Context, override *config.Linter) (types.Linter, error) {
+	if override.Spectral == nil {
+		return nil, fmt.Errorf("invalid linter override")
+	}
+	merged := *override.Spectral
+	merged.Rules = append(s.rules, merged.Rules...)
+	return New(ctx, &merged)
 }
 
 // Run runs spectral on the given paths. Linting output is written to standard

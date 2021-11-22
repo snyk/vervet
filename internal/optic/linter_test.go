@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/uuid"
 
+	"github.com/snyk/vervet/config"
 	"github.com/snyk/vervet/testdata"
 )
 
@@ -24,7 +25,11 @@ func TestNewLocalFile(t *testing.T) {
 	c.Cleanup(cancel)
 
 	// Sanity check constructor
-	l, err := New(ctx, "some-image", "", "")
+	l, err := New(ctx, &config.OpticCILinter{
+		Image:    "some-image",
+		Original: "",
+		Proposed: "",
+	})
 	c.Assert(err, qt.IsNil)
 	c.Assert(l.image, qt.Equals, "some-image")
 	c.Assert(l.fromSource, qt.DeepEquals, nilSource{})
@@ -95,7 +100,11 @@ func TestNewGitFile(t *testing.T) {
 	c.Assert(os.Chdir(testRepo), qt.IsNil)
 
 	// Sanity check constructor
-	l, err := New(ctx, "some-image", commitHash.String(), "")
+	l, err := New(ctx, &config.OpticCILinter{
+		Image:    "some-image",
+		Original: commitHash.String(),
+		Proposed: "",
+	})
 	c.Assert(err, qt.IsNil)
 	c.Assert(l.image, qt.Equals, "some-image")
 	c.Assert(l.fromSource, qt.Satisfies, func(v interface{}) bool {

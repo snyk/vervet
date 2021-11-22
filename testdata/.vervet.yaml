@@ -7,6 +7,8 @@ linters:
     spectral:
       rules:
         - compiled-rules.yaml
+  local-rules:
+    optic-ci: {}
 
 generators:
   version-readme:

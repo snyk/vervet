@@ -15,6 +15,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
+	"github.com/snyk/vervet/config"
 	"github.com/snyk/vervet/internal/types"
 )
 
@@ -41,7 +42,8 @@ func (*execCommandRunner) run(cmd *exec.Cmd) error {
 }
 
 // New returns a new SweaterComb instance configured with the given rules.
-func New(ctx context.Context, image string, rules []string, extraArgs []string) (*SweaterComb, error) {
+func New(ctx context.Context, cfg *config.SweaterCombLinter) (*SweaterComb, error) {
+	image, rules, extraArgs := cfg.Image, cfg.Rules, cfg.ExtraArgs
 	if len(rules) == 0 {
 		return nil, fmt.Errorf("missing spectral rules")
 	}
@@ -90,16 +92,21 @@ func New(ctx context.Context, image string, rules []string, extraArgs []string) 
 	}, nil
 }
 
-// NewRules returns a new Linter instance with additional rules appended.
-func (l *SweaterComb) NewRules(ctx context.Context, rules ...string) (types.Linter, error) {
-	return New(ctx, l.image, append(l.rules, rules...), l.extraArgs)
+// WithOverride implements types.Linter.
+func (s *SweaterComb) WithOverride(ctx context.Context, override *config.Linter) (types.Linter, error) {
+	if override.SweaterComb == nil {
+		return nil, fmt.Errorf("invalid linter override")
+	}
+	merged := *override.SweaterComb
+	merged.Rules = append(s.rules, merged.Rules...)
+	return New(ctx, &merged)
 }
 
 var sweaterCombOutputRE = regexp.MustCompile(`/sweater-comb/target`)
 
 // Run runs spectral on the given paths. Linting output is written to standard
 // output by spectral. Returns an error when lint fails configured rules.
-func (l *SweaterComb) Run(ctx context.Context, paths ...string) error {
+func (s *SweaterComb) Run(ctx context.Context, paths ...string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -110,11 +117,11 @@ func (l *SweaterComb) Run(ctx context.Context, paths ...string) error {
 	}
 	cmdline := append(append([]string{
 		"run", "--rm",
-		"-v", l.rulesDir + ":/vervet", "-v", cwd + ":/sweater-comb/target",
-		l.image,
+		"-v", s.rulesDir + ":/vervet", "-v", cwd + ":/sweater-comb/target",
+		s.image,
 		"lint",
 		"-r", "/vervet/ruleset.yaml",
-	}, l.extraArgs...), paths...)
+	}, s.extraArgs...), paths...)
 	cmd := exec.CommandContext(ctx, "docker", cmdline...)
 
 	pipeReader, pipeWriter := io.Pipe()
@@ -145,7 +152,7 @@ func (l *SweaterComb) Run(ctx context.Context, paths ...string) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = pipeWriter
 	cmd.Stderr = os.Stderr
-	return l.runner.run(cmd)
+	return s.runner.run(cmd)
 }
 
 const cmdTimeout = time.Second * 10
