@@ -1,12 +1,15 @@
 package optic
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
 // fileSource defines a source of files.
 type fileSource interface {
 	// Fetch retrieves the contents of the requested logical path as a local
-	// file and returns the location where it may be found. An empty string,
-	// rather than an error, is returned if the file does not exist.
+	// file and returns the absolute path where it may be found. An empty
+	// string, rather than an error, is returned if the file does not exist.
 	Fetch(path string) (string, error)
 
 	// Close releases any resources consumed in content retrieval. Any files
@@ -31,9 +34,9 @@ func (nilSource) Close() error { return nil }
 type workingCopySource struct{}
 
 // Fetch implements fileSource.
-func (workingCopySource) Fetch(path string) (string, error) {
+func (s workingCopySource) Fetch(path string) (string, error) {
 	if _, err := os.Stat(path); err == nil {
-		return path, nil
+		return filepath.Abs(path)
 	} else if os.IsNotExist(err) {
 		return "", nil
 	} else {
