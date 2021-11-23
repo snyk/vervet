@@ -125,9 +125,9 @@ func TestCompilerSmoke(t *testing.T) {
 }
 
 type mockLinter struct {
-	runs  [][]string
-	rules []string
-	err   error
+	runs     [][]string
+	override *config.Linter
+	err      error
 }
 
 func (l *mockLinter) Run(ctx context.Context, paths ...string) error {
@@ -135,9 +135,9 @@ func (l *mockLinter) Run(ctx context.Context, paths ...string) error {
 	return l.err
 }
 
-func (l *mockLinter) NewRules(ctx context.Context, rules ...string) (types.Linter, error) {
+func (l *mockLinter) WithOverride(ctx context.Context, cfg *config.Linter) (types.Linter, error) {
 	nl := &mockLinter{
-		rules: append(l.rules, rules...),
+		override: cfg,
 	}
 	return nl, nil
 }
