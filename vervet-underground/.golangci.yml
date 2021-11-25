@@ -1,0 +1,35 @@
+run:
+  concurrency: 4
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+linters-settings:
+  gci:
+    local-prefixes: vervet-underground
+
+  forbidigo:
+    # Forbid the following identifiers (identifiers are written using regexp):
+    forbid:
+      - ^print.*$
+      - 'fmt\.Print.*'
+      - 'ginkgo\.It\("should'
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 20
+
+  # ST1001: Dot imports that aren’t in external test packages are discouraged.
+  stylecheck:
+    checks: [ "all", "-ST1003"]
+
+  staticcheck:
+    checks: ["all"]
+
+linters:
+  enable:
+    - gci
+    - gofmt
+    - forbidigo
+    - gocyclo
+    - stylecheck
+    - staticcheck
