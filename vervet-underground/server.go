@@ -13,8 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/go-libs/config"
-
 
 	"vervet-underground/lib"
 )
@@ -29,13 +27,17 @@ func main() {
 
 	ctx := context.Background()
 	router := gorillaMux.NewRouter()
+	host := os.Getenv("host")
+	if host == "" {
+		host = "localhost"
+	}
 	var cfg lib.ServerConfig
-	if err := config.Unmarshal(&cfg); err != nil {
+	if err := lib.Decode("config.default.json", &cfg); err != nil {
 		logError(err)
 		panic("unable to load config")
 	}
 
-	log.Info().Msgf("services: %s", )
+	log.Info().Msgf("services: %s", cfg.Services)
 	router.Path("/").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(1 * time.Second)
 		w.WriteHeader(http.StatusOK)
@@ -48,7 +50,7 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr: "localhost:8080",
+		Addr: fmt.Sprintf("%s:8080", host),
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
@@ -58,7 +60,7 @@ func main() {
 
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
-		log.Info().Msg("I'm starting my server")
+		log.Info().Msg(fmt.Sprintf("I'm starting my server on %s:8080", host))
 		if err := srv.ListenAndServe(); err != nil {
 			logError(err)
 			os.Exit(1)

@@ -20,6 +20,8 @@ tidy:
 test:
 	go test ./... -count=1 -ginkgo.failFast
 
+build:
+	go build server.go
 #----------------------------------------------------------------------------------
 # Check for updates to packages in remote OSS repositories and update go.mod AND
 # go.sum to match changes. Then download the all the dependencies
