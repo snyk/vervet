@@ -196,7 +196,7 @@ func (c *Compiler) LintResources(ctx context.Context, apiName string) error {
 		} else {
 			err := rc.linter.Run(ctx, rc.matchedFiles...)
 			if err != nil {
-				return fmt.Errorf("lint failed (apis.%s.resources[%d])", apiName, rcIndex)
+				return fmt.Errorf("lint failed: %w (apis.%s.resources[%d])", err, apiName, rcIndex)
 			}
 		}
 	}

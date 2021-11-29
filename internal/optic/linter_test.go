@@ -50,18 +50,19 @@ func TestNewLocalFile(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs, qt.DeepEquals, [][]string{{
 		"docker", "run", "--rm",
-		"-v", cwd + ":/target",
+		"-v", cwd + ":/to",
+		"-v", cwd + "/spec.yaml:/to/spec.yaml",
 		"some-image",
 		"compare",
 		"--to",
-		"spec.yaml",
+		"/to/spec.yaml",
 	}})
 
 	// Command failed.
-	runner = &mockRunner{err: fmt.Errorf("nope")}
+	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
 	l.runner = runner
 	err = l.Run(ctx, "spec.yaml")
-	c.Assert(err, qt.ErrorMatches, "nope")
+	c.Assert(err, qt.ErrorMatches, "bad wolf")
 }
 
 func TestNoSuchWorkingCopyFile(t *testing.T) {
