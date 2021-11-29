@@ -11,6 +11,7 @@ import (
 	"github.com/ghodss/yaml"
 
 	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/files"
 	"github.com/snyk/vervet/internal/linter"
 )
 
@@ -72,6 +73,11 @@ func New(ctx context.Context, cfg *config.SpectralLinter) (*Spectral, error) {
 		rulesPath:    rulesPath,
 		extraArgs:    extraArgs,
 	}, nil
+}
+
+// Match implements linter.Linter.
+func (s *Spectral) Match(rcConfig *config.ResourceSet) ([]string, error) {
+	return files.LocalFSSource{}.Match(rcConfig)
 }
 
 // WithOverride implements linter.Linter.

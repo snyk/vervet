@@ -16,6 +16,7 @@ import (
 	"github.com/ghodss/yaml"
 
 	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/files"
 	"github.com/snyk/vervet/internal/linter"
 )
 
@@ -90,6 +91,11 @@ func New(ctx context.Context, cfg *config.SweaterCombLinter) (*SweaterComb, erro
 		extraArgs: extraArgs,
 		runner:    &execCommandRunner{},
 	}, nil
+}
+
+// Match implements linter.Linter.
+func (s *SweaterComb) Match(rcConfig *config.ResourceSet) ([]string, error) {
+	return files.LocalFSSource{}.Match(rcConfig)
 }
 
 // WithOverride implements linter.Linter.

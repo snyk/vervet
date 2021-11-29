@@ -13,9 +13,11 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/ghodss/yaml"
+	"go.uber.org/multierr"
 
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/files"
 	"github.com/snyk/vervet/internal/linter"
 	"github.com/snyk/vervet/internal/linter/optic"
 	"github.com/snyk/vervet/internal/linter/spectral"
@@ -64,7 +66,8 @@ type api struct {
 type resource struct {
 	linter          linter.Linter
 	linterOverrides map[string]map[string]config.Linter
-	matchedFiles    []string
+	sourceFiles     []string
+	lintFiles       []string
 }
 
 type output struct {
@@ -104,18 +107,25 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 				linter:          compiler.linters[rcConfig.Linter],
 				linterOverrides: map[string]map[string]config.Linter{},
 			}
-			r.matchedFiles, err = ResourceSpecFiles(rcConfig)
+			if r.linter != nil {
+				r.lintFiles, err = r.linter.Match(rcConfig)
+				if err != nil {
+					return nil, fmt.Errorf("%w: (apis.%s.resources[%d].path)", err, apiName, rcIndex)
+				}
+				// TODO: overrides can probably be better implemented with Match now...
+				linterOverrides := map[string]map[string]config.Linter{}
+				for rcName, versionMap := range rcConfig.LinterOverrides {
+					linterOverrides[rcName] = map[string]config.Linter{}
+					for version, linter := range versionMap {
+						linterOverrides[rcName][version] = *linter
+					}
+				}
+				r.linterOverrides = linterOverrides
+			}
+			r.sourceFiles, err = ResourceSpecFiles(rcConfig)
 			if err != nil {
 				return nil, fmt.Errorf("%w: (apis.%s.resources[%d].path)", err, apiName, rcIndex)
 			}
-			linterOverrides := map[string]map[string]config.Linter{}
-			for rcName, versionMap := range rcConfig.LinterOverrides {
-				linterOverrides[rcName] = map[string]config.Linter{}
-				for version, linter := range versionMap {
-					linterOverrides[rcName][version] = *linter
-				}
-			}
-			r.linterOverrides = linterOverrides
 			a.resources = append(a.resources, r)
 		}
 
@@ -160,22 +170,7 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 
 // ResourceSpecFiles returns all matching spec files for a config.Resource.
 func ResourceSpecFiles(rcConfig *config.ResourceSet) ([]string, error) {
-	var result []string
-	err := doublestar.GlobWalk(os.DirFS(rcConfig.Path),
-		vervet.SpecGlobPattern,
-		func(path string, d fs.DirEntry) error {
-			rcPath := filepath.Join(rcConfig.Path, path)
-			for i := range rcConfig.Excludes {
-				if ok, err := doublestar.Match(rcConfig.Excludes[i], rcPath); ok {
-					return nil
-				} else if err != nil {
-					return err
-				}
-			}
-			result = append(result, rcPath)
-			return nil
-		})
-	return result, err
+	return files.LocalFSSource{}.Match(rcConfig)
 }
 
 // LintResources checks the inputs of an API's resources with the configured linter.
@@ -184,6 +179,7 @@ func (c *Compiler) LintResources(ctx context.Context, apiName string) error {
 	if !ok {
 		return fmt.Errorf("api not found (apis.%s)", apiName)
 	}
+	var errs error
 	for rcIndex, rc := range api.resources {
 		if rc.linter == nil {
 			continue
@@ -191,21 +187,21 @@ func (c *Compiler) LintResources(ctx context.Context, apiName string) error {
 		if len(rc.linterOverrides) > 0 {
 			err := c.lintWithOverrides(ctx, rc, apiName, rcIndex)
 			if err != nil {
-				return err
+				errs = multierr.Append(errs, fmt.Errorf("%w (apis.%s.resources[%d])", err, apiName, rcIndex))
 			}
 		} else {
-			err := rc.linter.Run(ctx, rc.matchedFiles...)
+			err := rc.linter.Run(ctx, rc.lintFiles...)
 			if err != nil {
-				return fmt.Errorf("lint failed: %w (apis.%s.resources[%d])", err, apiName, rcIndex)
+				errs = multierr.Append(errs, fmt.Errorf("%w (apis.%s.resources[%d])", err, apiName, rcIndex))
 			}
 		}
 	}
-	return nil
+	return errs
 }
 
 func (c *Compiler) lintWithOverrides(ctx context.Context, rc *resource, apiName string, rcIndex int) error {
 	var pending []string
-	for _, matchedFile := range rc.matchedFiles {
+	for _, matchedFile := range rc.lintFiles {
 		versionDir := filepath.Dir(matchedFile)
 		rcDir := filepath.Dir(versionDir)
 		versionName := filepath.Base(versionDir)
@@ -240,13 +236,14 @@ func (c *Compiler) LintResourcesAll(ctx context.Context) error {
 }
 
 func (c *Compiler) apisEach(ctx context.Context, f func(ctx context.Context, apiName string) error) error {
+	var errs error
 	for apiName := range c.apis {
 		err := f(ctx, apiName)
 		if err != nil {
-			return err
+			errs = multierr.Append(errs, err)
 		}
 	}
-	return nil
+	return errs
 }
 
 // Build builds an aggregate versioned OpenAPI spec for a specific API by name
@@ -270,7 +267,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	log.Printf("compiling API %s to output versions", apiName)
 	var versionSpecFiles []string
 	for rcIndex, rc := range api.resources {
-		specVersions, err := vervet.LoadSpecVersionsFileset(rc.matchedFiles)
+		specVersions, err := vervet.LoadSpecVersionsFileset(rc.sourceFiles)
 		if err != nil {
 			return fmt.Errorf("failed to load spec versions: %w (apis.%s.resources[%d])",
 				err, apiName, rcIndex)

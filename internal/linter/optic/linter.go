@@ -2,20 +2,29 @@
 package optic
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"os/exec"
+	"regexp"
+	"sort"
+	"time"
+
+	"go.uber.org/multierr"
 
 	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/files"
 	"github.com/snyk/vervet/internal/linter"
 )
 
 // Optic runs a Docker image containing Optic CI and built-in rules.
 type Optic struct {
 	image      string
-	fromSource fileSource
-	toSource   fileSource
+	fromSource files.FileSource
+	toSource   files.FileSource
 	runner     commandRunner
 }
 
@@ -41,11 +50,11 @@ func (*execCommandRunner) run(cmd *exec.Cmd) error {
 // the context cancels.
 func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 	image, from, to := cfg.Image, cfg.Original, cfg.Proposed
-	var fromSource, toSource fileSource
+	var fromSource, toSource files.FileSource
 	var err error
 
 	if from == "" {
-		fromSource = nilSource{}
+		fromSource = files.NilSource{}
 	} else {
 		fromSource, err = newGitRepoSource(".", from)
 		if err != nil {
@@ -54,7 +63,7 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 	}
 
 	if to == "" {
-		toSource = workingCopySource{}
+		toSource = files.LocalFSSource{}
 	} else {
 		toSource, err = newGitRepoSource(".", to)
 		if err != nil {
@@ -75,8 +84,36 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 	}, nil
 }
 
+// Match implements linter.Linter.
+func (o *Optic) Match(rcConfig *config.ResourceSet) ([]string, error) {
+	fromFiles, err := o.fromSource.Match(rcConfig)
+	if err != nil {
+		return nil, err
+	}
+	toFiles, err := o.toSource.Match(rcConfig)
+	if err != nil {
+		return nil, err
+	}
+	// Unique set of files
+	// TODO: normalization needed? or if not needed, tested to prove it?
+	filesMap := map[string]struct{}{}
+	for i := range fromFiles {
+		filesMap[fromFiles[i]] = struct{}{}
+	}
+	for i := range toFiles {
+		filesMap[toFiles[i]] = struct{}{}
+	}
+	var result []string
+	for k := range filesMap {
+		result = append(result, k)
+	}
+	sort.Strings(result)
+	log.Println(result)
+	return result, nil
+}
+
 // WithOverride implements linter.Linter.
-func (l *Optic) WithOverride(ctx context.Context, override *config.Linter) (linter.Linter, error) {
+func (*Optic) WithOverride(ctx context.Context, override *config.Linter) (linter.Linter, error) {
 	if override.OpticCI == nil {
 		return nil, fmt.Errorf("invalid linter override")
 	}
@@ -86,14 +123,17 @@ func (l *Optic) WithOverride(ctx context.Context, override *config.Linter) (lint
 // Run runs Optic CI on the given paths. Linting output is written to standard
 // output by Optic CI. Returns an error when lint fails configured rules.
 func (o *Optic) Run(ctx context.Context, paths ...string) error {
+	var errs error
 	for i := range paths {
 		err := o.runCompare(ctx, paths[i])
 		if err != nil {
-			return err
+			errs = multierr.Append(errs, err)
 		}
 	}
-	return nil
+	return errs
 }
+
+var opticOutputRE = regexp.MustCompile(`/(from|to)`)
 
 func (o *Optic) runCompare(ctx context.Context, path string) error {
 	cwd, err := os.Getwd()
@@ -131,9 +171,45 @@ func (o *Optic) runCompare(ctx context.Context, path string) error {
 	cmdline := append([]string{"run", "--rm"}, volumeArgs...)
 	cmdline = append(cmdline, o.image, "compare")
 	cmdline = append(cmdline, compareArgs...)
+	log.Println(cmdline)
 	cmd := exec.CommandContext(ctx, "docker", cmdline...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+
+	pipeReader, pipeWriter := io.Pipe()
+	ch := make(chan struct{})
+	defer func() {
+		err := pipeWriter.Close()
+		if err != nil {
+			log.Printf("warning: failed to close output: %v", err)
+		}
+		select {
+		case <-ch:
+			return
+		case <-ctx.Done():
+			return
+		case <-time.After(cmdTimeout):
+			log.Printf("warning: timeout waiting for output to flush")
+			return
+		}
+	}()
+	go func() {
+		defer pipeReader.Close()
+		sc := bufio.NewScanner(pipeReader)
+		for sc.Scan() {
+			fmt.Println(opticOutputRE.ReplaceAllLiteralString(sc.Text(), cwd))
+		}
+		if err := sc.Err(); err != nil {
+			fmt.Fprintf(os.Stderr, "error reading stdout: %v", err)
+		}
+		close(ch)
+	}()
 	cmd.Stdin = os.Stdin
-	return o.runner.run(cmd)
+	cmd.Stdout = pipeWriter
+	cmd.Stderr = os.Stderr
+	err = o.runner.run(cmd)
+	if err != nil {
+		return fmt.Errorf("lint %q failed: %w", path, err)
+	}
+	return nil
 }
+
+const cmdTimeout = time.Second * 30
