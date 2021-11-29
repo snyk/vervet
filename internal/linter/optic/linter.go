@@ -8,7 +8,7 @@ import (
 	"os/exec"
 
 	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/types"
+	"github.com/snyk/vervet/internal/linter"
 )
 
 // Optic runs a Docker image containing Optic CI and built-in rules.
@@ -75,8 +75,8 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 	}, nil
 }
 
-// WithOverride implements types.Linter.
-func (l *Optic) WithOverride(ctx context.Context, override *config.Linter) (types.Linter, error) {
+// WithOverride implements linter.Linter.
+func (l *Optic) WithOverride(ctx context.Context, override *config.Linter) (linter.Linter, error) {
 	if override.OpticCI == nil {
 		return nil, fmt.Errorf("invalid linter override")
 	}

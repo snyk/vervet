@@ -16,19 +16,19 @@ import (
 
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/optic"
-	"github.com/snyk/vervet/internal/spectral"
-	"github.com/snyk/vervet/internal/sweatercomb"
-	"github.com/snyk/vervet/internal/types"
+	"github.com/snyk/vervet/internal/linter"
+	"github.com/snyk/vervet/internal/linter/optic"
+	"github.com/snyk/vervet/internal/linter/spectral"
+	"github.com/snyk/vervet/internal/linter/sweatercomb"
 )
 
 // A Compiler checks and builds versioned API resource inputs into aggregated
 // OpenAPI versioned outputs, as determined by an API project configuration.
 type Compiler struct {
 	apis    map[string]*api
-	linters map[string]types.Linter
+	linters map[string]linter.Linter
 
-	newLinter func(ctx context.Context, lc *config.Linter) (types.Linter, error)
+	newLinter func(ctx context.Context, lc *config.Linter) (linter.Linter, error)
 }
 
 // CompilerOption applies a configuration option to a Compiler.
@@ -36,14 +36,14 @@ type CompilerOption func(*Compiler) error
 
 // LinterFactory configures a Compiler to use a custom factory function for
 // instantiating Linters.
-func LinterFactory(f func(ctx context.Context, lc *config.Linter) (types.Linter, error)) CompilerOption {
+func LinterFactory(f func(ctx context.Context, lc *config.Linter) (linter.Linter, error)) CompilerOption {
 	return func(c *Compiler) error {
 		c.newLinter = f
 		return nil
 	}
 }
 
-func defaultLinterFactory(ctx context.Context, lc *config.Linter) (types.Linter, error) {
+func defaultLinterFactory(ctx context.Context, lc *config.Linter) (linter.Linter, error) {
 	if lc.Spectral != nil {
 		return spectral.New(ctx, lc.Spectral)
 	} else if lc.SweaterComb != nil {
@@ -62,21 +62,21 @@ type api struct {
 }
 
 type resource struct {
-	linter          types.Linter
+	linter          linter.Linter
 	linterOverrides map[string]map[string]config.Linter
 	matchedFiles    []string
 }
 
 type output struct {
 	path   string
-	linter types.Linter
+	linter linter.Linter
 }
 
 // New returns a new Compiler for a given project configuration.
 func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (*Compiler, error) {
 	compiler := &Compiler{
 		apis:      map[string]*api{},
-		linters:   map[string]types.Linter{},
+		linters:   map[string]linter.Linter{},
 		newLinter: defaultLinterFactory,
 	}
 	for i := range options {

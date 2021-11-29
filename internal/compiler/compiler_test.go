@@ -11,7 +11,7 @@ import (
 	qt "github.com/frankban/quicktest"
 
 	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/types"
+	"github.com/snyk/vervet/internal/linter"
 	"github.com/snyk/vervet/testdata"
 )
 
@@ -74,7 +74,7 @@ func TestCompilerSmoke(t *testing.T) {
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
 	c.Assert(err, qt.IsNil)
-	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (types.Linter, error) {
+	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (linter.Linter, error) {
 		return &mockLinter{}, nil
 	}))
 	c.Assert(err, qt.IsNil)
@@ -135,7 +135,7 @@ func (l *mockLinter) Run(ctx context.Context, paths ...string) error {
 	return l.err
 }
 
-func (l *mockLinter) WithOverride(ctx context.Context, cfg *config.Linter) (types.Linter, error) {
+func (l *mockLinter) WithOverride(ctx context.Context, cfg *config.Linter) (linter.Linter, error) {
 	nl := &mockLinter{
 		override: cfg,
 	}

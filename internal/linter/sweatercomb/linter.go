@@ -16,7 +16,7 @@ import (
 	"github.com/ghodss/yaml"
 
 	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/types"
+	"github.com/snyk/vervet/internal/linter"
 )
 
 // SweaterComb runs a Docker image containing Spectral and some built-in rules,
@@ -92,8 +92,8 @@ func New(ctx context.Context, cfg *config.SweaterCombLinter) (*SweaterComb, erro
 	}, nil
 }
 
-// WithOverride implements types.Linter.
-func (s *SweaterComb) WithOverride(ctx context.Context, override *config.Linter) (types.Linter, error) {
+// WithOverride implements linter.Linter.
+func (s *SweaterComb) WithOverride(ctx context.Context, override *config.Linter) (linter.Linter, error) {
 	if override.SweaterComb == nil {
 		return nil, fmt.Errorf("invalid linter override")
 	}
