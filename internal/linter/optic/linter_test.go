@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/internal/files"
 	"github.com/snyk/vervet/testdata"
 )
 
@@ -32,8 +33,8 @@ func TestNewLocalFile(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 	c.Assert(l.image, qt.Equals, "some-image")
-	c.Assert(l.fromSource, qt.DeepEquals, nilSource{})
-	c.Assert(l.toSource, qt.DeepEquals, workingCopySource{})
+	c.Assert(l.fromSource, qt.DeepEquals, files.NilSource{})
+	c.Assert(l.toSource, qt.DeepEquals, files.LocalFSSource{})
 
 	testProject := c.TempDir()
 	copyFile(c, filepath.Join(testProject, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
@@ -43,6 +44,12 @@ func TestNewLocalFile(t *testing.T) {
 	c.Assert(os.Chdir(testProject), qt.IsNil)
 	cwd, err := os.Getwd()
 	c.Assert(err, qt.IsNil)
+
+	// Capture stdout to a file
+	tempFile, err := os.Create(c.TempDir() + "/stdout")
+	c.Assert(err, qt.IsNil)
+	c.Patch(&os.Stdout, tempFile)
+	defer tempFile.Close()
 
 	runner := &mockRunner{}
 	l.runner = runner
@@ -58,16 +65,23 @@ func TestNewLocalFile(t *testing.T) {
 		"/to/spec.yaml",
 	}})
 
+	// Verify captured output was substituted. Mainly a convenience that makes
+	// output host-relevant and cmd-clickable if possible.
+	c.Assert(tempFile.Sync(), qt.IsNil)
+	capturedOutput, err := ioutil.ReadFile(tempFile.Name())
+	c.Assert(err, qt.IsNil)
+	c.Assert(string(capturedOutput), qt.Equals, cwd+"/here.yaml "+cwd+"/eternity.yaml\n")
+
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
 	l.runner = runner
 	err = l.Run(ctx, "spec.yaml")
-	c.Assert(err, qt.ErrorMatches, "bad wolf")
+	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
 }
 
 func TestNoSuchWorkingCopyFile(t *testing.T) {
 	c := qt.New(t)
-	path, err := workingCopySource{}.Fetch(uuid.New().String())
+	path, err := files.LocalFSSource{}.Fetch(uuid.New().String())
 	c.Assert(err, qt.IsNil)
 	c.Assert(path, qt.Equals, "")
 }
@@ -112,7 +126,7 @@ func TestNewGitFile(t *testing.T) {
 		_, ok := v.(*gitRepoSource)
 		return ok
 	})
-	c.Assert(l.toSource, qt.DeepEquals, workingCopySource{})
+	c.Assert(l.toSource, qt.DeepEquals, files.LocalFSSource{})
 
 	// Sanity check gitRepoSource
 	path, err := l.fromSource.Fetch("spec.yaml")
@@ -130,7 +144,29 @@ func TestNewGitFile(t *testing.T) {
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
 	l.runner = runner
 	err = l.Run(ctx, "spec.yaml")
-	c.Assert(err, qt.ErrorMatches, "bad wolf")
+	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
+}
+
+func TestMatchDisjointSources(t *testing.T) {
+	c := qt.New(t)
+	o := &Optic{
+		fromSource: mockSource([]string{"apple", "orange"}),
+		toSource:   mockSource([]string{"blue", "green"}),
+	}
+	result, err := o.Match(&config.ResourceSet{Path: "whatever"})
+	c.Assert(err, qt.IsNil)
+	c.Assert(result, qt.ContentEquals, []string{"apple", "blue", "green", "orange"})
+}
+
+func TestMatchIntersectSources(t *testing.T) {
+	c := qt.New(t)
+	o := &Optic{
+		fromSource: mockSource([]string{"apple", "orange"}),
+		toSource:   mockSource([]string{"orange", "green"}),
+	}
+	result, err := o.Match(&config.ResourceSet{Path: "whatever"})
+	c.Assert(err, qt.IsNil)
+	c.Assert(result, qt.ContentEquals, []string{"apple", "green", "orange"})
 }
 
 type mockRunner struct {
@@ -139,6 +175,7 @@ type mockRunner struct {
 }
 
 func (r *mockRunner) run(cmd *exec.Cmd) error {
+	fmt.Fprintln(cmd.Stdout, "/from/here.yaml /to/eternity.yaml")
 	r.runs = append(r.runs, cmd.Args)
 	return r.err
 }
@@ -170,3 +207,13 @@ func setupGitRepo(c *qt.C) (string, plumbing.Hash) {
 	copyFile(c, filepath.Join(testRepo, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-13/spec.yaml"))
 	return testRepo, commitHash
 }
+
+type mockSource []string
+
+func (m mockSource) Match(*config.ResourceSet) ([]string, error) {
+	return m, nil
+}
+
+func (mockSource) Fetch(path string) (string, error) { return path, nil }
+
+func (mockSource) Close() error { return nil }
