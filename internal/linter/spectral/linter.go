@@ -11,7 +11,8 @@ import (
 	"github.com/ghodss/yaml"
 
 	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/types"
+	"github.com/snyk/vervet/internal/files"
+	"github.com/snyk/vervet/internal/linter"
 )
 
 // Spectral runs spectral on collections of files with a set of rules.
@@ -74,8 +75,13 @@ func New(ctx context.Context, cfg *config.SpectralLinter) (*Spectral, error) {
 	}, nil
 }
 
-// WithOverride implements types.Linter.
-func (s *Spectral) WithOverride(ctx context.Context, override *config.Linter) (types.Linter, error) {
+// Match implements linter.Linter.
+func (s *Spectral) Match(rcConfig *config.ResourceSet) ([]string, error) {
+	return files.LocalFSSource{}.Match(rcConfig)
+}
+
+// WithOverride implements linter.Linter.
+func (s *Spectral) WithOverride(ctx context.Context, override *config.Linter) (linter.Linter, error) {
 	if override.Spectral == nil {
 		return nil, fmt.Errorf("invalid linter override")
 	}

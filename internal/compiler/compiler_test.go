@@ -11,7 +11,8 @@ import (
 	qt "github.com/frankban/quicktest"
 
 	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/types"
+	"github.com/snyk/vervet/internal/files"
+	"github.com/snyk/vervet/internal/linter"
 	"github.com/snyk/vervet/testdata"
 )
 
@@ -74,7 +75,7 @@ func TestCompilerSmoke(t *testing.T) {
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
 	c.Assert(err, qt.IsNil)
-	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (types.Linter, error) {
+	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (linter.Linter, error) {
 		return &mockLinter{}, nil
 	}))
 	c.Assert(err, qt.IsNil)
@@ -85,7 +86,7 @@ func TestCompilerSmoke(t *testing.T) {
 	v3Api := compiler.apis["v3-api"]
 	c.Assert(v3Api, qt.Not(qt.IsNil))
 	c.Assert(v3Api.resources, qt.HasLen, 1)
-	c.Assert(v3Api.resources[0].matchedFiles, qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
+	c.Assert(v3Api.resources[0].sourceFiles, qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
 	c.Assert(v3Api.overlayIncludes, qt.HasLen, 1)
 	c.Assert(v3Api.overlayIncludes[0].Paths, qt.HasLen, 2)
 	c.Assert(v3Api.overlayInlines[0].Servers[0].URL, qt.Contains, "https://example.com/api/v3", qt.Commentf("environment variable interpolation"))
@@ -130,12 +131,16 @@ type mockLinter struct {
 	err      error
 }
 
+func (l *mockLinter) Match(rcConfig *config.ResourceSet) ([]string, error) {
+	return files.LocalFSSource{}.Match(rcConfig)
+}
+
 func (l *mockLinter) Run(ctx context.Context, paths ...string) error {
 	l.runs = append(l.runs, paths)
 	return l.err
 }
 
-func (l *mockLinter) WithOverride(ctx context.Context, cfg *config.Linter) (types.Linter, error) {
+func (l *mockLinter) WithOverride(ctx context.Context, cfg *config.Linter) (linter.Linter, error) {
 	nl := &mockLinter{
 		override: cfg,
 	}
