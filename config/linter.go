@@ -93,6 +93,9 @@ type OpticCILinter struct {
 
 func (l Linters) init() error {
 	for name, linter := range l {
+		if linter == nil {
+			return fmt.Errorf("missing linter definition (linters.%s)", name)
+		}
 		linter.Name = name
 		if err := linter.validate(); err != nil {
 			return err

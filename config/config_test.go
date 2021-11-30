@@ -181,6 +181,47 @@ apis:
       - path: resources
         linter: foo`[1:],
 		err: `linter "foo" not found \(apis\.testapi\.resources\[0\]\.linter\)`,
+	}, {
+		conf: `
+version: "1"
+linters:
+  ci:
+    optic-ci: {}
+apis:
+  testapi:
+    resources:
+      - path: resources
+        linter: ci
+        linter-overrides:
+          foo:
+            2021-09-01:
+              optic-ci: {}
+`[1:],
+		err: `optic linter does not support overrides \(apis\.testapi\.resources\[0\]\.linter-overrides\.foo\.2021-09-01\)`,
+	}, {
+		conf: `
+version: "1"
+linters:
+  ci:
+    optic-ci: {}
+apis:
+  testapi:
+    resources:
+      - path: resources
+        linter: ci
+    output:
+      path: /somewhere/else
+      linter: ci
+`[1:],
+		err: `optic linter does not yet support compiled specs \(apis\.testapi\.output\.linter\)`,
+	}, {
+		conf: `
+linters:
+  ci:
+`[1:],
+		err: `missing linter definition \(linters\.ci\)`,
+	}, {
+		err: `no apis defined`,
 	}}
 	for i := range tests {
 		c.Logf("test#%d: %s", i, tests[i].conf)
