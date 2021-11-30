@@ -1,6 +1,6 @@
 package lib
 
 type ServerConfig struct {
-	Host string `json:"host"`
+	Host     string   `json:"host"`
 	Services []string `json:"services"`
 }
