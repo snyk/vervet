@@ -1,7 +1,6 @@
 {
   "services":
   [
-    "http://registry-web",
-    "http://audit-log"
+    "https://api.snyk.io/v3/openapi"
   ]
 }

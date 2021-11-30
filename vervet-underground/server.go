@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	gorillaMux "github.com/gorilla/mux"
@@ -42,6 +45,27 @@ func main() {
 		time.Sleep(1 * time.Second)
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
+		for _, service := range cfg.Services {
+			if !strings.Contains(service, "/openapi") {
+				service += "/openapi"
+			}
+			resp, err := http.Get(service)
+			if err != nil {
+
+			}
+			b, err := io.ReadAll(resp.Body)
+
+			var versionList []string
+			json.Unmarshal(b, &versionList)
+			for _, version := range versionList {
+				versionedEndpoint := fmt.Sprintf("%s/%s", service, version)
+				resp, err := http.Get(fmt.Sprintf(versionedEndpoint))
+				if err != nil {
+
+				}
+				fmt.Println(fmt.Sprintf("%s => %d", versionedEndpoint, resp.StatusCode))
+			}
+		}
 		_, err := w.Write([]byte(fmt.Sprintf(`{"msg": "success", "services": %s}`, cfg.Services)))
 		if err != nil {
 			http.Error(w, "Failure to write response", http.StatusInternalServerError)
