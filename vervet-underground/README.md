@@ -34,6 +34,7 @@ Aggregating APIs across services brings a unique and different set of challenges
 
 Vervet Underground (VU) is a system that solves the above system-level API integration requirements.
 
+
 ## Minimum Viable
 
 VU aggregates OpenAPI specs from multiple services and serves them up in a single place for:
