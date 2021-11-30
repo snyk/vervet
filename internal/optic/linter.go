@@ -43,6 +43,7 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 	image, from, to := cfg.Image, cfg.Original, cfg.Proposed
 	var fromSource, toSource fileSource
 	var err error
+
 	if from == "" {
 		fromSource = nilSource{}
 	} else {
@@ -51,6 +52,7 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 			return nil, err
 		}
 	}
+
 	if to == "" {
 		toSource = workingCopySource{}
 	} else {
@@ -59,6 +61,7 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 			return nil, err
 		}
 	}
+
 	go func() {
 		<-ctx.Done()
 		fromSource.Close()
@@ -97,29 +100,40 @@ func (o *Optic) runCompare(ctx context.Context, path string) error {
 	if err != nil {
 		return err
 	}
-	var args []string
+	var compareArgs, volumeArgs []string
+
 	fromFile, err := o.fromSource.Fetch(path)
 	if err != nil {
 		return err
 	}
 	if fromFile != "" {
-		args = append(args, "--from", fromFile)
+		compareArgs = append(compareArgs, "--from", "/from/"+path)
+		volumeArgs = append(volumeArgs,
+			"-v", cwd+":/from",
+			"-v", fromFile+":/from/"+path,
+		)
 	}
+
 	toFile, err := o.toSource.Fetch(path)
 	if err != nil {
 		return err
 	}
 	if toFile != "" {
-		args = append(args, "--to", toFile)
+		compareArgs = append(compareArgs, "--to", "/to/"+path)
+		volumeArgs = append(volumeArgs,
+			"-v", cwd+":/to",
+			"-v", toFile+":/to/"+path,
+		)
 	}
+
 	// TODO: provide context JSON object in --context
 	// TODO: link to command line arguments for optic-ci when available.
-	cmdline := append([]string{
-		"run", "--rm",
-		"-v", cwd + ":/target",
-		o.image,
-		"compare",
-	}, args...)
+	cmdline := append([]string{"run", "--rm"}, volumeArgs...)
+	cmdline = append(cmdline, o.image, "compare")
+	cmdline = append(cmdline, compareArgs...)
 	cmd := exec.CommandContext(ctx, "docker", cmdline...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 	return o.runner.run(cmd)
 }
