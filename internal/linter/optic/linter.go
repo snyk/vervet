@@ -4,17 +4,22 @@ package optic
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"time"
 
+	"github.com/ghodss/yaml"
 	"go.uber.org/multierr"
 
+	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/config"
 	"github.com/snyk/vervet/internal/files"
 	"github.com/snyk/vervet/internal/linter"
@@ -26,6 +31,7 @@ type Optic struct {
 	fromSource files.FileSource
 	toSource   files.FileSource
 	runner     commandRunner
+	timeNow    func() time.Time
 }
 
 type commandRunner interface {
@@ -81,6 +87,7 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 		fromSource: fromSource,
 		toSource:   toSource,
 		runner:     &execCommandRunner{},
+		timeNow:    time.Now,
 	}, nil
 }
 
@@ -141,6 +148,20 @@ func (o *Optic) runCompare(ctx context.Context, path string) error {
 		return err
 	}
 	var compareArgs, volumeArgs []string
+
+	// TODO: This assumes the file being linted is a resource version spec
+	// file, and not a compiled one. We don't yet have rules that support
+	// diffing _compiled_ specs; that will require a different context and rule
+	// set for Vervet Underground integration.
+	opticCtx, err := o.contextFromPath(path)
+	if err != nil {
+		return fmt.Errorf("failed to get context from path %q: %w", path, err)
+	}
+	opticCtxJson, err := json.Marshal(&opticCtx)
+	if err != nil {
+		return err
+	}
+	compareArgs = append(compareArgs, "--context", string(opticCtxJson))
 
 	fromFile, err := o.fromSource.Fetch(path)
 	if err != nil {
@@ -210,6 +231,59 @@ func (o *Optic) runCompare(ctx context.Context, path string) error {
 		return fmt.Errorf("lint %q failed: %w", path, err)
 	}
 	return nil
+}
+
+func (o *Optic) contextFromPath(path string) (*Context, error) {
+	dateDir := filepath.Dir(path)
+	resourceDir := filepath.Dir(dateDir)
+	date, resource := filepath.Base(dateDir), filepath.Base(resourceDir)
+	if _, err := time.Parse("2006-01-02", date); err != nil {
+		return nil, err
+	}
+	stability, err := o.loadStability(path)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := vervet.ParseStability(stability); err != nil {
+		return nil, err
+	}
+	return &Context{
+		ChangeDate:     o.timeNow().UTC().Format("2006-01-02"),
+		ChangeResource: resource,
+		ChangeVersion: Version{
+			Date:      date,
+			Stability: stability,
+		},
+	}, nil
+}
+
+func (o *Optic) loadStability(path string) (string, error) {
+	var (
+		doc struct {
+			Stability string `json:"x-snyk-api-stability"`
+		}
+		contentsFile string
+		err          error
+	)
+	contentsFile, err = o.fromSource.Fetch(path)
+	if err != nil {
+		return "", err
+	}
+	if contentsFile == "" {
+		contentsFile, err = o.toSource.Fetch(path)
+		if err != nil {
+			return "", err
+		}
+	}
+	contents, err := ioutil.ReadFile(contentsFile)
+	if err != nil {
+		return "", err
+	}
+	err = yaml.Unmarshal(contents, &doc)
+	if err != nil {
+		return "", err
+	}
+	return doc.Stability, nil
 }
 
 const cmdTimeout = time.Second * 30
