@@ -106,6 +106,8 @@ func ParseStability(s string) (Stability, error) {
 		return StabilityExperimental, nil
 	case "beta":
 		return StabilityBeta, nil
+	case "ga":
+		return StabilityGA, nil
 	default:
 		return stabilityUndefined, fmt.Errorf("invalid stability %q", s)
 	}

@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	qt "github.com/frankban/quicktest"
 	"github.com/go-git/go-git/v5"
@@ -36,14 +37,20 @@ func TestNewLocalFile(t *testing.T) {
 	c.Assert(l.fromSource, qt.DeepEquals, files.NilSource{})
 	c.Assert(l.toSource, qt.DeepEquals, files.LocalFSSource{})
 
+	// Set up a local example project
 	testProject := c.TempDir()
-	copyFile(c, filepath.Join(testProject, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
+	versionDir := testProject + "/hello/2021-06-01"
+	c.Assert(os.MkdirAll(versionDir, 0777), qt.IsNil)
+	copyFile(c, filepath.Join(versionDir, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
 	origWd, err := os.Getwd()
 	c.Assert(err, qt.IsNil)
 	c.Cleanup(func() { c.Assert(os.Chdir(origWd), qt.IsNil) })
 	c.Assert(os.Chdir(testProject), qt.IsNil)
 	cwd, err := os.Getwd()
 	c.Assert(err, qt.IsNil)
+
+	// Mock time for repeatable tests
+	l.timeNow = func() time.Time { return time.Date(2021, time.October, 30, 1, 2, 3, 0, time.UTC) }
 
 	// Capture stdout to a file
 	tempFile, err := os.Create(c.TempDir() + "/stdout")
@@ -53,16 +60,18 @@ func TestNewLocalFile(t *testing.T) {
 
 	runner := &mockRunner{}
 	l.runner = runner
-	err = l.Run(ctx, "spec.yaml")
+	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs, qt.DeepEquals, [][]string{{
 		"docker", "run", "--rm",
 		"-v", cwd + ":/to",
-		"-v", cwd + "/spec.yaml:/to/spec.yaml",
+		"-v", cwd + "/hello/2021-06-01/spec.yaml:/to/hello/2021-06-01/spec.yaml",
 		"some-image",
 		"compare",
+		"--context",
+		`{"changeDate":"2021-10-30","changeResource":"hello","changeVersion":{"date":"2021-06-01","stability":"experimental"}}`,
 		"--to",
-		"/to/spec.yaml",
+		"/to/hello/2021-06-01/spec.yaml",
 	}})
 
 	// Verify captured output was substituted. Mainly a convenience that makes
@@ -75,7 +84,7 @@ func TestNewLocalFile(t *testing.T) {
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
 	l.runner = runner
-	err = l.Run(ctx, "spec.yaml")
+	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
 }
 
@@ -129,13 +138,13 @@ func TestNewGitFile(t *testing.T) {
 	c.Assert(l.toSource, qt.DeepEquals, files.LocalFSSource{})
 
 	// Sanity check gitRepoSource
-	path, err := l.fromSource.Fetch("spec.yaml")
+	path, err := l.fromSource.Fetch("hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(path, qt.Not(qt.Equals), "")
 
 	runner := &mockRunner{}
 	l.runner = runner
-	err = l.Run(ctx, "spec.yaml")
+	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs[0], qt.Contains, "--from")
 	c.Assert(runner.runs[0], qt.Contains, "--to")
@@ -143,7 +152,7 @@ func TestNewGitFile(t *testing.T) {
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
 	l.runner = runner
-	err = l.Run(ctx, "spec.yaml")
+	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
 }
 
@@ -191,10 +200,12 @@ func setupGitRepo(c *qt.C) (string, plumbing.Hash) {
 	testRepo := c.TempDir()
 	repo, err := git.PlainInit(testRepo, false)
 	c.Assert(err, qt.IsNil)
-	copyFile(c, filepath.Join(testRepo, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
+	versionDir := testRepo + "/hello/2021-06-01"
+	c.Assert(os.MkdirAll(versionDir, 0777), qt.IsNil)
+	copyFile(c, filepath.Join(versionDir, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
 	worktree, err := repo.Worktree()
 	c.Assert(err, qt.IsNil)
-	_, err = worktree.Add("spec.yaml")
+	_, err = worktree.Add("hello")
 	c.Assert(err, qt.IsNil)
 	commitHash, err := worktree.Commit("test: initial commit", &git.CommitOptions{
 		All: true,
@@ -204,7 +215,7 @@ func setupGitRepo(c *qt.C) (string, plumbing.Hash) {
 		},
 	})
 	c.Assert(err, qt.IsNil)
-	copyFile(c, filepath.Join(testRepo, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-13/spec.yaml"))
+	copyFile(c, filepath.Join(versionDir, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-13/spec.yaml"))
 	return testRepo, commitHash
 }
 
