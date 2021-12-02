@@ -45,6 +45,18 @@ func TestParseVersion(t *testing.T) {
 	}
 }
 
+func TestVersionStringPanics(t *testing.T) {
+	c := qt.New(t)
+	var v Version
+	c.Assert(func() {
+		c.Log(v.String())
+	}, qt.PanicMatches, "invalid stability.*")
+	var s Stability
+	c.Assert(func() {
+		c.Log(s.String())
+	}, qt.PanicMatches, "invalid stability.*")
+}
+
 func TestVersionOrder(t *testing.T) {
 	c := qt.New(t)
 	tests := []struct {

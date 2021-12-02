@@ -21,7 +21,7 @@ func (v *Version) DateString() string {
 }
 
 // String returns the string representation of the version in
-// YYYY-mm-dd~Stability form.
+// YYYY-mm-dd~Stability form. This method will panic if the value is empty.
 func (v *Version) String() string {
 	d := v.Date.Format("2006-01-02")
 	if v.Stability != StabilityGA {
@@ -51,6 +51,8 @@ const (
 	StabilityGA Stability = iota
 )
 
+// String returns a string representation of the stability level. This method
+// will panic if the value is empty.
 func (s Stability) String() string {
 	switch s {
 	case StabilityWIP:
@@ -62,7 +64,7 @@ func (s Stability) String() string {
 	case StabilityGA:
 		return "ga"
 	}
-	panic(fmt.Sprintf("invalid stability value: %d", int(s)))
+	panic(fmt.Sprintf("invalid stability (%d)", int(s)))
 }
 
 // ParseVersion parses a version string into a Version type, returning an error
