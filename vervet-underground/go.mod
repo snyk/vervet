@@ -26,8 +26,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.6.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.11.0 // indirect
 	github.com/aws/smithy-go v1.9.0 // indirect
+	github.com/frankban/quicktest v1.14.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
 	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e // indirect
 	golang.org/x/text v0.3.6 // indirect

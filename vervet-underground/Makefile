@@ -18,7 +18,7 @@ lint-docker:
 tidy:
 	$(GOMOD) tidy -v
 test:
-	go test ./... -count=1 -ginkgo.failFast
+	go test ./... -count=1 -race
 
 build:
 	go build server.go
