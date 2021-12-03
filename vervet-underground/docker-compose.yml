@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  localstack:
+    image: localstack/localstack:0.13.0
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+    environment:
+      - SERVICES=${SERVICES:-"s3"}
+      - DEBUG=${DEBUG- }
+      - DATA_DIR=${DATA_DIR- }
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
+      - HOST_TMP_FOLDER=${TMPDIR:-/tmp/}localstack
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  redis:
+    image: redis:6.2-alpine
+    ports:
+      - "6379:6379"
+
+  vervet-underground:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: vervet-underground
+    ports:
+      - "8080:8080"

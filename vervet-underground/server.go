@@ -8,13 +8,13 @@ import (
 	"os"
 	"os/signal"
 	"time"
-	"vervet-underground/config"
 
 	gorillaMux "github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"vervet-underground/config"
 	"vervet-underground/lib"
 )
 
@@ -26,7 +26,6 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
-	ctx := context.Background()
 	router := gorillaMux.NewRouter()
 	var cfg *lib.ServerConfig
 	var err error
