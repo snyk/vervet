@@ -21,6 +21,11 @@ const (
 
 	// ExtSnykApiVersion is used to annotate a path in a compiled OpenAPI spec with its resolved release version.
 	ExtSnykApiVersion = "x-snyk-api-version"
+
+	// ExtSnykApiReleases is used to annotate a path in a compiled OpenAPI spec
+	// with all the release versions containing a change in the path info. This
+	// is useful for navigating changes in a particular path across versions.
+	ExtSnykApiReleases = "x-snyk-api-releases"
 )
 
 // Resource defines a specific version of a resource, corresponding to a
@@ -139,8 +144,10 @@ func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 }
 
 func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) {
-	var eps ResourceVersions
+	var resourceVersions ResourceVersions
 	var err error
+	pathReleases := map[string]VersionSlice{}
+
 	for i := range specYamls {
 		specYamls[i], err = filepath.Abs(specYamls[i])
 		if err != nil {
@@ -148,22 +155,38 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 		}
 		versionDir := filepath.Dir(specYamls[i])
 		versionBase := filepath.Base(versionDir)
-		ep, err := loadResource(specYamls[i], versionBase)
+		rc, err := loadResource(specYamls[i], versionBase)
 		if err != nil {
 			return nil, err
 		}
-		if ep == nil {
+		if rc == nil {
 			continue
 		}
-		ep.sourcePrefix = specYamls[i]
-		err = ep.Validate(context.TODO())
+		rc.sourcePrefix = specYamls[i]
+		err = rc.Validate(context.TODO())
 		if err != nil {
 			return nil, err
 		}
-		eps.versions = append(eps.versions, ep)
+		resourceVersions.versions = append(resourceVersions.versions, rc)
+		// Map of release versions per path
+		for path := range rc.Paths {
+			pathReleases[path] = append(pathReleases[path], rc.Version)
+		}
 	}
-	sort.Sort(resourceVersionSlice(eps.versions))
-	return &eps, nil
+	// Sort release versions per path
+	for _, releases := range pathReleases {
+		sort.Sort(releases)
+	}
+	// Sort the resources themselves by version
+	sort.Sort(resourceVersionSlice(resourceVersions.versions))
+	// Annotate each path in each resource version with the other change
+	// versions affecting the path. This supports navigation across versions.
+	for _, rc := range resourceVersions.versions {
+		for path, pathInfo := range rc.Paths {
+			pathInfo.ExtensionProps.Extensions[ExtSnykApiReleases] = pathReleases[path].Strings()
+		}
+	}
+	return &resourceVersions, nil
 }
 
 // ExtensionString returns the string value of an OpenAPI extension.
