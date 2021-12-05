@@ -322,6 +322,8 @@ paths:
     - 2021-06-13~beta
     x-snyk-api-resource: hello-world
     x-snyk-api-version: 2021-06-07~experimental
+    x-snyk-deprecated-by: 2021-06-13~beta
+    x-snyk-sunset-eligible: "2021-07-14"
   /openapi:
     get:
       description: List available versions of OpenAPI specification

@@ -30,6 +30,15 @@ func (v *Version) String() string {
 	return d
 }
 
+// AddDays returns the version corresponding to adding the given number of days
+// to the version date.
+func (v *Version) AddDays(days int) Version {
+	return Version{
+		Date:      v.Date.AddDate(0, 0, days),
+		Stability: v.Stability,
+	}
+}
+
 // Stability defines the stability level of the version.
 type Stability int
 
@@ -146,6 +155,48 @@ func (v *Version) Compare(vr *Version) int {
 	return stabilityCmp
 }
 
+// DeprecatedBy returns true if the given version deprecates the caller target
+// version.
+func (v *Version) DeprecatedBy(vr *Version) bool {
+	dateCmp, stabilityCmp := v.compareDateStability(vr)
+	// A version is deprecated by a newer version of equal or greater stability.
+	return dateCmp == -1 && stabilityCmp <= 0
+}
+
+const (
+	// SunsetWIP is the duration past deprecation after which a work-in-progress version may be sunset.
+	SunsetWIP = 0
+
+	// SunsetExperimental is the duration past deprecation after which an experimental version may be sunset.
+	SunsetExperimental = 31 * 24 * time.Hour
+
+	// SunsetBeta is the duration past deprecation after which a beta version may be sunset.
+	SunsetBeta = 91 * 24 * time.Hour
+
+	// SunsetGA is the duration past deprecation after which a GA version may be sunset.
+	SunsetGA = 181 * 24 * time.Hour
+)
+
+// Sunset returns, given a potentially deprecating version, the eligible sunset
+// date and whether the caller target version would actually be deprecated and
+// sunset by the given version.
+func (v *Version) Sunset(vr *Version) (time.Time, bool) {
+	if !v.DeprecatedBy(vr) {
+		return time.Time{}, false
+	}
+	switch v.Stability {
+	case StabilityWIP:
+		return vr.Date.Add(SunsetWIP), true
+	case StabilityExperimental:
+		return vr.Date.Add(SunsetExperimental), true
+	case StabilityBeta:
+		return vr.Date.Add(SunsetBeta), true
+	case StabilityGA:
+		return vr.Date.Add(SunsetGA), true
+	}
+	return time.Time{}, false
+}
+
 // compareDateStability returns the comparison of both the date and stability
 // between two versions. Used internally where these need to be evaluated
 // independently, such as when searching for the best matching version.
@@ -182,10 +233,24 @@ type VersionSlice []Version
 // This method requires that the VersionSlice has already been sorted with
 // sort.Sort, otherwise behavior is undefined.
 func (vs VersionSlice) Resolve(q Version) (*Version, error) {
+	i, err := vs.ResolveIndex(q)
+	if err != nil {
+		return nil, err
+	}
+	v := vs[i]
+	return &v, nil
+}
+
+// ResolveIndex returns the slice index of the most recent Version in the slice
+// with equal or greater stability.
+//
+// This method requires that the VersionSlice has already been sorted with
+// sort.Sort, otherwise behavior is undefined.
+func (vs VersionSlice) ResolveIndex(q Version) (int, error) {
 	lower, curr, upper := 0, len(vs)/2, len(vs)
 	if upper == 0 {
 		// Nothing matches an empty slice.
-		return nil, ErrNoMatchingVersion
+		return -1, ErrNoMatchingVersion
 	}
 	for curr < upper && lower != upper-1 {
 		dateCmp, stabilityCmp := vs[curr].compareDateStability(&q)
@@ -207,10 +272,31 @@ func (vs VersionSlice) Resolve(q Version) (*Version, error) {
 	// Did we find a match?
 	dateCmp, stabilityCmp := vs[lower].compareDateStability(&q)
 	if dateCmp <= 0 && stabilityCmp >= 0 {
-		v := &vs[lower]
-		return v, nil
+		return lower, nil
 	}
-	return nil, ErrNoMatchingVersion
+	return -1, ErrNoMatchingVersion
+}
+
+// Deprecates returns the version that deprecates the given version in the
+// slice.
+func (vs VersionSlice) Deprecates(q Version) (*Version, bool) {
+	match, err := vs.ResolveIndex(q)
+	if err == ErrNoMatchingVersion {
+		return nil, false
+	} else if err != nil {
+		panic(err)
+	}
+	for i := match + 1; i < len(vs); i++ {
+		dateCmp, stabilityCmp := vs[match].compareDateStability(&vs[i])
+		if stabilityCmp > 0 {
+			continue
+		}
+		if dateCmp < 0 {
+			v := vs[i]
+			return &v, true
+		}
+	}
+	return nil, false
 }
 
 // Len implements sort.Interface.
