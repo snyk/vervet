@@ -21,6 +21,22 @@ const (
 
 	// ExtSnykApiVersion is used to annotate a path in a compiled OpenAPI spec with its resolved release version.
 	ExtSnykApiVersion = "x-snyk-api-version"
+
+	// ExtSnykApiReleases is used to annotate a path in a compiled OpenAPI spec
+	// with all the release versions containing a change in the path info. This
+	// is useful for navigating changes in a particular path across versions.
+	ExtSnykApiReleases = "x-snyk-api-releases"
+
+	// ExtSnykDeprecatedBy is used to annotate a path in a resource version
+	// spec with the subsequent version that deprecates it. This may be used
+	// by linters, service middleware and API documentation to indicate which
+	// version deprecates a given version.
+	ExtSnykDeprecatedBy = "x-snyk-deprecated-by"
+
+	// ExtSnykSunsetEligible is used to annotate a path in a resource version
+	// spec which is deprecated, with the sunset eligible date: the date after
+	// which the resource version may be removed and no longer available.
+	ExtSnykSunsetEligible = "x-snyk-sunset-eligible"
 )
 
 // Resource defines a specific version of a resource, corresponding to a
@@ -38,10 +54,12 @@ type extensionNotFoundError struct {
 	extension string
 }
 
+// Error implements error.
 func (e *extensionNotFoundError) Error() string {
 	return fmt.Sprintf("extension \"%s\" not found", e.extension)
 }
 
+// Is returns whether an error matches this error instance.
 func (e *extensionNotFoundError) Is(err error) bool {
 	_, ok := err.(*extensionNotFoundError)
 	return ok
@@ -67,6 +85,7 @@ type ResourceVersions struct {
 	versions resourceVersionSlice
 }
 
+// Name returns the resource name for a collection of resource versions.
 func (e *ResourceVersions) Name() string {
 	for i := range e.versions {
 		return e.versions[i].Name
@@ -110,10 +129,15 @@ func (e *ResourceVersions) At(vs string) (*Resource, error) {
 
 type resourceVersionSlice []*Resource
 
+// Less implements sort.Interface.
 func (e resourceVersionSlice) Less(i, j int) bool {
 	return e[i].Version.Compare(&e[j].Version) < 0
 }
-func (e resourceVersionSlice) Len() int      { return len(e) }
+
+// Len implements sort.Interface.
+func (e resourceVersionSlice) Len() int { return len(e) }
+
+// Swap implements sort.Interface.
 func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 
 // LoadResourceVersions returns a ResourceVersions slice parsed from a
@@ -138,9 +162,13 @@ func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 	return LoadResourceVersionsFileset(specYamls)
 }
 
+// LoadResourceVersionFileset returns a ResourceVersions slice parsed from the
+// directory structure described above for LoadResourceVersions.
 func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) {
-	var eps ResourceVersions
+	var resourceVersions ResourceVersions
 	var err error
+	pathReleases := map[string]VersionSlice{}
+
 	for i := range specYamls {
 		specYamls[i], err = filepath.Abs(specYamls[i])
 		if err != nil {
@@ -148,22 +176,47 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 		}
 		versionDir := filepath.Dir(specYamls[i])
 		versionBase := filepath.Base(versionDir)
-		ep, err := loadResource(specYamls[i], versionBase)
+		rc, err := loadResource(specYamls[i], versionBase)
 		if err != nil {
 			return nil, err
 		}
-		if ep == nil {
+		if rc == nil {
 			continue
 		}
-		ep.sourcePrefix = specYamls[i]
-		err = ep.Validate(context.TODO())
+		rc.sourcePrefix = specYamls[i]
+		err = rc.Validate(context.TODO())
 		if err != nil {
 			return nil, err
 		}
-		eps.versions = append(eps.versions, ep)
+		resourceVersions.versions = append(resourceVersions.versions, rc)
+		// Map of release versions per path
+		for path := range rc.Paths {
+			pathReleases[path] = append(pathReleases[path], rc.Version)
+		}
 	}
-	sort.Sort(resourceVersionSlice(eps.versions))
-	return &eps, nil
+	// Sort release versions per path
+	for _, releases := range pathReleases {
+		sort.Sort(releases)
+	}
+	// Sort the resources themselves by version
+	sort.Sort(resourceVersionSlice(resourceVersions.versions))
+	// Annotate each path in each resource version with the other change
+	// versions affecting the path. This supports navigation across versions.
+	for _, rc := range resourceVersions.versions {
+		for path, pathInfo := range rc.Paths {
+			// Annotate path with other release versions available for this path
+			releases := pathReleases[path]
+			pathInfo.ExtensionProps.Extensions[ExtSnykApiReleases] = releases.Strings()
+			// Annotate path with deprecated-by and sunset information
+			if deprecatedBy, ok := releases.Deprecates(rc.Version); ok {
+				pathInfo.ExtensionProps.Extensions[ExtSnykDeprecatedBy] = deprecatedBy.String()
+				if sunset, ok := rc.Version.Sunset(deprecatedBy); ok {
+					pathInfo.ExtensionProps.Extensions[ExtSnykSunsetEligible] = sunset.Format("2006-01-02")
+				}
+			}
+		}
+	}
+	return &resourceVersions, nil
 }
 
 // ExtensionString returns the string value of an OpenAPI extension.

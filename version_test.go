@@ -3,6 +3,7 @@ package vervet_test
 import (
 	"sort"
 	"testing"
+	"time"
 
 	qt "github.com/frankban/quicktest"
 
@@ -236,4 +237,86 @@ func TestVersionSliceResolveEmpty(t *testing.T) {
 	c := qt.New(t)
 	_, err := VersionSlice{}.Resolve(MustParseVersion("2021-10-31"))
 	c.Assert(err, qt.ErrorMatches, "no matching version")
+}
+
+func TestDeprecatedBy(t *testing.T) {
+	c := qt.New(t)
+	tests := []struct {
+		base, deprecatedBy string
+		result             bool
+	}{{
+		"2021-06-01", "2021-02-01", false,
+	}, {
+		"2021-06-01", "2021-02-01~experimental", false,
+	}, {
+		"2021-06-01", "2021-02-01~beta", false,
+	}, {
+		"2021-06-01", "2022-02-01~beta", false,
+	}, {
+		"2021-06-01", "2022-02-01~experimental", false,
+	}, {
+		"2021-06-01", "2021-06-01", false,
+	}, {
+		"2021-06-01", "2021-06-02", true,
+	}, {
+		"2021-06-01~experimental", "2021-06-02~beta", true,
+	}, {
+		"2021-06-01~beta", "2021-06-02", true,
+	}, {
+		"2021-06-01", "2021-06-01", false,
+	}}
+	for i, test := range tests {
+		c.Logf("test#%d: %#v", i, test)
+		base, deprecatedBy := MustParseVersion(test.base), MustParseVersion(test.deprecatedBy)
+		c.Assert(base.DeprecatedBy(&deprecatedBy), qt.Equals, test.result)
+	}
+}
+
+func TestDeprecates(t *testing.T) {
+	c := qt.New(t)
+	versions := VersionSlice{
+		MustParseVersion("2021-06-01~experimental"),
+		MustParseVersion("2021-06-07~beta"),
+		MustParseVersion("2021-07-01"),
+		MustParseVersion("2021-08-12~experimental"),
+		MustParseVersion("2021-09-16~beta"),
+		MustParseVersion("2021-10-31"),
+	}
+	sort.Sort(versions)
+	tests := []struct {
+		name         string
+		target       Version
+		deprecatedBy Version
+		isDeprecated bool
+		sunset       time.Time
+	}{{
+		name:         "beta deprecates experimental",
+		target:       MustParseVersion("2021-06-01~experimental"),
+		deprecatedBy: MustParseVersion("2021-06-07~beta"),
+		isDeprecated: true,
+		sunset:       time.Date(2021, time.July, 8, 0, 0, 0, 0, time.UTC),
+	}, {
+		name:         "ga deprecates beta",
+		target:       MustParseVersion("2021-06-07~beta"),
+		deprecatedBy: MustParseVersion("2021-07-01"),
+		isDeprecated: true,
+		sunset:       time.Date(2021, time.September, 30, 0, 0, 0, 0, time.UTC),
+	}, {
+		name:         "ga deprecates ga",
+		target:       MustParseVersion("2021-07-01"),
+		deprecatedBy: MustParseVersion("2021-10-31"),
+		isDeprecated: true,
+		sunset:       time.Date(2022, time.April, 30, 0, 0, 0, 0, time.UTC),
+	}}
+	for i, test := range tests {
+		c.Logf("test#%d: %s", i, test.name)
+		deprecates, ok := versions.Deprecates(test.target)
+		c.Assert(ok, qt.Equals, test.isDeprecated)
+		if test.isDeprecated {
+			c.Assert(&test.deprecatedBy, qt.DeepEquals, deprecates)
+			sunset, ok := test.target.Sunset(deprecates)
+			c.Assert(ok, qt.IsTrue)
+			c.Assert(test.sunset, qt.Equals, sunset)
+		}
+	}
 }
