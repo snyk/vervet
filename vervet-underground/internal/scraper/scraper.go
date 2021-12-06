@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -101,24 +100,19 @@ func Clock(c func() time.Time) Option {
 // Run executes the OpenAPI version scraping on all configured services.
 func (s *Scraper) Run(ctx context.Context) error {
 	scrapeTime := s.timeNow().UTC()
-	var wg sync.WaitGroup
-	errCh := make(chan error)
+	errCh := make(chan error, len(s.services))
 	for i := range s.services {
 		svc := s.services[i]
-		wg.Add(1)
 		go func() {
-			defer wg.Done()
 			errCh <- s.scrape(ctx, scrapeTime, svc)
 		}()
 	}
-	go func() {
-		wg.Wait()
-		close(errCh)
-	}()
 	var errs error
-	for err := range errCh {
+	for _ = range s.services {
+		err := <-errCh
 		errs = multierr.Append(errs, err)
 	}
+	close(errCh)
 	return errs
 }
 
