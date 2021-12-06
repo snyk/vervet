@@ -105,17 +105,24 @@ func (a APIs) init(p *Project) error {
 				for version, linter := range versionMap {
 					err := linter.validate()
 					if err != nil {
-						return fmt.Errorf("%w: (apis.%s.resources[%d].linter-overrides.%s.%s)",
+						return fmt.Errorf("%w (apis.%s.resources[%d].linter-overrides.%s.%s)",
 							err, api.Name, rcIndex, rcName, version)
+					}
+					if linter.OpticCI != nil {
+						return fmt.Errorf("optic linter does not support overrides (apis.%s.resources[%d].linter-overrides.%s.%s)",
+							api.Name, rcIndex, rcName, version)
 					}
 				}
 			}
 		}
 		if api.Output != nil && api.Output.Linter != "" {
 			if api.Output.Linter != "" {
-				if _, ok := p.Linters[api.Output.Linter]; !ok {
+				if linter, ok := p.Linters[api.Output.Linter]; !ok {
 					return fmt.Errorf("linter %q not found (apis.%s.output.linter)",
 						api.Output.Linter, api.Name)
+				} else if linter.OpticCI != nil {
+					return fmt.Errorf("optic linter does not yet support compiled specs (apis.%s.output.linter)",
+						api.Name)
 				}
 			}
 		}
