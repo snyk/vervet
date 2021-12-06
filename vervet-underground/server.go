@@ -9,25 +9,23 @@ import (
 	"os/signal"
 	"time"
 
-	gorillaMux "github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"vervet-underground/config"
-	"vervet-underground/lib"
 )
 
 func main() {
-
 	var wait time.Duration
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.Parse()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
-	router := gorillaMux.NewRouter()
-	var cfg *lib.ServerConfig
+	router := mux.NewRouter()
+	var cfg *config.ServerConfig
 	var err error
 	if cfg, err = config.Load("config.default.json"); err != nil {
 		logError(err)

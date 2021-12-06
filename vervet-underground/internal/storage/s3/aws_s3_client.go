@@ -1,4 +1,6 @@
-package storage
+// Package s3 provides an implementation of Vervet Underground storage backed
+// by Amazon S3.
+package s3
 
 import (
 	"context"

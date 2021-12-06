@@ -1,15 +1,22 @@
+// Package config supports configuring the Vervet Underground service.
 package config
 
 import (
 	"encoding/json"
 	"os"
-
-	"vervet-underground/lib"
 )
 
-func Load(configPath string) (*lib.ServerConfig, error) {
+// ServerConfig defines the configuration options for the Vervet Underground service.
+type ServerConfig struct {
+	Host     string   `json:"host"`
+	Services []string `json:"services"`
+}
+
+// Load returns a ServerConfig instance loaded from the given path to a JSON
+// config file.
+func Load(configPath string) (*ServerConfig, error) {
 	file, err := os.Open(configPath)
-	var config lib.ServerConfig
+	var config ServerConfig
 	if err != nil {
 		return nil, err
 	}

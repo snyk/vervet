@@ -1,4 +1,4 @@
-package storage
+package s3
 
 import (
 	"github.com/onsi/ginkgo"
