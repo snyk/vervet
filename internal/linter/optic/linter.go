@@ -131,23 +131,38 @@ func (*Optic) WithOverride(ctx context.Context, override *config.Linter) (linter
 // output by Optic CI. Returns an error when lint fails configured rules.
 func (o *Optic) Run(ctx context.Context, paths ...string) error {
 	var errs error
+	var comparisons []comparison
+	var dockerArgs []string
 	for i := range paths {
-		err := o.runCompare(ctx, paths[i])
+		comparison, volumeArgs, err := o.newComparison(paths[i])
 		if err != nil {
 			errs = multierr.Append(errs, err)
+		} else {
+			comparisons = append(comparisons, comparison)
+			dockerArgs = append(dockerArgs, volumeArgs...)
 		}
 	}
+	err := o.bulkCompare(ctx, comparisons, dockerArgs)
+	errs = multierr.Append(errs, err)
 	return errs
 }
 
-var opticOutputRE = regexp.MustCompile(`/(from|to)`)
+type comparison struct {
+	From    string  `json:"from"`
+	To      string  `json:"to"`
+	Context Context `json:"context"`
+}
 
-func (o *Optic) runCompare(ctx context.Context, path string) error {
+type bulkCompareInput struct {
+	Comparisons []comparison `json:"comparisons"`
+}
+
+func (o *Optic) newComparison(path string) (comparison, []string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return err
+		return comparison{}, nil, err
 	}
-	var compareArgs, volumeArgs []string
+	var volumeArgs []string
 
 	// TODO: This assumes the file being linted is a resource version spec
 	// file, and not a compiled one. We don't yet have rules that support
@@ -155,20 +170,19 @@ func (o *Optic) runCompare(ctx context.Context, path string) error {
 	// set for Vervet Underground integration.
 	opticCtx, err := o.contextFromPath(path)
 	if err != nil {
-		return fmt.Errorf("failed to get context from path %q: %w", path, err)
+		return comparison{}, nil, fmt.Errorf("failed to get context from path %q: %w", path, err)
 	}
-	opticCtxJson, err := json.Marshal(&opticCtx)
-	if err != nil {
-		return err
+
+	cmp := comparison{
+		Context: *opticCtx,
 	}
-	compareArgs = append(compareArgs, "--context", string(opticCtxJson))
 
 	fromFile, err := o.fromSource.Fetch(path)
 	if err != nil {
-		return err
+		return comparison{}, nil, err
 	}
 	if fromFile != "" {
-		compareArgs = append(compareArgs, "--from", "/from/"+path)
+		cmp.From = "/from/" + path
 		volumeArgs = append(volumeArgs,
 			"-v", cwd+":/from",
 			"-v", fromFile+":/from/"+path,
@@ -177,21 +191,42 @@ func (o *Optic) runCompare(ctx context.Context, path string) error {
 
 	toFile, err := o.toSource.Fetch(path)
 	if err != nil {
-		return err
+		return comparison{}, nil, err
 	}
 	if toFile != "" {
-		compareArgs = append(compareArgs, "--to", "/to/"+path)
+		cmp.To = "/to/" + path
 		volumeArgs = append(volumeArgs,
 			"-v", cwd+":/to",
 			"-v", toFile+":/to/"+path,
 		)
 	}
 
-	// TODO: provide context JSON object in --context
+	return cmp, volumeArgs, nil
+}
+
+var opticFromOutputRE = regexp.MustCompile(`/from/`)
+var opticToOutputRE = regexp.MustCompile(`/to/`)
+
+func (o *Optic) bulkCompare(ctx context.Context, comparisons []comparison, dockerArgs []string) error {
+	input := &bulkCompareInput{
+		Comparisons: comparisons,
+	}
+	inputFile, err := ioutil.TempFile("", "*-input.json")
+	if err != nil {
+		return err
+	}
+	defer inputFile.Close()
+	err = json.NewEncoder(inputFile).Encode(&input)
+	if err != nil {
+		return err
+	}
+	if err := inputFile.Sync(); err != nil {
+		return err
+	}
+
 	// TODO: link to command line arguments for optic-ci when available.
-	cmdline := append([]string{"run", "--rm"}, volumeArgs...)
-	cmdline = append(cmdline, o.image, "compare")
-	cmdline = append(cmdline, compareArgs...)
+	cmdline := append([]string{"run", "--rm", "-v", inputFile.Name() + ":/input.json"}, dockerArgs...)
+	cmdline = append(cmdline, o.image, "bulk-compare", "--input", "/input.json")
 	log.Println(cmdline)
 	cmd := exec.CommandContext(ctx, "docker", cmdline...)
 
@@ -216,7 +251,10 @@ func (o *Optic) runCompare(ctx context.Context, path string) error {
 		defer pipeReader.Close()
 		sc := bufio.NewScanner(pipeReader)
 		for sc.Scan() {
-			fmt.Println(opticOutputRE.ReplaceAllLiteralString(sc.Text(), cwd))
+			line := sc.Text()
+			line = opticFromOutputRE.ReplaceAllString(line, "("+o.fromSource.Name()+"):")
+			line = opticToOutputRE.ReplaceAllString(line, "("+o.toSource.Name()+"):")
+			fmt.Println(line)
 		}
 		if err := sc.Err(); err != nil {
 			fmt.Fprintf(os.Stderr, "error reading stdout: %v", err)
@@ -228,7 +266,7 @@ func (o *Optic) runCompare(ctx context.Context, path string) error {
 	cmd.Stderr = os.Stderr
 	err = o.runner.run(cmd)
 	if err != nil {
-		return fmt.Errorf("lint %q failed: %w", path, err)
+		return fmt.Errorf("lint failed: %w", err)
 	}
 	return nil
 }
