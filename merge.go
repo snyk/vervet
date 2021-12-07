@@ -44,7 +44,38 @@ func mergeTags(dst, src *openapi3.T, replace bool) {
 	}
 }
 
+func initDestinationComponents(dst, src *openapi3.T) {
+	if src.Components.Schemas != nil && dst.Components.Schemas == nil {
+		dst.Components.Schemas = make(map[string]*openapi3.SchemaRef)
+	}
+	if src.Components.Parameters != nil && dst.Components.Parameters == nil {
+		dst.Components.Parameters = make(map[string]*openapi3.ParameterRef)
+	}
+	if src.Components.Headers != nil && dst.Components.Headers == nil {
+		dst.Components.Headers = make(map[string]*openapi3.HeaderRef)
+	}
+	if src.Components.RequestBodies != nil && dst.Components.RequestBodies == nil {
+		dst.Components.RequestBodies = make(map[string]*openapi3.RequestBodyRef)
+	}
+	if src.Components.Responses != nil && dst.Components.Responses == nil {
+		dst.Components.Responses = make(map[string]*openapi3.ResponseRef)
+	}
+	if src.Components.SecuritySchemes != nil && dst.Components.SecuritySchemes == nil {
+		dst.Components.SecuritySchemes = make(map[string]*openapi3.SecuritySchemeRef)
+	}
+	if src.Components.Examples != nil && dst.Components.Examples == nil {
+		dst.Components.Examples = make(map[string]*openapi3.ExampleRef)
+	}
+	if src.Components.Links != nil && dst.Components.Links == nil {
+		dst.Components.Links = make(map[string]*openapi3.LinkRef)
+	}
+	if src.Components.Callbacks != nil && dst.Components.Callbacks == nil {
+		dst.Components.Callbacks = make(map[string]*openapi3.CallbackRef)
+	}
+}
+
 func mergeComponents(dst, src *openapi3.T, replace bool) {
+	initDestinationComponents(dst, src)
 	for k, v := range src.Components.Schemas {
 		if _, ok := dst.Components.Schemas[k]; !ok || replace {
 			dst.Components.Schemas[k] = v
