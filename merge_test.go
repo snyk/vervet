@@ -83,6 +83,40 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
 	})
+	c.Run("component with missing sections", func(c *qt.C) {
+		src := mustLoadFile(c, "merge_test_src.yaml")
+		dstOrig := mustLoadFile(c, "merge_test_dst_missing_components.yaml")
+		dst := mustLoadFile(c, "merge_test_dst_missing_components.yaml")
+		vervet.Merge(dst, src, true)
+
+		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, src.Components.Schemas["Foo"])
+		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
+		c.Assert(dst.Components.Schemas["Baz"], openapiCmp, dstOrig.Components.Schemas["Baz"])
+
+		c.Assert(dst.Components.Parameters["Foo"], openapiCmp, src.Components.Parameters["Foo"])
+		c.Assert(dst.Components.Parameters["Bar"], openapiCmp, src.Components.Parameters["Bar"])
+		c.Assert(dst.Components.Parameters["Baz"], openapiCmp, dstOrig.Components.Parameters["Baz"])
+
+		c.Assert(dst.Components.Headers["Foo"], openapiCmp, src.Components.Headers["Foo"])
+		c.Assert(dst.Components.Headers["Bar"], openapiCmp, src.Components.Headers["Bar"])
+		c.Assert(dst.Components.Headers["Baz"], openapiCmp, dstOrig.Components.Headers["Baz"])
+
+		c.Assert(dst.Components.RequestBodies["Foo"], openapiCmp, src.Components.RequestBodies["Foo"])
+		c.Assert(dst.Components.RequestBodies["Bar"], openapiCmp, src.Components.RequestBodies["Bar"])
+		c.Assert(dst.Components.RequestBodies["Baz"], openapiCmp, dstOrig.Components.RequestBodies["Baz"])
+
+		c.Assert(dst.Components.RequestBodies["200"], openapiCmp, src.Components.RequestBodies["200"])
+		c.Assert(dst.Components.RequestBodies["201"], openapiCmp, src.Components.RequestBodies["201"])
+		c.Assert(dst.Components.RequestBodies["202"], openapiCmp, dstOrig.Components.RequestBodies["202"])
+
+		c.Assert(dst.Components.SecuritySchemes["Foo"], openapiCmp, src.Components.SecuritySchemes["Foo"])
+		c.Assert(dst.Components.SecuritySchemes["Bar"], openapiCmp, src.Components.SecuritySchemes["Bar"])
+		c.Assert(dst.Components.SecuritySchemes["Baz"], openapiCmp, dstOrig.Components.SecuritySchemes["Baz"])
+
+		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
+		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
+		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
+	})
 }
 
 func TestMergeTags(t *testing.T) {
