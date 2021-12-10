@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -46,8 +47,6 @@ func TestNewLocalFile(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Cleanup(func() { c.Assert(os.Chdir(origWd), qt.IsNil) })
 	c.Assert(os.Chdir(testProject), qt.IsNil)
-	cwd, err := os.Getwd()
-	c.Assert(err, qt.IsNil)
 
 	// Mock time for repeatable tests
 	l.timeNow = func() time.Time { return time.Date(2021, time.October, 30, 1, 2, 3, 0, time.UTC) }
@@ -62,24 +61,18 @@ func TestNewLocalFile(t *testing.T) {
 	l.runner = runner
 	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
-	c.Assert(runner.runs, qt.DeepEquals, [][]string{{
-		"docker", "run", "--rm",
-		"-v", cwd + ":/to",
-		"-v", cwd + "/hello/2021-06-01/spec.yaml:/to/hello/2021-06-01/spec.yaml",
-		"some-image",
-		"compare",
-		"--context",
-		`{"changeDate":"2021-10-30","changeResource":"hello","changeVersion":{"date":"2021-06-01","stability":"experimental"}}`,
-		"--to",
-		"/to/hello/2021-06-01/spec.yaml",
-	}})
+	c.Assert(runner.runs, qt.HasLen, 1)
+	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
+		``+
+			`^docker run --rm -v .*:/input.json -v .*:/to -v .*/hello/2021-06-01/spec.yaml:/to/hello/2021-06-01/spec.yaml `+
+			`some-image bulk-compare --input /input.json`)
 
 	// Verify captured output was substituted. Mainly a convenience that makes
 	// output host-relevant and cmd-clickable if possible.
 	c.Assert(tempFile.Sync(), qt.IsNil)
 	capturedOutput, err := ioutil.ReadFile(tempFile.Name())
 	c.Assert(err, qt.IsNil)
-	c.Assert(string(capturedOutput), qt.Equals, cwd+"/here.yaml "+cwd+"/eternity.yaml\n")
+	c.Assert(string(capturedOutput), qt.Equals, "(does not exist):here.yaml (local file):eternity.yaml\n")
 
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
@@ -146,8 +139,11 @@ func TestNewGitFile(t *testing.T) {
 	l.runner = runner
 	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
-	c.Assert(runner.runs[0], qt.Contains, "--from")
-	c.Assert(runner.runs[0], qt.Contains, "--to")
+	c.Assert(runner.runs, qt.HasLen, 1)
+	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
+		``+
+			`^docker run --rm -v .*:/input.json -v .*:/to -v .*/hello/2021-06-01/spec.yaml:/to/hello/2021-06-01/spec.yaml `+
+			`some-image bulk-compare --input /input.json`)
 
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
@@ -220,6 +216,10 @@ func setupGitRepo(c *qt.C) (string, plumbing.Hash) {
 }
 
 type mockSource []string
+
+func (m mockSource) Name() string {
+	return "mock"
+}
 
 func (m mockSource) Match(*config.ResourceSet) ([]string, error) {
 	return m, nil

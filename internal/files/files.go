@@ -14,6 +14,9 @@ import (
 // FileSource defines a source of spec files to lint. This abstraction allows
 // linters to operate seamlessly over version control systems and local files.
 type FileSource interface {
+	// Name returns a string describing the file source.
+	Name() string
+
 	// Match returns a slice of logical paths to spec files that should be
 	// linted from the given resource set configuration.
 	Match(*config.ResourceSet) ([]string, error)
@@ -32,6 +35,9 @@ type FileSource interface {
 // NilSource is a FileSource that does not have any files in it.
 type NilSource struct{}
 
+// Name implements FileSource.
+func (NilSource) Name() string { return "does not exist" }
+
 // Match implements FileSource.
 func (NilSource) Match(*config.ResourceSet) ([]string, error) { return nil, nil }
 
@@ -46,6 +52,9 @@ func (NilSource) Close() error { return nil }
 // LocalFSSource is a FileSource that resolves files from the local filesystem
 // relative to the current working directory.
 type LocalFSSource struct{}
+
+// Name implements FileSource.
+func (LocalFSSource) Name() string { return "local file" }
 
 // Match implements FileSource.
 func (LocalFSSource) Match(rcConfig *config.ResourceSet) ([]string, error) {

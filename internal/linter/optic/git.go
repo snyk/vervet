@@ -44,6 +44,11 @@ func newGitRepoSource(path string, treeish string) (*gitRepoSource, error) {
 	return &gitRepoSource{repo: repo, commit: commit, tempDir: tempDir}, nil
 }
 
+// Name implements FileSource.
+func (s *gitRepoSource) Name() string {
+	return "commit " + s.commit.Hash.String()
+}
+
 // Match implements FileSource.
 func (s *gitRepoSource) Match(rcConfig *config.ResourceSet) ([]string, error) {
 	tree, err := s.repo.TreeObject(s.commit.TreeHash)
