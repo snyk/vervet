@@ -115,7 +115,6 @@ func (o *Optic) Match(rcConfig *config.ResourceSet) ([]string, error) {
 		result = append(result, k)
 	}
 	sort.Strings(result)
-	log.Println(result)
 	return result, nil
 }
 
@@ -227,7 +226,6 @@ func (o *Optic) bulkCompare(ctx context.Context, comparisons []comparison, docke
 	// TODO: link to command line arguments for optic-ci when available.
 	cmdline := append([]string{"run", "--rm", "-v", inputFile.Name() + ":/input.json"}, dockerArgs...)
 	cmdline = append(cmdline, o.image, "bulk-compare", "--input", "/input.json")
-	log.Println(cmdline)
 	cmd := exec.CommandContext(ctx, "docker", cmdline...)
 
 	pipeReader, pipeWriter := io.Pipe()
