@@ -108,7 +108,7 @@ func (s *Scraper) Run(ctx context.Context) error {
 		}()
 	}
 	var errs error
-	for _ = range s.services {
+	for range s.services {
 		err := <-errCh
 		errs = multierr.Append(errs, err)
 	}

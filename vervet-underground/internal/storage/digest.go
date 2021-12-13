@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+// Digest is a sha256 calculation generated
+// into a specific string format prefixed by "sha256:" followed by
+// the sha256 value generated
+type Digest string
+
 // DigestHeader returns a content digest parsed from a Digest HTTP response
 // header as defined in
 // https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-digest-headers-05#section-3.
@@ -33,8 +38,8 @@ func DigestHeader(value string) string {
 	return ""
 }
 
-// Digest returns the digest of the given contents.
-func Digest(contents []byte) string {
+// NewDigest returns the digest of the given contents.
+func NewDigest(contents []byte) Digest {
 	buf := sha256.Sum256(contents)
-	return "sha256:" + base64.StdEncoding.EncodeToString(buf[:])
+	return Digest("sha256:" + base64.StdEncoding.EncodeToString(buf[:]))
 }
