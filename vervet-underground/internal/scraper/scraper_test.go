@@ -88,7 +88,7 @@ func TestScraper(t *testing.T) {
 
 	// No version digests should be known
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsFalse)
 	}
@@ -99,7 +99,7 @@ func TestScraper(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
@@ -201,13 +201,11 @@ func TestScraperCollation(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
 
-	err = st.CollateVersions()
-	c.Assert(err, qt.IsNil)
 	collated, err := st.GetCollatedVersionSpecs()
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(collated), qt.Equals, 4)
