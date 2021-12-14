@@ -89,6 +89,9 @@ type OpticCILinter struct {
 	// spec file when comparing. If empty, this is assumed to be the
 	// local working copy.
 	Proposed string `json:"proposed,omitempty"`
+
+	// Debug turns on debug logging.
+	Debug bool `json:"debug,omitempty"`
 }
 
 func (l Linters) init() error {

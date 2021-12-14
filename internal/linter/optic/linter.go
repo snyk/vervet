@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -32,6 +33,7 @@ type Optic struct {
 	toSource   files.FileSource
 	runner     commandRunner
 	timeNow    func() time.Time
+	debug      bool
 }
 
 type commandRunner interface {
@@ -88,6 +90,7 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 		toSource:   toSource,
 		runner:     &execCommandRunner{},
 		timeNow:    time.Now,
+		debug:      cfg.Debug,
 	}, nil
 }
 
@@ -131,7 +134,14 @@ func (*Optic) WithOverride(ctx context.Context, override *config.Linter) (linter
 func (o *Optic) Run(ctx context.Context, paths ...string) error {
 	var errs error
 	var comparisons []comparison
-	var dockerArgs []string
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	dockerArgs := []string{
+		"-v", cwd + ":/from",
+		"-v", cwd + ":/to",
+	}
 	for i := range paths {
 		comparison, volumeArgs, err := o.newComparison(paths[i])
 		if err != nil {
@@ -141,26 +151,22 @@ func (o *Optic) Run(ctx context.Context, paths ...string) error {
 			dockerArgs = append(dockerArgs, volumeArgs...)
 		}
 	}
-	err := o.bulkCompare(ctx, comparisons, dockerArgs)
+	err = o.bulkCompare(ctx, comparisons, dockerArgs)
 	errs = multierr.Append(errs, err)
 	return errs
 }
 
 type comparison struct {
-	From    string  `json:"from"`
-	To      string  `json:"to"`
-	Context Context `json:"context"`
+	From    string  `json:"from,omitempty"`
+	To      string  `json:"to,omitempty"`
+	Context Context `json:"context,omitempty"`
 }
 
 type bulkCompareInput struct {
-	Comparisons []comparison `json:"comparisons"`
+	Comparisons []comparison `json:"comparisons,omitempty"`
 }
 
 func (o *Optic) newComparison(path string) (comparison, []string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return comparison{}, nil, err
-	}
 	var volumeArgs []string
 
 	// TODO: This assumes the file being linted is a resource version spec
@@ -182,10 +188,7 @@ func (o *Optic) newComparison(path string) (comparison, []string, error) {
 	}
 	if fromFile != "" {
 		cmp.From = "/from/" + path
-		volumeArgs = append(volumeArgs,
-			"-v", cwd+":/from",
-			"-v", fromFile+":/from/"+path,
-		)
+		volumeArgs = append(volumeArgs, "-v", fromFile+":/from/"+path)
 	}
 
 	toFile, err := o.toSource.Fetch(path)
@@ -194,10 +197,7 @@ func (o *Optic) newComparison(path string) (comparison, []string, error) {
 	}
 	if toFile != "" {
 		cmp.To = "/to/" + path
-		volumeArgs = append(volumeArgs,
-			"-v", cwd+":/to",
-			"-v", toFile+":/to/"+path,
-		)
+		volumeArgs = append(volumeArgs, "-v", toFile+":/to/"+path)
 	}
 
 	return cmp, volumeArgs, nil
@@ -223,9 +223,20 @@ func (o *Optic) bulkCompare(ctx context.Context, comparisons []comparison, docke
 		return err
 	}
 
+	if o.debug {
+		log.Print("bulk-compare input:")
+		if err := json.NewEncoder(os.Stdout).Encode(&input); err != nil {
+			log.Println("failed to encode input to stdout!")
+		}
+		log.Println()
+	}
+
 	// TODO: link to command line arguments for optic-ci when available.
 	cmdline := append([]string{"run", "--rm", "-v", inputFile.Name() + ":/input.json"}, dockerArgs...)
 	cmdline = append(cmdline, o.image, "bulk-compare", "--input", "/input.json")
+	if o.debug {
+		log.Printf("running: docker %s", strings.Join(cmdline, " "))
+	}
 	cmd := exec.CommandContext(ctx, "docker", cmdline...)
 
 	pipeReader, pipeWriter := io.Pipe()
