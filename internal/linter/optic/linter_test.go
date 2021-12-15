@@ -91,7 +91,7 @@ func TestNoSuchWorkingCopyFile(t *testing.T) {
 func TestNoSuchGitFile(t *testing.T) {
 	c := qt.New(t)
 	testRepo, commitHash := setupGitRepo(c)
-	gitSource, err := newGitRepoSource(testRepo, commitHash.String())
+	gitSource, err := newGitRepoSource(testRepo, commitHash.String(), true)
 	c.Assert(err, qt.IsNil)
 	path, err := gitSource.Fetch(uuid.New().String())
 	c.Assert(err, qt.IsNil)
@@ -101,7 +101,7 @@ func TestNoSuchGitFile(t *testing.T) {
 func TestNoSuchGitBranch(t *testing.T) {
 	c := qt.New(t)
 	testRepo, _ := setupGitRepo(c)
-	_, err := newGitRepoSource(testRepo, "nope")
+	_, err := newGitRepoSource(testRepo, "nope", true)
 	c.Assert(err, qt.ErrorMatches, "reference not found")
 }
 
@@ -144,6 +144,52 @@ func TestNewGitFile(t *testing.T) {
 		``+
 			`^docker run --rm -v .*:/input.json -v .*:/to -v .*/hello/2021-06-01/spec.yaml:/to/hello/2021-06-01/spec.yaml `+
 			`some-image bulk-compare --input /input.json`)
+
+	// Command failed.
+	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
+	l.runner = runner
+	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
+	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
+}
+
+func TestGitScript(t *testing.T) {
+	c := qt.New(t)
+	ctx, cancel := context.WithCancel(context.TODO())
+	c.Cleanup(cancel)
+
+	testRepo, commitHash := setupGitRepo(c)
+	origWd, err := os.Getwd()
+	c.Assert(err, qt.IsNil)
+	c.Cleanup(func() { c.Assert(os.Chdir(origWd), qt.IsNil) })
+	c.Assert(os.Chdir(testRepo), qt.IsNil)
+
+	// Sanity check constructor
+	l, err := New(ctx, &config.OpticCILinter{
+		Script:   "/usr/local/lib/node_modules/.bin/sweater-comb",
+		Original: commitHash.String(),
+		Proposed: "",
+	})
+	c.Assert(err, qt.IsNil)
+	c.Assert(l.image, qt.Equals, "")
+	c.Assert(l.script, qt.Equals, "/usr/local/lib/node_modules/.bin/sweater-comb")
+	c.Assert(l.fromSource, qt.Satisfies, func(v interface{}) bool {
+		_, ok := v.(*gitRepoSource)
+		return ok
+	})
+	c.Assert(l.toSource, qt.DeepEquals, files.LocalFSSource{})
+
+	// Sanity check gitRepoSource
+	path, err := l.fromSource.Fetch("hello/2021-06-01/spec.yaml")
+	c.Assert(err, qt.IsNil)
+	c.Assert(path, qt.Not(qt.Equals), "")
+
+	runner := &mockRunner{}
+	l.runner = runner
+	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
+	c.Assert(err, qt.IsNil)
+	c.Assert(runner.runs, qt.HasLen, 1)
+	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
+		`/usr/local/lib/node_modules/.bin/sweater-comb bulk-compare --input /tmp/.*-input.json`)
 
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}

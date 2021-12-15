@@ -4,7 +4,7 @@ import "fmt"
 
 const (
 	defaultSweaterCombImage = "gcr.io/snyk-main/sweater-comb:latest"
-	defaultOpticCIImage     = "ghcr.io/snyk/sweater-comb:optic-main"
+	defaultOpticCIImage     = "ghcr.io/snyk/sweater-comb:latest"
 )
 
 var defaultSpectralExtraArgs = []string{"--format", "text"}
@@ -81,6 +81,11 @@ type OpticCILinter struct {
 	// Image identifies the Optic CI docker image to use for linting.
 	Image string
 
+	// Script identifies the path to the Optic CI script to use for linting.
+	// Mutually exclusive with Image; if Script is specified Docker will not be
+	// used.
+	Script string
+
 	// Original is where to source the original version of an OpenAPI spec file
 	// when comparing. If empty, all changes are assumed to be new additions.
 	Original string `json:"original,omitempty"`
@@ -115,7 +120,7 @@ func (l Linters) init() error {
 			}
 		}
 		if linter.OpticCI != nil {
-			if linter.OpticCI.Image == "" {
+			if linter.OpticCI.Image == "" && linter.OpticCI.Script == "" {
 				linter.OpticCI.Image = defaultOpticCIImage
 			}
 		}

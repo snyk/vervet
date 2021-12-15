@@ -10,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"go.uber.org/multierr"
 
 	"github.com/snyk/vervet/config"
 )
@@ -17,14 +18,23 @@ import (
 // gitRepoSource is a fileSource that resolves files out of a specific git
 // commit.
 type gitRepoSource struct {
-	repo    *git.Repository
-	commit  *object.Commit
-	tempDir string
+	repo         *git.Repository
+	commit       *object.Commit
+	tempDir      string
+	tempFiles    []string
+	storeFetched func(path string, f *object.File) (string, error)
 }
 
 // newGitRepoSource returns a new gitRepoSource for the given git repository
 // path and commit, which can be a branch, tag, commit hash or other "treeish".
-func newGitRepoSource(path string, treeish string) (*gitRepoSource, error) {
+//
+// If useTempDir is true, all fetched files will be located in a temporary directory
+// and the caller will be responsible for arranging them into a filesystem hierarchy that
+// maintains relative paths.
+//
+// If useTempDir is false, fetched files will be located in a temporary dotfile
+// relative to the path.
+func newGitRepoSource(path string, treeish string, useTempDir bool) (*gitRepoSource, error) {
 	repo, err := git.PlainOpen(path)
 	if err != nil {
 		return nil, err
@@ -41,7 +51,13 @@ func newGitRepoSource(path string, treeish string) (*gitRepoSource, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &gitRepoSource{repo: repo, commit: commit, tempDir: tempDir}, nil
+	g := &gitRepoSource{repo: repo, commit: commit, tempDir: tempDir}
+	if useTempDir {
+		g.storeFetched = g.storeFetchedTempDir
+	} else {
+		g.storeFetched = g.storeFetchedTempFile
+	}
+	return g, nil
 }
 
 // Name implements FileSource.
@@ -95,12 +111,25 @@ func (g *gitRepoSource) Fetch(path string) (string, error) {
 		return "", err
 	}
 	defer r.Close()
+	fname, err := g.storeFetched(path, f)
+	if err != nil {
+		return "", err
+	}
+	return fname, nil
+}
+
+func (g *gitRepoSource) storeFetchedTempDir(path string, f *object.File) (string, error) {
 	fname := filepath.Join(g.tempDir, f.ID().String())
 	tempf, err := os.Create(fname)
 	if err != nil {
 		return "", err
 	}
 	defer tempf.Close()
+	r, err := f.Reader()
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
 	_, err = io.Copy(tempf, r)
 	if err != nil {
 		return "", err
@@ -108,11 +137,37 @@ func (g *gitRepoSource) Fetch(path string) (string, error) {
 	return fname, nil
 }
 
+func (g *gitRepoSource) storeFetchedTempFile(path string, f *object.File) (string, error) {
+	fname := filepath.Join(filepath.Dir(path), ".vervet."+f.ID().String()+"."+filepath.Base(path))
+	tempf, err := os.Create(fname)
+	if err != nil {
+		return "", err
+	}
+	defer tempf.Close()
+	r, err := f.Reader()
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(tempf, r)
+	if err != nil {
+		return "", err
+	}
+	g.tempFiles = append(g.tempFiles, fname)
+	return fname, nil
+}
+
 // Close implements fileSource.
 func (g *gitRepoSource) Close() (retErr error) {
 	err := os.RemoveAll(g.tempDir)
+	var errs error
 	if err != nil {
-		return err
+		errs = multierr.Append(errs, err)
 	}
-	return nil
+	for i := range g.tempFiles {
+		err := os.Remove(g.tempFiles[i])
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	return errs
 }
