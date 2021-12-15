@@ -6,3 +6,4 @@
 .vscode
 
 **/server
+config.json

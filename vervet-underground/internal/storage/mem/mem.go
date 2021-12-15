@@ -5,13 +5,12 @@
 package mem
 
 import (
-	"context"
-	"github.com/pkg/errors"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/snyk/vervet"
 	"go.uber.org/multierr"
@@ -67,11 +66,11 @@ func New() *Storage {
 }
 
 // NotifyVersions implements scraper.Storage.
-func (s *Storage) NotifyVersions(ctx context.Context, name string, versions []string, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time.Time) error {
 	for _, version := range versions {
 		// TODO: Add method to fetch contents here
 		// TODO: implement notify versions; update sunset when versions are removed
-		err := s.NotifyVersion(ctx, name, version, []byte{}, scrapeTime)
+		err := s.NotifyVersion(name, version, []byte{}, scrapeTime)
 		if err != nil {
 			return err
 		}
@@ -80,7 +79,7 @@ func (s *Storage) NotifyVersions(ctx context.Context, name string, versions []st
 }
 
 // HasVersion implements scraper.Storage.
-func (s *Storage) HasVersion(ctx context.Context, name string, version string, digest string) (bool, error) {
+func (s *Storage) HasVersion(name string, version string, digest string) (bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	revisions, ok := s.serviceVersionMappedRevisionSpecs[name][version]
@@ -93,7 +92,7 @@ func (s *Storage) HasVersion(ctx context.Context, name string, version string, d
 }
 
 // NotifyVersion implements scraper.Storage.
-func (s *Storage) NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersion(name string, version string, contents []byte, scrapeTime time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -143,6 +142,32 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 	}
 
 	return nil
+}
+
+// Versions implements scraper.Storage
+func (s *Storage) Versions() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	stringVersions := make([]string, len(s.collatedVersions))
+	for i, version := range s.collatedVersions {
+		stringVersions[i] = version.String()
+	}
+
+	return stringVersions
+}
+
+// Version implements scraper.Storage
+func (s *Storage) Version(version string) ([]byte, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	parsedVersion, err := vervet.ParseVersion(version)
+	if err != nil {
+		return nil, err
+	}
+
+	spec := s.collatedVersionedSpecs[*parsedVersion]
+	return spec.MarshalJSON()
 }
 
 // CollateVersions does the following:
@@ -206,13 +231,12 @@ func (s *Storage) collateVersion(version vervet.Version) error {
 	// number of services maximum needed
 	contentRevisions := make([]ContentRevision, 0)
 
+	s.mu.RLock()
 	// preprocessing all relevant docs in byte format before combining
 	for service, versionSlice := range s.serviceVersions {
 		// If there is an exact match on versions 1-to-1
-		s.mu.RLock()
-		revisions, ok := s.serviceVersionMappedRevisionSpecs[service][version.String()]
-		s.mu.RUnlock()
 		var currentRevision ContentRevision
+		revisions, ok := s.serviceVersionMappedRevisionSpecs[service][version.String()]
 		if ok {
 			// TODO: iterate through and take last contentRevision.
 			//       Could change to []ContentRevision in struct later
@@ -229,9 +253,7 @@ func (s *Storage) collateVersion(version vervet.Version) error {
 				continue
 			}
 
-			s.mu.RLock()
 			revisions, ok = s.serviceVersionMappedRevisionSpecs[service][resolvedVersion.String()]
-			s.mu.RUnlock()
 			if ok {
 				// TODO: iterate through and take last contentRevision.
 				//       Could change to []ContentRevision in struct later
@@ -242,6 +264,7 @@ func (s *Storage) collateVersion(version vervet.Version) error {
 			}
 		}
 	}
+	s.mu.RUnlock()
 
 	err := s.mergeContentRevisions(version, contentRevisions)
 	if err != nil {
