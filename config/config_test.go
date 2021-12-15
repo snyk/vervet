@@ -77,7 +77,7 @@ apis:
 			"ci-rules": {
 				Name: "ci-rules",
 				OpticCI: &config.OpticCILinter{
-					Image:    "ghcr.io/snyk/sweater-comb:optic-main",
+					Image:    "ghcr.io/snyk/sweater-comb:latest",
 					Original: "target-branch",
 				},
 			},

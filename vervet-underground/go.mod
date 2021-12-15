@@ -13,7 +13,7 @@ require (
 	github.com/onsi/gomega v1.17.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.26.0
-	github.com/snyk/vervet v1.3.1
+	github.com/snyk/vervet v1.5.1
 	go.uber.org/multierr v1.7.0
 )
 

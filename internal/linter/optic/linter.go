@@ -29,6 +29,7 @@ import (
 // Optic runs a Docker image containing Optic CI and built-in rules.
 type Optic struct {
 	image      string
+	script     string
 	fromSource files.FileSource
 	toSource   files.FileSource
 	runner     commandRunner
@@ -57,9 +58,13 @@ func (*execCommandRunner) run(cmd *exec.Cmd) error {
 // Temporary resources may be created by the linter, which are reclaimed when
 // the context cancels.
 func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
-	image, from, to := cfg.Image, cfg.Original, cfg.Proposed
+	image, script, from, to := cfg.Image, cfg.Script, cfg.Original, cfg.Proposed
 	var fromSource, toSource files.FileSource
 	var err error
+
+	if !isDocker(script) {
+		image = ""
+	}
 
 	if from == "" {
 		fromSource = files.NilSource{}
@@ -86,12 +91,17 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 	}()
 	return &Optic{
 		image:      image,
+		script:     script,
 		fromSource: fromSource,
 		toSource:   toSource,
 		runner:     &execCommandRunner{},
 		timeNow:    time.Now,
 		debug:      cfg.Debug,
 	}, nil
+}
+
+func isDocker(script string) bool {
+	return script == ""
 }
 
 // Match implements linter.Linter.
@@ -131,16 +141,23 @@ func (*Optic) WithOverride(ctx context.Context, override *config.Linter) (linter
 
 // Run runs Optic CI on the given paths. Linting output is written to standard
 // output by Optic CI. Returns an error when lint fails configured rules.
-func (o *Optic) Run(ctx context.Context, paths ...string) error {
+func (o *Optic) Run(ctx context.Context, root string, paths ...string) error {
 	var errs error
 	var comparisons []comparison
-	cwd, err := os.Getwd()
+	localFrom, err := o.fromSource.Prefetch(root)
 	if err != nil {
 		return err
 	}
-	dockerArgs := []string{
-		"-v", cwd + ":/from",
-		"-v", cwd + ":/to",
+	localTo, err := o.toSource.Prefetch(root)
+	if err != nil {
+		return err
+	}
+	var dockerArgs []string
+	if localFrom != "" {
+		dockerArgs = append(dockerArgs, "-v", localFrom+":/from/"+root)
+	}
+	if localTo != "" {
+		dockerArgs = append(dockerArgs, "-v", localTo+":/to/"+root)
 	}
 	for i := range paths {
 		comparison, volumeArgs, err := o.newComparison(paths[i])
@@ -151,9 +168,17 @@ func (o *Optic) Run(ctx context.Context, paths ...string) error {
 			dockerArgs = append(dockerArgs, volumeArgs...)
 		}
 	}
-	err = o.bulkCompare(ctx, comparisons, dockerArgs)
+	if o.isDocker() {
+		err = o.bulkCompareDocker(ctx, comparisons, dockerArgs)
+	} else {
+		err = o.bulkCompareScript(ctx, comparisons)
+	}
 	errs = multierr.Append(errs, err)
 	return errs
+}
+
+func (o *Optic) isDocker() bool {
+	return isDocker(o.script)
 }
 
 type comparison struct {
@@ -186,27 +211,100 @@ func (o *Optic) newComparison(path string) (comparison, []string, error) {
 	if err != nil {
 		return comparison{}, nil, err
 	}
-	if fromFile != "" {
-		cmp.From = "/from/" + path
-		volumeArgs = append(volumeArgs, "-v", fromFile+":/from/"+path)
-	}
+	cmp.From = fromFile
 
 	toFile, err := o.toSource.Fetch(path)
 	if err != nil {
 		return comparison{}, nil, err
 	}
-	if toFile != "" {
-		cmp.To = "/to/" + path
-		volumeArgs = append(volumeArgs, "-v", toFile+":/to/"+path)
-	}
+	cmp.To = toFile
 
 	return cmp, volumeArgs, nil
 }
 
-var opticFromOutputRE = regexp.MustCompile(`/from/`)
-var opticToOutputRE = regexp.MustCompile(`/to/`)
+func (o *Optic) bulkCompareScript(ctx context.Context, comparisons []comparison) error {
+	input := &bulkCompareInput{
+		Comparisons: comparisons,
+	}
+	inputFile, err := ioutil.TempFile("", "*-input.json")
+	if err != nil {
+		return err
+	}
+	defer inputFile.Close()
+	err = json.NewEncoder(inputFile).Encode(&input)
+	if err != nil {
+		return err
+	}
+	if err := inputFile.Sync(); err != nil {
+		return err
+	}
 
-func (o *Optic) bulkCompare(ctx context.Context, comparisons []comparison, dockerArgs []string) error {
+	if o.debug {
+		log.Print("bulk-compare input:")
+		if err := json.NewEncoder(os.Stdout).Encode(&input); err != nil {
+			log.Println("failed to encode input to stdout!")
+		}
+		log.Println()
+	}
+
+	cmd := exec.CommandContext(ctx, o.script, "bulk-compare", "--input", inputFile.Name())
+
+	pipeReader, pipeWriter := io.Pipe()
+	ch := make(chan struct{})
+	defer func() {
+		err := pipeWriter.Close()
+		if err != nil {
+			log.Printf("warning: failed to close output: %v", err)
+		}
+		select {
+		case <-ch:
+			return
+		case <-ctx.Done():
+			return
+		case <-time.After(cmdTimeout):
+			log.Printf("warning: timeout waiting for output to flush")
+			return
+		}
+	}()
+	go func() {
+		defer pipeReader.Close()
+		sc := bufio.NewScanner(pipeReader)
+		for sc.Scan() {
+			line := sc.Text()
+			// TODO: this wanton breakage of FileSource encapsulation indicates
+			// we probably need an abstraction if/when we support other
+			// sources. VU might be such a future source...
+			if fromGit, ok := o.fromSource.(*gitRepoSource); ok {
+				for root, tempDir := range fromGit.roots {
+					line = strings.ReplaceAll(line, tempDir, "("+fromGit.Name()+"):"+root)
+				}
+			}
+			if toGit, ok := o.toSource.(*gitRepoSource); ok {
+				for root, tempDir := range toGit.roots {
+					line = strings.ReplaceAll(line, tempDir, "("+toGit.Name()+"):"+root)
+				}
+			}
+			fmt.Println(line)
+		}
+		if err := sc.Err(); err != nil {
+			fmt.Fprintf(os.Stderr, "error reading stdout: %v", err)
+		}
+		close(ch)
+	}()
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = pipeWriter
+	cmd.Stderr = os.Stderr
+	err = o.runner.run(cmd)
+	if err != nil {
+		return fmt.Errorf("lint failed: %w", err)
+	}
+	return nil
+}
+
+var fromDockerOutputRE = regexp.MustCompile(`/from/`)
+var toDockerOutputRE = regexp.MustCompile(`/to/`)
+
+func (o *Optic) bulkCompareDocker(ctx context.Context, comparisons []comparison, dockerArgs []string) error {
 	input := &bulkCompareInput{
 		Comparisons: comparisons,
 	}
@@ -261,8 +359,8 @@ func (o *Optic) bulkCompare(ctx context.Context, comparisons []comparison, docke
 		sc := bufio.NewScanner(pipeReader)
 		for sc.Scan() {
 			line := sc.Text()
-			line = opticFromOutputRE.ReplaceAllString(line, "("+o.fromSource.Name()+"):")
-			line = opticToOutputRE.ReplaceAllString(line, "("+o.toSource.Name()+"):")
+			line = fromDockerOutputRE.ReplaceAllString(line, "("+o.fromSource.Name()+"):")
+			line = toDockerOutputRE.ReplaceAllString(line, "("+o.toSource.Name()+"):")
 			fmt.Println(line)
 		}
 		if err := sc.Err(); err != nil {

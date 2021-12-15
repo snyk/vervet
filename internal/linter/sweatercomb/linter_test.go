@@ -53,7 +53,7 @@ extends:
 	// Verify mock runner ran what we'd expect
 	runner := &mockRunner{}
 	l.runner = runner
-	err = l.Run(ctx, "my-api/**/*.yaml")
+	err = l.Run(ctx, "my-api", "my-api/**/*.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs, qt.DeepEquals, [][]string{{
 		"docker", "run", "--rm",
@@ -76,7 +76,7 @@ extends:
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("nope")}
 	l.runner = runner
-	err = l.Run(ctx, "my-api/**/*.yaml")
+	err = l.Run(ctx, "my-api", "my-api/**/*.yaml")
 	c.Assert(err, qt.ErrorMatches, "nope")
 }
 

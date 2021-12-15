@@ -112,7 +112,7 @@ var sweaterCombOutputRE = regexp.MustCompile(`/sweater-comb/target`)
 
 // Run runs spectral on the given paths. Linting output is written to standard
 // output by spectral. Returns an error when lint fails configured rules.
-func (s *SweaterComb) Run(ctx context.Context, paths ...string) error {
+func (s *SweaterComb) Run(ctx context.Context, _ string, paths ...string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err

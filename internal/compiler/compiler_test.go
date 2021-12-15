@@ -135,7 +135,7 @@ func (l *mockLinter) Match(rcConfig *config.ResourceSet) ([]string, error) {
 	return files.LocalFSSource{}.Match(rcConfig)
 }
 
-func (l *mockLinter) Run(ctx context.Context, paths ...string) error {
+func (l *mockLinter) Run(ctx context.Context, root string, paths ...string) error {
 	l.runs = append(l.runs, paths)
 	return l.err
 }
