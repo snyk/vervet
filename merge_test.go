@@ -257,6 +257,29 @@ servers:
 	})
 }
 
+func TestMergeIntoEmpty(t *testing.T) {
+	c := qt.New(t)
+	srcYaml := `
+info:
+  title: Src
+  version: src
+paths:
+  /foo:
+    get:
+    description: get a foo
+    responses:
+      200:
+      contents:
+        application/json:
+        schema:
+          type: object
+`
+	src := mustLoad(c, srcYaml)
+	dst := &openapi3.T{}
+	vervet.Merge(dst, src, false)
+	c.Assert(dst.Paths, qt.HasLen, 1)
+}
+
 func mustLoadFile(c *qt.C, path string) *openapi3.T {
 	doc, err := vervet.NewDocumentFile(testdata.Path(path))
 	c.Assert(err, qt.IsNil)
