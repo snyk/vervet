@@ -3,12 +3,12 @@ version: 2.1
 defaults: &defaults
   resource_class: small
   working_directory: ~/vervet
+  docker:
+    - image: circleci/golang:1.16-node
 
 jobs:
   test:
     <<: *defaults
-    docker:
-      - image: circleci/golang:1.16-node
     steps:
       - run:
           name: Install spectral
@@ -55,12 +55,38 @@ jobs:
       - run:
           command: golangci-lint run -v ./...
 
+  release:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Build package
+          command: ./scripts/dist.bash
+      - run:
+          name: Release package
+          command: cd dist; npx semantic-release -b main
+
 workflows:
   version: 2
   test:
     jobs:
       - test:
           name: Test
+  release:
+    jobs:
+      - test:
+          name: Test
+          filters:
+            branches:
+              only: 'main'
+      - release:
+          name: Release
+          context: nodejs-app-release
+          requires:
+            - Test
+          filters:
+            branches:
+              only: 'main'
   lint:
     jobs:
       - lint:
