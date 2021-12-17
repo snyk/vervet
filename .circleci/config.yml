@@ -84,6 +84,18 @@ jobs:
           at: ~/vervet/vervet-underground
       - run:
           command: golangci-lint run -v ./...
+
+  build-vu:
+    <<: *vu_metadata
+    docker:
+      - image: circleci/golang:1.16-node
+    steps:
+      - checkout
+      - git_https_token
+      - run:
+          name: build go vervet-undergound
+          command: make build
+
   publish-vu:
     <<: *ci_cd_image
     steps:
@@ -136,3 +148,25 @@ workflows:
           name: Lint
       - lint-vu:
           name: Lint VU
+  publish-vu:
+    jobs:
+      - build-vu:
+          name: Build app
+          context:
+            - snyk-docker-build
+            - go-private-modules
+          filters:
+            branches:
+              only:
+                - main
+      - publish-vu:
+          name: Build and publish image
+          context:
+            - snyk-docker-build
+            - go-private-modules
+          requires:
+            - Build app
+          filters:
+            branches:
+              only:
+                - main
