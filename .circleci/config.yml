@@ -64,7 +64,7 @@ jobs:
           command: ./scripts/dist.bash
       - run:
           name: Release package
-          command: cd dist; npx semantic-release -b main
+          command: cd dist; npx semantic-release -b main --dry-run
 
 workflows:
   version: 2

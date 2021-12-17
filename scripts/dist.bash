@@ -10,10 +10,6 @@ fi
 
 rm -rf dist
 
-NOW=$(date '+%Y%m%d%H%M')
-COMMIT=$(git rev-parse --short HEAD)
-export VERSION=$(git describe --abbrev=0)+${NOW}-${COMMIT}
-
 mkdir -p ./dist/bin
 
 for GOOS in linux darwin; do
@@ -25,4 +21,4 @@ cp packaging/npm/passthrough.js dist/bin/vervet
 cp README.md LICENSE ATTRIBUTIONS dist/
 
 go get github.com/a8m/envsubst/cmd/envsubst
-$GOPATH/bin/envsubst < packaging/npm/package.json.in > dist/package.json
+VERSION=0.0.0 $GOPATH/bin/envsubst < packaging/npm/package.json.in > dist/package.json
