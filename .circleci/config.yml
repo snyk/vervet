@@ -6,6 +6,36 @@ defaults: &defaults
   docker:
     - image: circleci/golang:1.16-node
 
+vu_metadata: &vu_metadata
+    resource_class: small
+    working_directory: ~/vervet/vervet-underground
+
+ci_cd_image: &ci_cd_image
+  <<: *vu_metadata
+  docker:
+    - image: golang:1.17
+      auth:
+        username: _json_key
+        password: $GCLOUD_GCR_BUILDER
+
+commands:
+  gcr_auth:
+    description: Auth GCR
+    steps:
+      - setup_remote_docker
+      - run:
+          name: GCR auth
+          command: echo $GCLOUD_GCR_BUILDER | docker login -u _json_key --password-stdin
+            https://gcr.io/snyk-main
+  git_https_token:
+    description: Authenticate using provided token when fetching private repos from
+      github.com/snyk, use `go-private-modules` context
+    steps:
+      - run:
+          name: use private token for git
+          command: git config --global url."https://${GITHUB_PRIVATE_TOKEN}:x-oauth-basic@github.com/snyk".insteadOf
+            "https://github.com/snyk"
+
 jobs:
   test:
     <<: *defaults
@@ -54,6 +84,19 @@ jobs:
           at: ~/vervet/vervet-underground
       - run:
           command: golangci-lint run -v ./...
+  publish-vu:
+    <<: *ci_cd_image
+    steps:
+      - checkout
+      - gcr_auth
+      - git_https_token
+      - run:
+          name: Build
+          command: docker build --build-arg GITHUB_PRIVATE_TOKEN=${GITHUB_PRIVATE_TOKEN}
+            -t gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1} .
+      - run:
+          name: Push
+          command: docker push gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1}
 
   release:
     <<: *defaults
