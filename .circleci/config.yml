@@ -27,14 +27,6 @@ commands:
           name: GCR auth
           command: echo $GCLOUD_GCR_BUILDER | docker login -u _json_key --password-stdin
             https://gcr.io/snyk-main
-  git_https_token:
-    description: Authenticate using provided token when fetching private repos from
-      github.com/snyk, use `go-private-modules` context
-    steps:
-      - run:
-          name: use private token for git
-          command: git config --global url."https://${GITHUB_PRIVATE_TOKEN}:x-oauth-basic@github.com/snyk".insteadOf
-            "https://github.com/snyk"
 
 jobs:
   test:
@@ -91,7 +83,6 @@ jobs:
       - image: circleci/golang:1.16-node
     steps:
       - checkout
-      - git_https_token
       - run:
           name: build go vervet-undergound
           command: make build
@@ -101,11 +92,9 @@ jobs:
     steps:
       - checkout
       - gcr_auth
-      - git_https_token
       - run:
           name: Build
-          command: docker build --build-arg GITHUB_PRIVATE_TOKEN=${GITHUB_PRIVATE_TOKEN}
-            -t gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1} .
+          command: docker build -t gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1} .
       - run:
           name: Push
           command: docker push gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1}
@@ -154,7 +143,6 @@ workflows:
           name: Build app
           context:
             - snyk-docker-build
-            - go-private-modules
           filters:
             branches:
               only:
@@ -163,7 +151,6 @@ workflows:
           name: Build and publish image
           context:
             - snyk-docker-build
-            - go-private-modules
           requires:
             - Build app
           filters:
