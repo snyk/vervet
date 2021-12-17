@@ -130,6 +130,9 @@ func mergeInfo(dst, src *openapi3.T, replace bool) {
 }
 
 func mergePaths(dst, src *openapi3.T, replace bool) {
+	if src.Paths != nil && dst.Paths == nil {
+		dst.Paths = make(openapi3.Paths)
+	}
 	for k, v := range src.Paths {
 		if _, ok := dst.Paths[k]; !ok || replace {
 			dst.Paths[k] = v
