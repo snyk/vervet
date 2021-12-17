@@ -5,11 +5,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"go.uber.org/multierr"
 
 	"github.com/snyk/vervet/config"
 )
@@ -17,9 +19,9 @@ import (
 // gitRepoSource is a fileSource that resolves files out of a specific git
 // commit.
 type gitRepoSource struct {
-	repo    *git.Repository
-	commit  *object.Commit
-	tempDir string
+	repo   *git.Repository
+	commit *object.Commit
+	roots  map[string]string
 }
 
 // newGitRepoSource returns a new gitRepoSource for the given git repository
@@ -37,11 +39,7 @@ func newGitRepoSource(path string, treeish string) (*gitRepoSource, error) {
 	if err != nil {
 		return nil, err
 	}
-	tempDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		return nil, err
-	}
-	return &gitRepoSource{repo: repo, commit: commit, tempDir: tempDir}, nil
+	return &gitRepoSource{repo: repo, commit: commit, roots: map[string]string{}}, nil
 }
 
 // Name implements FileSource.
@@ -81,38 +79,105 @@ func (s *gitRepoSource) Match(rcConfig *config.ResourceSet) ([]string, error) {
 	return matches, nil
 }
 
-// Fetch implements fileSource.
-func (g *gitRepoSource) Fetch(path string) (string, error) {
-	f, err := g.commit.File(path)
+// Prefetch implements FileSource
+func (g *gitRepoSource) Prefetch(root string) (string, error) {
+	tree, err := g.commit.Tree()
 	if err != nil {
-		if err == object.ErrFileNotFound {
-			return "", nil
+		return "", err
+	}
+	tree, err = tree.Tree(root)
+	if err != nil {
+		return "", err
+	}
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		return "", err
+	}
+	err = func() error {
+		// Wrap this in a closure to simplify walker cleanup
+		w := object.NewTreeWalker(tree, true, map[plumbing.Hash]bool{})
+		defer w.Close()
+		for {
+			ok, err := func() (bool, error) {
+				// Wrap this in a closure to release fds early & often
+				name, entry, err := w.Next()
+				if err == io.EOF {
+					return false, nil
+				} else if err != nil {
+					return false, err
+				}
+				if !entry.Mode.IsFile() {
+					return true, nil
+				}
+				blob, err := object.GetBlob(g.repo.Storer, entry.Hash)
+				if err != nil {
+					return false, err
+				}
+				err = os.MkdirAll(filepath.Join(tempDir, filepath.Dir(name)), 0777)
+				if err != nil {
+					return false, err
+				}
+				tempFile, err := os.Create(filepath.Join(tempDir, name))
+				if err != nil {
+					return false, err
+				}
+				defer tempFile.Close()
+				blobContents, err := blob.Reader()
+				if err != nil {
+					return false, err
+				}
+				_, err = io.Copy(tempFile, blobContents)
+				if err != nil {
+					return false, err
+				}
+				return true, nil
+			}()
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return nil
+			}
 		}
-		return "", err
-	}
-	r, err := f.Reader()
+	}()
 	if err != nil {
-		return "", err
+		// Clean up temp dir if we failed to populate it
+		errs := multierr.Append(nil, err)
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+		return "", errs
 	}
-	defer r.Close()
-	fname := filepath.Join(g.tempDir, f.ID().String())
-	tempf, err := os.Create(fname)
-	if err != nil {
-		return "", err
+	g.roots[root] = tempDir
+	return tempDir, nil
+}
+
+// Fetch implements FileSource.
+func (g *gitRepoSource) Fetch(path string) (string, error) {
+	var matchRoot string
+	// Linear search for this is probably good enough. Could use a trie if it
+	// gets out of hand.
+	for root := range g.roots {
+		if strings.HasPrefix(path, root) {
+			matchRoot = root
+		}
 	}
-	defer tempf.Close()
-	_, err = io.Copy(tempf, r)
-	if err != nil {
-		return "", err
+	if matchRoot == "" {
+		return "", nil
 	}
-	return fname, nil
+	matchPath := strings.Replace(path, matchRoot, g.roots[matchRoot], 1)
+	if _, err := os.Stat(matchPath); os.IsNotExist(err) {
+		return "", nil
+	}
+	return matchPath, nil
 }
 
 // Close implements fileSource.
-func (g *gitRepoSource) Close() (retErr error) {
-	err := os.RemoveAll(g.tempDir)
-	if err != nil {
-		return err
+func (g *gitRepoSource) Close() error {
+	var errs error
+	for _, tempDir := range g.roots {
+		errs = multierr.Append(errs, os.RemoveAll(tempDir))
 	}
-	return nil
+	return errs
 }

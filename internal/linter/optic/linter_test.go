@@ -59,12 +59,12 @@ func TestNewLocalFile(t *testing.T) {
 
 	runner := &mockRunner{}
 	l.runner = runner
-	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
+	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs, qt.HasLen, 1)
 	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
 		``+
-			`^docker run --rm -v .*:/input.json -v .*:/to -v .*/hello/2021-06-01/spec.yaml:/to/hello/2021-06-01/spec.yaml `+
+			`^docker run --rm -v .*:/input.json -v .*/hello:/to/hello `+
 			`some-image bulk-compare --input /input.json`)
 
 	// Verify captured output was substituted. Mainly a convenience that makes
@@ -77,7 +77,7 @@ func TestNewLocalFile(t *testing.T) {
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
 	l.runner = runner
-	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
+	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
 }
 
@@ -93,7 +93,10 @@ func TestNoSuchGitFile(t *testing.T) {
 	testRepo, commitHash := setupGitRepo(c)
 	gitSource, err := newGitRepoSource(testRepo, commitHash.String())
 	c.Assert(err, qt.IsNil)
-	path, err := gitSource.Fetch(uuid.New().String())
+	c.Cleanup(func() { c.Assert(gitSource.Close(), qt.IsNil) })
+	_, err = gitSource.Prefetch("hello")
+	c.Assert(err, qt.IsNil)
+	path, err := gitSource.Fetch("hello/" + uuid.New().String())
 	c.Assert(err, qt.IsNil)
 	c.Assert(path, qt.Equals, "")
 }
@@ -131,24 +134,74 @@ func TestNewGitFile(t *testing.T) {
 	c.Assert(l.toSource, qt.DeepEquals, files.LocalFSSource{})
 
 	// Sanity check gitRepoSource
+	_, err = l.fromSource.Prefetch("hello")
+	c.Assert(err, qt.IsNil)
 	path, err := l.fromSource.Fetch("hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(path, qt.Not(qt.Equals), "")
 
 	runner := &mockRunner{}
 	l.runner = runner
-	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
+	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs, qt.HasLen, 1)
 	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
 		``+
-			`^docker run --rm -v .*:/input.json -v .*:/to -v .*/hello/2021-06-01/spec.yaml:/to/hello/2021-06-01/spec.yaml `+
+			`^docker run --rm -v .*:/input.json -v .*/hello:/to/hello `+
 			`some-image bulk-compare --input /input.json`)
 
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
 	l.runner = runner
-	err = l.Run(ctx, "hello/2021-06-01/spec.yaml")
+	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
+	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
+}
+
+func TestGitScript(t *testing.T) {
+	c := qt.New(t)
+	ctx, cancel := context.WithCancel(context.TODO())
+	c.Cleanup(cancel)
+
+	testRepo, commitHash := setupGitRepo(c)
+	origWd, err := os.Getwd()
+	c.Assert(err, qt.IsNil)
+	c.Cleanup(func() { c.Assert(os.Chdir(origWd), qt.IsNil) })
+	c.Assert(os.Chdir(testRepo), qt.IsNil)
+
+	// Sanity check constructor
+	l, err := New(ctx, &config.OpticCILinter{
+		Script:   "/usr/local/lib/node_modules/.bin/sweater-comb",
+		Original: commitHash.String(),
+		Proposed: "",
+	})
+	c.Assert(err, qt.IsNil)
+	c.Assert(l.image, qt.Equals, "")
+	c.Assert(l.script, qt.Equals, "/usr/local/lib/node_modules/.bin/sweater-comb")
+	c.Assert(l.fromSource, qt.Satisfies, func(v interface{}) bool {
+		_, ok := v.(*gitRepoSource)
+		return ok
+	})
+	c.Assert(l.toSource, qt.DeepEquals, files.LocalFSSource{})
+
+	// Sanity check gitRepoSource
+	_, err = l.fromSource.Prefetch("hello")
+	c.Assert(err, qt.IsNil)
+	path, err := l.fromSource.Fetch("hello/2021-06-01/spec.yaml")
+	c.Assert(err, qt.IsNil)
+	c.Assert(path, qt.Not(qt.Equals), "")
+
+	runner := &mockRunner{}
+	l.runner = runner
+	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
+	c.Assert(err, qt.IsNil)
+	c.Assert(runner.runs, qt.HasLen, 1)
+	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
+		`/usr/local/lib/node_modules/.bin/sweater-comb bulk-compare --input /tmp/.*-input.json`)
+
+	// Command failed.
+	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
+	l.runner = runner
+	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
 }
 
@@ -224,6 +277,8 @@ func (m mockSource) Name() string {
 func (m mockSource) Match(*config.ResourceSet) ([]string, error) {
 	return m, nil
 }
+
+func (mockSource) Prefetch(path string) (string, error) { return path, nil }
 
 func (mockSource) Fetch(path string) (string, error) { return path, nil }
 

@@ -57,13 +57,14 @@ func defaultLinterFactory(ctx context.Context, lc *config.Linter) (linter.Linter
 }
 
 type api struct {
-	resources       []*resource
+	resources       []*resourceSet
 	overlayIncludes []*vervet.Document
 	overlayInlines  []*openapi3.T
 	output          *output
 }
 
-type resource struct {
+type resourceSet struct {
+	path            string
 	linter          linter.Linter
 	linterOverrides map[string]map[string]config.Linter
 	sourceFiles     []string
@@ -103,7 +104,8 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 		// Build resources
 		for rcIndex, rcConfig := range apiConfig.Resources {
 			var err error
-			r := &resource{
+			r := &resourceSet{
+				path:            rcConfig.Path,
 				linter:          compiler.linters[rcConfig.Linter],
 				linterOverrides: map[string]map[string]config.Linter{},
 			}
@@ -112,7 +114,7 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 				if err != nil {
 					return nil, fmt.Errorf("%w: (apis.%s.resources[%d].path)", err, apiName, rcIndex)
 				}
-				// TODO: overrides can probably be better implemented with Match now...
+				// TODO: overrides are deprecated by Optic CI, remove soon
 				linterOverrides := map[string]map[string]config.Linter{}
 				for rcName, versionMap := range rcConfig.LinterOverrides {
 					linterOverrides[rcName] = map[string]config.Linter{}
@@ -190,7 +192,7 @@ func (c *Compiler) LintResources(ctx context.Context, apiName string) error {
 				errs = multierr.Append(errs, fmt.Errorf("%w (apis.%s.resources[%d])", err, apiName, rcIndex))
 			}
 		} else {
-			err := rc.linter.Run(ctx, rc.lintFiles...)
+			err := rc.linter.Run(ctx, rc.path, rc.lintFiles...)
 			if err != nil {
 				errs = multierr.Append(errs, fmt.Errorf("%w (apis.%s.resources[%d])", err, apiName, rcIndex))
 			}
@@ -199,7 +201,7 @@ func (c *Compiler) LintResources(ctx context.Context, apiName string) error {
 	return errs
 }
 
-func (c *Compiler) lintWithOverrides(ctx context.Context, rc *resource, apiName string, rcIndex int) error {
+func (c *Compiler) lintWithOverrides(ctx context.Context, rc *resourceSet, apiName string, rcIndex int) error {
 	var pending []string
 	for _, matchedFile := range rc.lintFiles {
 		versionDir := filepath.Dir(matchedFile)
@@ -223,7 +225,7 @@ func (c *Compiler) lintWithOverrides(ctx context.Context, rc *resource, apiName 
 	if len(pending) == 0 {
 		return nil
 	}
-	err := rc.linter.Run(ctx, pending...)
+	err := rc.linter.Run(ctx, rc.path, pending...)
 	if err != nil {
 		return fmt.Errorf("lint failed (apis.%s.resources[%d])", apiName, rcIndex)
 	}
@@ -410,7 +412,7 @@ func (c *Compiler) LintOutput(ctx context.Context, apiName string) error {
 		if len(outputFiles) == 0 {
 			return fmt.Errorf("lint failed: no output files were produced")
 		}
-		err = api.output.linter.Run(ctx, outputFiles...)
+		err = api.output.linter.Run(ctx, api.output.path, outputFiles...)
 		if err != nil {
 			return fmt.Errorf("lint failed (apis.%s.output)", apiName)
 		}

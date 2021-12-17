@@ -17,5 +17,5 @@ type Linter interface {
 	WithOverride(ctx context.Context, cfg *config.Linter) (Linter, error)
 
 	// Run executes the linter checks on the given spec files.
-	Run(ctx context.Context, files ...string) error
+	Run(ctx context.Context, root string, files ...string) error
 }

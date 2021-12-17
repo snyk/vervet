@@ -92,7 +92,7 @@ func (s *Spectral) WithOverride(ctx context.Context, override *config.Linter) (l
 
 // Run runs spectral on the given paths. Linting output is written to standard
 // output by spectral. Returns an error when lint fails configured rules.
-func (l *Spectral) Run(ctx context.Context, paths ...string) error {
+func (l *Spectral) Run(ctx context.Context, _ string, paths ...string) error {
 	cmd := exec.CommandContext(ctx, l.spectralPath, append(append([]string{"lint", "-r", l.rulesPath}, l.extraArgs...), paths...)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
