@@ -73,7 +73,8 @@ jobs:
   build-vu:
     <<: *vu_metadata
     steps:
-      - checkout
+      - checkout:
+          path: ~/vervet
       - run:
           name: build go vervet-undergound
           command: make build
@@ -81,7 +82,8 @@ jobs:
   publish-vu:
     <<: *vu_metadata
     steps:
-      - checkout
+      - checkout:
+          path: ~/vervet
       - gcr_auth
       - run:
           name: Build
