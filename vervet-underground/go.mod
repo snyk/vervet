@@ -7,12 +7,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.21.0
 	github.com/frankban/quicktest v1.14.0
-	github.com/getkin/kin-openapi v0.86.0
+	github.com/getkin/kin-openapi v0.87.0
 	github.com/gorilla/mux v1.8.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.26.0
+	github.com/rs/zerolog v1.26.1
 	github.com/snyk/vervet v1.5.1
 	go.uber.org/multierr v1.7.0
 )

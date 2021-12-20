@@ -109,6 +109,11 @@ workflows:
     jobs:
       - test:
           name: Test
+      - lint:
+          name: Lint
+      - lint-vu:
+          name: Lint VU
+
   release:
     jobs:
       - test:
@@ -116,25 +121,18 @@ workflows:
           filters:
             branches:
               only: 'main'
+      - build-vu:
+          name: Build app
+          context: snyk-docker-build
+          filters:
+            branches:
+              only:
+                - main
       - release:
           name: Release
           context: nodejs-app-release
           requires:
             - Test
-          filters:
-            branches:
-              only: 'main'
-  lint:
-    jobs:
-      - lint:
-          name: Lint
-      - lint-vu:
-          name: Lint VU
-  publish-vu:
-    jobs:
-      - build-vu:
-          name: Build app
-          context: snyk-docker-build
           filters:
             branches:
               only:
