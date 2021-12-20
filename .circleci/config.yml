@@ -6,6 +6,28 @@ defaults: &defaults
   docker:
     - image: circleci/golang:1.16-node
 
+vu_metadata: &vu_metadata
+    resource_class: small
+    working_directory: ~/vervet/vervet-underground
+
+ci_cd_image: &ci_cd_image
+  <<: *vu_metadata
+  docker:
+    - image: golang:1.17
+      auth:
+        username: _json_key
+        password: $GCLOUD_GCR_BUILDER
+
+commands:
+  gcr_auth:
+    description: Auth GCR
+    steps:
+      - setup_remote_docker
+      - run:
+          name: GCR auth
+          command: echo $GCLOUD_GCR_BUILDER | docker login -u _json_key --password-stdin
+            https://gcr.io/snyk-main
+
 jobs:
   test:
     <<: *defaults
@@ -55,6 +77,28 @@ jobs:
       - run:
           command: golangci-lint run -v ./...
 
+  build-vu:
+    <<: *vu_metadata
+    docker:
+      - image: circleci/golang:1.16-node
+    steps:
+      - checkout
+      - run:
+          name: build go vervet-undergound
+          command: make build
+
+  publish-vu:
+    <<: *ci_cd_image
+    steps:
+      - checkout
+      - gcr_auth
+      - run:
+          name: Build
+          command: docker build -t gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1} .
+      - run:
+          name: Push
+          command: docker push gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1}
+
   release:
     <<: *defaults
     steps:
@@ -93,3 +137,23 @@ workflows:
           name: Lint
       - lint-vu:
           name: Lint VU
+  publish-vu:
+    jobs:
+      - build-vu:
+          name: Build app
+          context:
+            - snyk-docker-build
+          filters:
+            branches:
+              only:
+                - main
+      - publish-vu:
+          name: Build and publish image
+          context:
+            - snyk-docker-build
+          requires:
+            - Build app
+          filters:
+            branches:
+              only:
+                - main
