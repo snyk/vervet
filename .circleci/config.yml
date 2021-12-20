@@ -9,14 +9,8 @@ defaults: &defaults
 vu_metadata: &vu_metadata
     resource_class: small
     working_directory: ~/vervet/vervet-underground
-
-ci_cd_image: &ci_cd_image
-  <<: *vu_metadata
-  docker:
-    - image: golang:1.17
-      auth:
-        username: _json_key
-        password: $GCLOUD_GCR_BUILDER
+    docker:
+      - image: cimg/go:1.17-node
 
 commands:
   gcr_auth:
@@ -25,8 +19,7 @@ commands:
       - setup_remote_docker
       - run:
           name: GCR auth
-          command: echo $GCLOUD_GCR_BUILDER | docker login -u _json_key --password-stdin
-            https://gcr.io/snyk-main
+          command: echo $GCLOUD_GCR_BUILDER | docker login -u _json_key --password-stdin https://gcr.io/snyk-main
 
 jobs:
   test:
@@ -79,8 +72,6 @@ jobs:
 
   build-vu:
     <<: *vu_metadata
-    docker:
-      - image: circleci/golang:1.16-node
     steps:
       - checkout
       - run:
@@ -88,7 +79,7 @@ jobs:
           command: make build
 
   publish-vu:
-    <<: *ci_cd_image
+    <<: *vu_metadata
     steps:
       - checkout
       - gcr_auth
@@ -141,16 +132,14 @@ workflows:
     jobs:
       - build-vu:
           name: Build app
-          context:
-            - snyk-docker-build
+          context: snyk-docker-build
           filters:
             branches:
               only:
                 - main
       - publish-vu:
           name: Build and publish image
-          context:
-            - snyk-docker-build
+          context: snyk-docker-build
           requires:
             - Build app
           filters:
