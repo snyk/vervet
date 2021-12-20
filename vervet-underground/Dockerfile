@@ -8,6 +8,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o server
 # Run
 FROM alpine:3.14
 WORKDIR /
-COPY --from=builder /src/* .
+COPY --from=builder /src/server .
 EXPOSE 8080
 CMD ["./server"]
