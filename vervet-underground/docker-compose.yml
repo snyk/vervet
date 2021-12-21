@@ -29,3 +29,5 @@ services:
     image: vervet-underground
     ports:
       - "8080:8080"
+    volumes:
+      - ${PWD}/${CONFIG:-config.json}:/config.default.json
