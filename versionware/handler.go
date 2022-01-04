@@ -44,7 +44,7 @@ func NewHandler(vhs ...VersionHandler) *Handler {
 	h := &Handler{
 		handlers: make([]http.Handler, len(vhs)),
 		versions: make([]vervet.Version, len(vhs)),
-		errFunc:  defaultErrorHandler,
+		errFunc:  DefaultVersionError,
 	}
 	handlerVersions := map[string]http.Handler{}
 	for i := range vhs {
@@ -59,8 +59,10 @@ func NewHandler(vhs ...VersionHandler) *Handler {
 	return h
 }
 
-func defaultErrorHandler(w http.ResponseWriter, r *http.Request, status int, err error) {
-	http.Error(w, err.Error(), status)
+// DefaultVersionError provides a basic implementation of VersionErrorHandler
+// that uses http.Error.
+func DefaultVersionError(w http.ResponseWriter, r *http.Request, status int, err error) {
+	http.Error(w, http.StatusText(status), status)
 }
 
 // HandleErrors changes the default error handler to the provided function. It

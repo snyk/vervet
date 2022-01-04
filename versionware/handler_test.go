@@ -75,19 +75,16 @@ func TestHandler(t *testing.T) {
 			c.Assert(err, qt.IsNil)
 		}),
 	}}...)
-	s := httptest.NewServer(h)
-	c.Cleanup(s.Close)
-
 	tests := []struct {
 		requested, resolved string
 		contents            string
 		status              int
 	}{{
-		"2021-08-31", "", "no matching version\n", 404,
+		"2021-08-31", "", "Not Found\n", 404,
+	}, {
+		"", "", "Bad Request\n", 400,
 	}, {
 		"bad wolf", "", "400 Bad Request", 400,
-	}, {
-		"", "", "missing required query parameter 'version'\n", 400,
 	}, {
 		"2021-09-16", "2021-09-01", "sept", 200,
 	}, {
@@ -100,15 +97,18 @@ func TestHandler(t *testing.T) {
 		"2023-02-05", "2021-11-01", "nov", 200,
 	}}
 	for i, test := range tests {
-		c.Logf("test#%d: requested %s resolved %s", i, test.requested, test.resolved)
-		req, err := http.NewRequest("GET", s.URL+"?version="+test.requested, nil)
-		c.Assert(err, qt.IsNil)
-		resp, err := s.Client().Do(req)
-		c.Assert(err, qt.IsNil)
-		defer resp.Body.Close()
-		c.Assert(resp.StatusCode, qt.Equals, test.status)
-		contents, err := ioutil.ReadAll(resp.Body)
-		c.Assert(err, qt.IsNil)
-		c.Assert(string(contents), qt.Equals, test.contents)
+		c.Run(fmt.Sprintf("%d requested %s resolved %s", i, test.requested, test.resolved), func(c *qt.C) {
+			s := httptest.NewServer(h)
+			c.Cleanup(s.Close)
+			req, err := http.NewRequest("GET", s.URL+"?version="+test.requested, nil)
+			c.Assert(err, qt.IsNil)
+			resp, err := s.Client().Do(req)
+			c.Assert(err, qt.IsNil)
+			defer resp.Body.Close()
+			c.Assert(resp.StatusCode, qt.Equals, test.status)
+			contents, err := ioutil.ReadAll(resp.Body)
+			c.Assert(err, qt.IsNil)
+			c.Assert(string(contents), qt.Equals, test.contents)
+		})
 	}
 }
