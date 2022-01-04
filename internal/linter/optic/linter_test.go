@@ -196,7 +196,7 @@ func TestGitScript(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs, qt.HasLen, 1)
 	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
-		`/usr/local/lib/node_modules/.bin/sweater-comb bulk-compare --input /tmp/.*-input.json`)
+		`/usr/local/lib/node_modules/.bin/sweater-comb bulk-compare --input `+filepath.Clean(os.TempDir())+`.*-input.json`)
 
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
