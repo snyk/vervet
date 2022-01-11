@@ -278,76 +278,67 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 			return fmt.Errorf("%w (apis.%s.resources[%d])", err, apiName, rcIndex)
 		}
 		versions := specVersions.Versions()
-		versionDates := vervet.VersionDateStrings(versions)
-		stabilities := []string{"~experimental", "~beta", ""}
-		for _, versionDate := range versionDates {
-			for _, stabilitySuffix := range stabilities {
-				version, err := vervet.ParseVersion(versionDate + stabilitySuffix)
-				if err != nil {
-					return buildErr(err)
-				}
-
-				spec, err := specVersions.At(version.String())
-				if err == vervet.ErrNoMatchingVersion {
-					continue
-				} else if err != nil {
-					return buildErr(err)
-				}
-
-				// Create the directories, but only if a spec file exists for it.
-				versionDir := api.output.path + "/" + version.String()
-
-				if spec != nil {
-					err = os.MkdirAll(versionDir, 0755)
-					if err != nil {
-						return buildErr(err)
-					}
-				}
-
-				// Merge all overlays
-				for _, doc := range api.overlayIncludes {
-					vervet.Merge(spec, doc.T, true)
-				}
-				for _, doc := range api.overlayInlines {
-					vervet.Merge(spec, doc, true)
-				}
-
-				// Write the compiled spec to JSON and YAML
-				jsonBuf, err := vervet.ToSpecJSON(spec)
-				if err != nil {
-					return buildErr(err)
-				}
-				jsonSpecPath := versionDir + "/spec.json"
-				jsonEmbedPath, err := filepath.Rel(api.output.path, jsonSpecPath)
-				if err != nil {
-					return buildErr(err)
-				}
-				versionSpecFiles = append(versionSpecFiles, jsonEmbedPath)
-				err = ioutil.WriteFile(jsonSpecPath, jsonBuf, 0644)
-				if err != nil {
-					return buildErr(err)
-				}
-				log.Println(jsonSpecPath)
-				yamlBuf, err := yaml.JSONToYAML(jsonBuf)
-				if err != nil {
-					return buildErr(err)
-				}
-				yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
-				if err != nil {
-					return buildErr(err)
-				}
-				yamlSpecPath := versionDir + "/spec.yaml"
-				yamlEmbedPath, err := filepath.Rel(api.output.path, yamlSpecPath)
-				if err != nil {
-					return buildErr(err)
-				}
-				versionSpecFiles = append(versionSpecFiles, yamlEmbedPath)
-				err = ioutil.WriteFile(yamlSpecPath, yamlBuf, 0644)
-				if err != nil {
-					return buildErr(err)
-				}
-				log.Println(yamlSpecPath)
+		for _, version := range versions {
+			spec, err := specVersions.At(version)
+			if err == vervet.ErrNoMatchingVersion {
+				continue
+			} else if err != nil {
+				return buildErr(err)
 			}
+
+			// Create the directories, but only if a spec file exists for it.
+			versionDir := api.output.path + "/" + version.String()
+
+			if spec != nil {
+				err = os.MkdirAll(versionDir, 0755)
+				if err != nil {
+					return buildErr(err)
+				}
+			}
+
+			// Merge all overlays
+			for _, doc := range api.overlayIncludes {
+				vervet.Merge(spec, doc.T, true)
+			}
+			for _, doc := range api.overlayInlines {
+				vervet.Merge(spec, doc, true)
+			}
+
+			// Write the compiled spec to JSON and YAML
+			jsonBuf, err := vervet.ToSpecJSON(spec)
+			if err != nil {
+				return buildErr(err)
+			}
+			jsonSpecPath := versionDir + "/spec.json"
+			jsonEmbedPath, err := filepath.Rel(api.output.path, jsonSpecPath)
+			if err != nil {
+				return buildErr(err)
+			}
+			versionSpecFiles = append(versionSpecFiles, jsonEmbedPath)
+			err = ioutil.WriteFile(jsonSpecPath, jsonBuf, 0644)
+			if err != nil {
+				return buildErr(err)
+			}
+			log.Println(jsonSpecPath)
+			yamlBuf, err := yaml.JSONToYAML(jsonBuf)
+			if err != nil {
+				return buildErr(err)
+			}
+			yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
+			if err != nil {
+				return buildErr(err)
+			}
+			yamlSpecPath := versionDir + "/spec.yaml"
+			yamlEmbedPath, err := filepath.Rel(api.output.path, yamlSpecPath)
+			if err != nil {
+				return buildErr(err)
+			}
+			versionSpecFiles = append(versionSpecFiles, yamlEmbedPath)
+			err = ioutil.WriteFile(yamlSpecPath, yamlBuf, 0644)
+			if err != nil {
+				return buildErr(err)
+			}
+			log.Println(yamlSpecPath)
 		}
 	}
 	err = c.writeEmbedGo(filepath.Base(api.output.path), api, versionSpecFiles)

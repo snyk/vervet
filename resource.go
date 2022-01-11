@@ -167,7 +167,10 @@ func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) {
 	var resourceVersions ResourceVersions
 	var err error
-	pathReleases := map[string]VersionSlice{}
+	type operationKey struct {
+		path, operation string
+	}
+	opReleases := map[operationKey]VersionSlice{}
 
 	for i := range specYamls {
 		specYamls[i], err = filepath.Abs(specYamls[i])
@@ -188,14 +191,21 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 		if err != nil {
 			return nil, err
 		}
-		resourceVersions.versions = append(resourceVersions.versions, rc)
-		// Map of release versions per path
-		for path := range rc.Paths {
-			pathReleases[path] = append(pathReleases[path], rc.Version)
+		// Map release versions per operation
+		for path, pathItem := range rc.Paths {
+			for _, opName := range operationNames {
+				op := getOperationByName(pathItem, opName)
+				if op != nil {
+					op.ExtensionProps.Extensions[ExtSnykApiVersion] = rc.Version.String()
+					opKey := operationKey{path, opName}
+					opReleases[opKey] = append(opReleases[opKey], rc.Version)
+				}
+			}
 		}
+		resourceVersions.versions = append(resourceVersions.versions, rc)
 	}
 	// Sort release versions per path
-	for _, releases := range pathReleases {
+	for _, releases := range opReleases {
 		sort.Sort(releases)
 	}
 	// Sort the resources themselves by version
@@ -203,15 +213,21 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 	// Annotate each path in each resource version with the other change
 	// versions affecting the path. This supports navigation across versions.
 	for _, rc := range resourceVersions.versions {
-		for path, pathInfo := range rc.Paths {
-			// Annotate path with other release versions available for this path
-			releases := pathReleases[path]
-			pathInfo.ExtensionProps.Extensions[ExtSnykApiReleases] = releases.Strings()
-			// Annotate path with deprecated-by and sunset information
-			if deprecatedBy, ok := releases.Deprecates(rc.Version); ok {
-				pathInfo.ExtensionProps.Extensions[ExtSnykDeprecatedBy] = deprecatedBy.String()
-				if sunset, ok := rc.Version.Sunset(deprecatedBy); ok {
-					pathInfo.ExtensionProps.Extensions[ExtSnykSunsetEligible] = sunset.Format("2006-01-02")
+		for path, pathItem := range rc.Paths {
+			for _, opName := range operationNames {
+				op := getOperationByName(pathItem, opName)
+				if op == nil {
+					continue
+				}
+				// Annotate operation with other release versions available for this path
+				releases := opReleases[operationKey{path, opName}]
+				op.ExtensionProps.Extensions[ExtSnykApiReleases] = releases.Strings()
+				// Annotate operation with deprecated-by and sunset information
+				if deprecatedBy, ok := releases.Deprecates(rc.Version); ok {
+					op.ExtensionProps.Extensions[ExtSnykDeprecatedBy] = deprecatedBy.String()
+					if sunset, ok := rc.Version.Sunset(deprecatedBy); ok {
+						op.ExtensionProps.Extensions[ExtSnykSunsetEligible] = sunset.Format("2006-01-02")
+					}
 				}
 			}
 		}
@@ -279,7 +295,6 @@ func loadResource(specPath string, versionStr string) (*Resource, error) {
 	ep := &Resource{Name: name, Document: doc, Version: *version}
 	for path := range doc.T.Paths {
 		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiResource] = name
-		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiVersion] = version.String()
 	}
 	return ep, nil
 }

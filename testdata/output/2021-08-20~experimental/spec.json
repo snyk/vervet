@@ -382,6 +382,105 @@
   },
   "openapi": "3.0.3",
   "paths": {
+    "/examples/hello-world": {
+      "post": {
+        "description": "Create a single result from the hello-world example",
+        "operationId": "helloWorldCreate",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Version"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "attributes": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "betaField": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "message",
+                      "betaField"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "attributes"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/HelloWorld"
+                    },
+                    "jsonapi": {
+                      "$ref": "#/components/schemas/JSONAPI"
+                    },
+                    "links": {
+                      "$ref": "#/components/schemas/Links"
+                    }
+                  },
+                  "required": [
+                    "jsonapi",
+                    "data",
+                    "links"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "A hello world entity being requested is returned",
+            "headers": {
+              "snyk-request-id": {
+                "$ref": "#/components/headers/RequestIDResponseHeader"
+              },
+              "snyk-version-requested": {
+                "$ref": "#/components/headers/VersionRequestedResponseHeader"
+              },
+              "snyk-version-served": {
+                "$ref": "#/components/headers/VersionServedResponseHeader"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "x-snyk-api-releases": [
+          "2021-06-13~beta"
+        ],
+        "x-snyk-api-version": "2021-06-13~beta"
+      },
+      "x-snyk-api-resource": "hello-world"
+    },
     "/examples/hello-world/{id}": {
       "get": {
         "description": "Get a single result from the hello-world example",
@@ -460,9 +559,7 @@
           "2021-06-07~experimental",
           "2021-06-13~beta"
         ],
-        "x-snyk-api-version": "2021-06-01~experimental",
-        "x-snyk-deprecated-by": "2021-06-07~experimental",
-        "x-snyk-sunset-eligible": "2021-07-08"
+        "x-snyk-api-version": "2021-06-13~beta"
       },
       "x-snyk-api-resource": "hello-world"
     },
@@ -700,6 +797,68 @@
         "x-snyk-api-version": "2021-06-04~experimental"
       },
       "x-snyk-api-resource": "projects"
+    },
+    "/orgs/{org_id}/projects/{project_id}": {
+      "delete": {
+        "description": "Delete an organization's project.",
+        "operationId": "deleteOrgsProject",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Version"
+          },
+          {
+            "description": "The id of the org containing the project",
+            "in": "path",
+            "name": "org_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The id of the project",
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Project was deleted",
+            "headers": {
+              "snyk-request-id": {
+                "$ref": "#/components/headers/RequestIDResponseHeader"
+              },
+              "snyk-version-requested": {
+                "$ref": "#/components/headers/VersionRequestedResponseHeader"
+              },
+              "snyk-version-served": {
+                "$ref": "#/components/headers/VersionServedResponseHeader"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "x-snyk-api-releases": [
+          "2021-08-20~experimental"
+        ],
+        "x-snyk-api-version": "2021-08-20~experimental"
+      },
+      "x-snyk-api-resource": "projects"
     }
   },
   "servers": [
@@ -708,5 +867,5 @@
       "url": "https://example.com/api/v3"
     }
   ],
-  "x-snyk-api-version": "2021-06-04~experimental"
+  "x-snyk-api-version": "2021-08-20~experimental"
 }

@@ -51,6 +51,7 @@ resources/_examples/hello-world/2021-06-01/spec.yaml
 resources/_examples/hello-world/2021-06-07/spec.yaml
 resources/_examples/hello-world/2021-06-13/spec.yaml
 resources/projects/2021-06-04/spec.yaml
+resources/projects/2021-08-20/spec.yaml
 `[1:])
 }
 
@@ -70,15 +71,16 @@ func TestVersionList(t *testing.T) {
 	out, err := ioutil.ReadFile(tmpFile)
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(out), qt.Equals, `
-+----------+-------------+-------------------------+----------------------------+--------+------------------+
-|   API    |  RESOURCE   |         VERSION         |            PATH            | METHOD |    OPERATION     |
-+----------+-------------+-------------------------+----------------------------+--------+------------------+
-| testdata | hello-world | 2021-06-01~experimental | /examples/hello-world/{id} | GET    | helloWorldGetOne |
-| testdata | hello-world | 2021-06-07~experimental | /examples/hello-world/{id} | GET    | helloWorldGetOne |
-| testdata | hello-world | 2021-06-13~beta         | /examples/hello-world      | POST   | helloWorldCreate |
-| testdata | hello-world | 2021-06-13~beta         | /examples/hello-world/{id} | GET    | helloWorldGetOne |
-| testdata | projects    | 2021-06-04~experimental | /orgs/{orgId}/projects     | GET    | getOrgsProjects  |
-+----------+-------------+-------------------------+----------------------------+--------+------------------+
++----------+-------------+-------------------------+--------------------------------------+--------+-------------------+
+|   API    |  RESOURCE   |         VERSION         |                 PATH                 | METHOD |     OPERATION     |
++----------+-------------+-------------------------+--------------------------------------+--------+-------------------+
+| testdata | hello-world | 2021-06-01~experimental | /examples/hello-world/{id}           | GET    | helloWorldGetOne  |
+| testdata | projects    | 2021-06-04~experimental | /orgs/{orgId}/projects               | GET    | getOrgsProjects   |
+| testdata | hello-world | 2021-06-07~experimental | /examples/hello-world/{id}           | GET    | helloWorldGetOne  |
+| testdata | hello-world | 2021-06-13~beta         | /examples/hello-world                | POST   | helloWorldCreate  |
+| testdata | hello-world | 2021-06-13~beta         | /examples/hello-world/{id}           | GET    | helloWorldGetOne  |
+| testdata | projects    | 2021-08-20~experimental | /orgs/{org_id}/projects/{project_id} | DELETE | deleteOrgsProject |
++----------+-------------+-------------------------+--------------------------------------+--------+-------------------+
 `[1:])
 }
 

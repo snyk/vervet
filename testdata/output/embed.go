@@ -15,4 +15,8 @@ import "embed"
 //go:embed 2021-06-13~experimental/spec.yaml
 //go:embed 2021-06-13~beta/spec.json
 //go:embed 2021-06-13~beta/spec.yaml
+//go:embed 2021-08-20~experimental/spec.json
+//go:embed 2021-08-20~experimental/spec.yaml
+//go:embed 2021-08-20~beta/spec.json
+//go:embed 2021-08-20~beta/spec.yaml
 var Versions embed.FS
