@@ -65,6 +65,9 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 			docs[i].Servers = []*openapi3.Server{{URL: config.ServerURL}}
 		}
 	}
+	if config.VersionError == nil {
+		config.VersionError = DefaultVersionError
+	}
 	v := &Validator{
 		versions:   make([]vervet.Version, len(docs)),
 		validators: make([]*openapi3filter.Validator, len(docs)),

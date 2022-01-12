@@ -1,0 +1,19 @@
+generators:
+  version-spec:
+    scope: version
+    filename: "resources/{{ .Resource }}/{{ .Version }}/spec.yaml"
+    template: "../../testdata/.vervet/resource/version/spec.yaml.tmpl"
+
+apis:
+  example:
+    resources:
+      - path: 'resources'
+        generators:
+          - version-spec
+    overlays:
+      - inline: |-
+          servers:
+            - url: https://example.com/api/v3
+              description: Test API v3
+    output:
+      path: 'releases'

@@ -1,0 +1,18 @@
+openapi: 3.0.3
+x-snyk-api-stability: experimental
+info:
+  title: api
+  version: 3.0.0
+servers:
+  - url: /api/api
+    description: Api API
+paths:
+  /things/{thingsId}:
+    delete:
+      description: Get an instance of things
+      operationId: getThings
+      parameters:
+        - { $ref: '../../common.yaml#/parameters/ThingsId' }
+      responses:
+        '204':
+          description: Returns an instance of things

@@ -1,0 +1,19 @@
+openapi: 3.0.3
+x-snyk-api-stability: experimental
+info:
+  title: api
+  version: 3.0.0
+servers:
+  - url: /api/api
+    description: Api API
+paths:
+  /things:
+    get:
+      description: List some things
+      operationId: listThings
+      responses:
+        '200':
+          description: Returns a list of things
+          content:
+            application/json:
+              schema: { $ref: '../../common.yaml#/schemas/ThingCollectionResponse' }

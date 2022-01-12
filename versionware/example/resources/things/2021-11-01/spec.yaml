@@ -1,0 +1,36 @@
+openapi: 3.0.3
+x-snyk-api-stability: experimental
+info:
+  title: api
+  version: 3.0.0
+servers:
+  - url: /api
+    description: Example API
+paths:
+  /things:
+    post:
+      description: Create a new things
+      operationId: createThings
+      responses:
+        '200':
+          description: Created things successfully
+          content:
+            application/json:
+              schema: { $ref: '../../common.yaml#/schemas/ThingResponse' }
+      requestBody:
+        description: Thing to be created
+        content:
+          application/json:
+            schema: { $ref: '../../common.yaml#/schemas/ThingAttributes' }
+  /things/{thingsId}:
+    get:
+      description: Get an instance of things
+      operationId: getThings
+      parameters:
+        - { $ref: '../../common.yaml#/parameters/ThingsId' }
+      responses:
+        '200':
+          description: Returns an instance of things
+          content:
+            application/json:
+              schema: { $ref: '../../common.yaml#/schemas/ThingResponse' }
