@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/ghodss/yaml"
 )
 
@@ -39,4 +41,36 @@ func WithGeneratedComment(yamlBuf []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to write output: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// LoadVersions loads all Vervet-compiled and versioned API specs from a
+// filesystem root and returns them.
+func LoadVersions(root fs.FS) ([]*openapi3.T, error) {
+	var versions []*openapi3.T
+	specFiles, err := fs.Glob(root, "*/spec.json")
+	if err != nil {
+		return nil, err
+	}
+	for _, specFile := range specFiles {
+		specData, err := fs.ReadFile(root, specFile)
+		if err != nil {
+			return nil, err
+		}
+		l := openapi3.NewLoader()
+		t, err := l.LoadFromData(specData)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := ExtensionString(t.ExtensionProps, ExtSnykApiVersion); IsExtensionNotFound(err) {
+			// Not a versioned OpenAPI spec, skip it
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+		versions = append(versions, t)
+	}
+	if len(versions) == 0 {
+		return nil, ErrNoMatchingVersion
+	}
+	return versions, nil
 }
