@@ -411,13 +411,13 @@
           "500": {
             "$ref": "#/components/responses/500"
           }
-        }
+        },
+        "x-snyk-api-releases": [
+          "2021-06-13~beta"
+        ],
+        "x-snyk-api-version": "2021-06-13~beta"
       },
-      "x-snyk-api-releases": [
-        "2021-06-13~beta"
-      ],
-      "x-snyk-api-resource": "hello-world",
-      "x-snyk-api-version": "2021-06-13~beta"
+      "x-snyk-api-resource": "hello-world"
     },
     "/examples/hello-world/{id}": {
       "get": {
@@ -491,15 +491,15 @@
           "500": {
             "$ref": "#/components/responses/500"
           }
-        }
+        },
+        "x-snyk-api-releases": [
+          "2021-06-01~experimental",
+          "2021-06-07~experimental",
+          "2021-06-13~beta"
+        ],
+        "x-snyk-api-version": "2021-06-13~beta"
       },
-      "x-snyk-api-releases": [
-        "2021-06-01~experimental",
-        "2021-06-07~experimental",
-        "2021-06-13~beta"
-      ],
-      "x-snyk-api-resource": "hello-world",
-      "x-snyk-api-version": "2021-06-13~beta"
+      "x-snyk-api-resource": "hello-world"
     },
     "/openapi": {
       "get": {
@@ -608,5 +608,6 @@
       "description": "Test API v3",
       "url": "https://example.com/api/v3"
     }
-  ]
+  ],
+  "x-snyk-api-version": "2021-06-13~beta"
 }

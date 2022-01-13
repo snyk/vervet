@@ -17,10 +17,10 @@ import (
 // YYYY-mm-dd, each containing a spec.yaml file.
 const SpecGlobPattern = "**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/spec.yaml"
 
-// SpecVersions defines an OpenAPI specification consisting of one or more
-// versioned resources.
+// SpecVersions stores a collection of versioned OpenAPI specs.
 type SpecVersions struct {
-	resources []*ResourceVersions
+	versions  VersionSlice
+	documents []*openapi3.T
 }
 
 // LoadSpecVersions returns SpecVersions loaded from a directory structure
@@ -49,109 +49,215 @@ func LoadSpecVersionsFileset(epPaths []string) (*SpecVersions, error) {
 		resourceNames = append(resourceNames, k)
 	}
 	sort.Strings(resourceNames)
-	svs := &SpecVersions{}
+	var resourceVersions resourceVersionsSlice
 	for _, resourcePath := range resourceNames {
 		specFiles := resourceMap[resourcePath]
 		eps, err := LoadResourceVersionsFileset(specFiles)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load resource at %q: %w", resourcePath, err)
 		}
-		svs.resources = append(svs.resources, eps)
+		resourceVersions = append(resourceVersions, eps)
 	}
-	if err := svs.Validate(); err != nil {
+	if err := resourceVersions.validate(); err != nil {
 		return nil, err
 	}
-	return svs, nil
+	return newSpecVersions(resourceVersions)
 }
 
-// Validate returns an error if there are conflicting resources at a spec version.
-func (s *SpecVersions) Validate() error {
-	for _, v := range s.Versions() {
-		resourcePaths := map[string]string{}
-		for _, eps := range s.resources {
-			ep, err := eps.At(v.String())
-			if err == ErrNoMatchingVersion {
-				continue
-			} else if err != nil {
-				return fmt.Errorf("validation failed: %w", err)
-			}
-			for path := range ep.Paths {
-				if conflict, ok := resourcePaths[path]; ok {
-					return fmt.Errorf("conflict: %q %q", conflict, ep.sourcePrefix)
+// Versions returns the distinct API versions in this collection of OpenAPI
+// documents.
+func (sv *SpecVersions) Versions() VersionSlice {
+	return sv.versions
+}
+
+// At returns the OpenAPI document that matches the given version. If the
+// version is not an exact match for an API release, the OpenAPI document
+// effective on the given version date for the version stability level is
+// returned. Returns ErrNoMatchingVersion if there is no release matching this
+// version.
+func (sv *SpecVersions) At(v Version) (*openapi3.T, error) {
+	i, err := sv.versions.ResolveIndex(v)
+	if err != nil {
+		return nil, err
+	}
+	// Because this collection contains each distinct version date and
+	// stability, perform an exact match on the most recent version date
+	// matching the requested stability. ResolveIndex may overshoot it because
+	// it returns equal or greater stability.
+	for ; i >= 0; i-- {
+		checkVersion := sv.versions[i]
+		if dateCmp, stabilityCmp := checkVersion.compareDateStability(&v); dateCmp <= 0 && stabilityCmp == 0 {
+			return sv.documents[i], nil
+		}
+	}
+	return nil, ErrNoMatchingVersion
+}
+
+func (sv *SpecVersions) resolveOperations() error {
+	type operationKey struct {
+		path, operation string
+	}
+	type operationVersion struct {
+		// src document where the active operation was declared
+		src *openapi3.T
+		// pathItem where the active operation was declared
+		pathItem *openapi3.PathItem
+		// operation where the active operation was declared
+		operation *openapi3.Operation
+		// spec version where the active operation was declared
+		version Version
+	}
+	type operationVersionMap map[operationKey]operationVersion
+	activeOpsByStability := map[Stability]operationVersionMap{}
+	for i, v := range sv.versions {
+		doc := sv.documents[i]
+		currentActiveOps, ok := activeOpsByStability[v.Stability]
+		if !ok {
+			currentActiveOps = operationVersionMap{}
+			activeOpsByStability[v.Stability] = currentActiveOps
+		}
+
+		// Operations declared in this spec become active for the next version
+		// at this stability.
+		nextActiveOps := operationVersionMap{}
+		for path, pathItem := range doc.Paths {
+			for _, opName := range operationNames {
+				op := getOperationByName(pathItem, opName)
+				if op != nil {
+					nextActiveOps[operationKey{path, opName}] = operationVersion{
+						doc, pathItem, op, v,
+					}
 				}
-				resourcePaths[path] = ep.sourcePrefix
 			}
+		}
+
+		// Operations currently active for this versions's stability get
+		// carried forward and remain active.
+		for opKey, opValue := range currentActiveOps {
+			currentPathItem := doc.Paths[opKey.path]
+			if currentPathItem == nil {
+				currentPathItem = &openapi3.PathItem{
+					ExtensionProps: opValue.pathItem.ExtensionProps,
+					Description:    opValue.pathItem.Description,
+					Summary:        opValue.pathItem.Summary,
+					Servers:        opValue.pathItem.Servers,
+					Parameters:     opValue.pathItem.Parameters,
+				}
+				doc.Paths[opKey.path] = currentPathItem
+			}
+			currentOp := getOperationByName(currentPathItem, opKey.operation)
+			if currentOp == nil {
+				// The added operation may reference components from its source
+				// document; import those that are missing here.
+				mergeComponents(doc, opValue.src, false)
+				setOperationByName(currentPathItem, opKey.operation, opValue.operation)
+			}
+		}
+
+		// Update currently active operations from any declared in this version.
+		for opKey, nextOpValue := range nextActiveOps {
+			currentActiveOps[opKey] = nextOpValue
 		}
 	}
 	return nil
 }
 
-// Resources returns a slice of each Resource contained in the spec.
-func (s *SpecVersions) Resources() []*ResourceVersions {
-	return s.resources
+var operationNames = []string{
+	"connect", "delete", "get", "head", "options", "patch", "post", "put", "trace",
 }
 
-// Versions returns a slice containing each Version defined by an Resource in
-// this specification. Versions are sorted in ascending order.
-func (s *SpecVersions) Versions() []Version {
-	vset := map[Version]bool{}
-	for _, eps := range s.resources {
-		for i := range eps.versions {
-			vset[eps.versions[i].Version] = true
+func getOperationByName(path *openapi3.PathItem, op string) *openapi3.Operation {
+	switch op {
+	case "connect":
+		return path.Connect
+	case "delete":
+		return path.Delete
+	case "get":
+		return path.Get
+	case "head":
+		return path.Head
+	case "options":
+		return path.Options
+	case "patch":
+		return path.Patch
+	case "post":
+		return path.Post
+	case "put":
+		return path.Put
+	case "trace":
+		return path.Trace
+	default:
+		return nil
+	}
+}
+
+func setOperationByName(path *openapi3.PathItem, opName string, op *openapi3.Operation) {
+	switch opName {
+	case "connect":
+		path.Connect = op
+	case "delete":
+		path.Delete = op
+	case "get":
+		path.Get = op
+	case "head":
+		path.Head = op
+	case "options":
+		path.Options = op
+	case "patch":
+		path.Patch = op
+	case "post":
+		path.Post = op
+	case "put":
+		path.Put = op
+	case "trace":
+		path.Trace = op
+	default:
+		panic("unsupported operation: " + opName)
+	}
+}
+
+var stabilities = []Stability{StabilityExperimental, StabilityBeta, StabilityGA}
+
+func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
+	versions := specs.versions()
+	var versionDates []time.Time
+	for _, v := range versions {
+		if len(versionDates) == 0 || versionDates[len(versionDates)-1] != v.Date {
+			versionDates = append(versionDates, v.Date)
 		}
 	}
-	versions := make([]Version, len(vset))
-	i := 0
-	for k := range vset {
-		v := k
-		versions[i] = v
-		i++
-	}
-	sort.Sort(VersionSlice(versions))
-	return versions
-}
 
-// At returns the OpenAPI document matching a version string.
-func (s *SpecVersions) At(vs string) (*openapi3.T, error) {
-	if vs == "" {
-		vs = time.Now().UTC().Format("2006-01-02")
+	documentVersions := map[Version]*openapi3.T{}
+	for _, date := range versionDates {
+		for _, stability := range stabilities {
+			v := Version{Date: date, Stability: stability}
+			doc, err := specs.at(v)
+			if err == ErrNoMatchingVersion {
+				continue
+			} else if err != nil {
+				return nil, err
+			}
+			documentVersions[v] = doc
+		}
 	}
-	v, err := ParseVersion(vs)
+	versions = VersionSlice{}
+	for v := range documentVersions {
+		versions = append(versions, v)
+	}
+	sort.Sort(versions)
+	sv := &SpecVersions{
+		versions:  versions,
+		documents: make([]*openapi3.T, len(versions)),
+	}
+	for i := range versions {
+		sv.documents[i] = documentVersions[versions[i]]
+		sv.documents[i].ExtensionProps.Extensions[ExtSnykApiVersion] = versions[i].String()
+	}
+	err := sv.resolveOperations()
 	if err != nil {
 		return nil, err
 	}
-	var result *openapi3.T
-	for _, eps := range s.resources {
-		ep, err := eps.At(v.String())
-		if err == ErrNoMatchingVersion {
-			continue
-		} else if err != nil {
-			return nil, err
-		}
-		if result == nil {
-			// Assign a clean copy of the contents of the first resource to the
-			// resulting spec. Marshaling is used to ensure that references in
-			// the source resource are dropped from the result, which could be
-			// modified on subsequent merges.
-			buf, err := ep.T.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			result = &openapi3.T{}
-			err = result.UnmarshalJSON(buf)
-			if err != nil {
-				return nil, err
-			}
-		}
-		Merge(result, ep.T, false)
-	}
-	if result == nil {
-		return nil, ErrNoMatchingVersion
-	}
-	// Remove the API stability extension from the merged OpenAPI spec, this
-	// extension is only applicable to individual resource version specs.
-	delete(result.ExtensionProps.Extensions, ExtSnykApiStability)
-	return result, nil
+	return sv, nil
 }
 
 func findResources(root string) ([]string, error) {
@@ -164,5 +270,5 @@ func findResources(root string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return paths, err
+	return paths, nil
 }

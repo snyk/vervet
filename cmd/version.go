@@ -49,41 +49,36 @@ func VersionList(ctx *cli.Context) error {
 			if err != nil {
 				return err
 			}
-			specVersions, err := vervet.LoadSpecVersionsFileset(specFiles)
+			resources, err := vervet.LoadResourceVersionsFileset(specFiles)
 			if err != nil {
 				return err
 			}
-			for _, rc := range specVersions.Resources() {
-				if rcArg := ctx.Args().Get(1); rcArg != "" && rcArg != rc.Name() {
-					continue
+			for _, version := range resources.Versions() {
+				rc, err := resources.At(version.String())
+				if err != nil {
+					return err
 				}
-				for _, version := range rc.Versions() {
-					doc, err := rc.At(version.String())
-					if err != nil {
-						return err
+				var pathNames []string
+				for k := range rc.Paths {
+					pathNames = append(pathNames, k)
+				}
+				sort.Strings(pathNames)
+				for _, pathName := range pathNames {
+					pathSpec := rc.Paths[pathName]
+					if pathSpec.Get != nil {
+						table.Append([]string{apiName, rc.Name, version.String(), pathName, "GET", pathSpec.Get.OperationID})
 					}
-					var pathNames []string
-					for k := range doc.Paths {
-						pathNames = append(pathNames, k)
+					if pathSpec.Post != nil {
+						table.Append([]string{apiName, rc.Name, version.String(), pathName, "POST", pathSpec.Post.OperationID})
 					}
-					sort.Strings(pathNames)
-					for _, pathName := range pathNames {
-						pathSpec := doc.Paths[pathName]
-						if pathSpec.Get != nil {
-							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "GET", pathSpec.Get.OperationID})
-						}
-						if pathSpec.Post != nil {
-							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "POST", pathSpec.Post.OperationID})
-						}
-						if pathSpec.Put != nil {
-							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "PUT", pathSpec.Put.OperationID})
-						}
-						if pathSpec.Patch != nil {
-							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "PATCH", pathSpec.Patch.OperationID})
-						}
-						if pathSpec.Delete != nil {
-							table.Append([]string{apiName, rc.Name(), version.String(), pathName, "DELETE", pathSpec.Delete.OperationID})
-						}
+					if pathSpec.Put != nil {
+						table.Append([]string{apiName, rc.Name, version.String(), pathName, "PUT", pathSpec.Put.OperationID})
+					}
+					if pathSpec.Patch != nil {
+						table.Append([]string{apiName, rc.Name, version.String(), pathName, "PATCH", pathSpec.Patch.OperationID})
+					}
+					if pathSpec.Delete != nil {
+						table.Append([]string{apiName, rc.Name, version.String(), pathName, "DELETE", pathSpec.Delete.OperationID})
 					}
 				}
 			}

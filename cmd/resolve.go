@@ -19,7 +19,11 @@ func Resolve(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	specVersion, err := specVersions.At(ctx.String("at"))
+	version, err := vervet.ParseVersion(ctx.String("at"))
+	if err != nil {
+		return err
+	}
+	specVersion, err := specVersions.At(*version)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,35 @@
+openapi: 3.0.3
+x-snyk-api-stability: experimental
+info:
+  title: Registry
+  version: 3.0.0
+servers:
+  - url: /api/v3
+    description: Snyk Registry
+paths:
+  /orgs/{org_id}/projects/{project_id}:
+    delete:
+      description: Delete an organization's project.
+      operationId: deleteOrgsProject
+      parameters:
+        - { $ref: '../../schemas/parameters/version.yaml#/Version' }
+        - name: org_id
+          in: path
+          required: true
+          description: The id of the org containing the project
+          schema:
+            type: string
+        - name: project_id
+          in: path
+          required: true
+          description: The id of the project
+          schema:
+            type: string
+      responses:
+        '400': { $ref: '../../schemas/responses/400.yaml#/400' }
+        '401': { $ref: '../../schemas/responses/401.yaml#/401' }
+        '404': { $ref: '../../schemas/responses/404.yaml#/404' }
+        '500': { $ref: '../../schemas/responses/500.yaml#/500' }
+        '204':
+          description: 'Project was deleted'
+          x-snyk-include-headers: { $ref: '../../schemas/headers/common-response.yaml#/Common' }
