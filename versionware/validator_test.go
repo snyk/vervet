@@ -191,7 +191,6 @@ type validatorTestHandler struct {
 	errStatusCode     int
 }
 
-const v20210820_Body = `{"id": "42", "contents": {"name": "foo", "expected": 9, "actual": 10}}`
 const v20210916_Body = `{"id": "42", "contents": {"name": "foo", "expected": 9, "actual": 10, "noodles": true}}`
 
 func (h validatorTestHandler) withDefaults() validatorTestHandler {
@@ -216,21 +215,33 @@ func (h *validatorTestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", h.contentType)
 	if h.errStatusCode != 0 {
 		w.WriteHeader(h.errStatusCode)
-		w.Write([]byte(h.errBody))
+		_, err := w.Write([]byte(h.errBody))
+		if err != nil {
+			panic(err)
+		}
 		return
 	}
 	if !testUrlRE.MatchString(r.URL.Path) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(h.errBody))
+		_, err := w.Write([]byte(h.errBody))
+		if err != nil {
+			panic(err)
+		}
 		return
 	}
 	switch r.Method {
 	case "GET":
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(h.getBody))
+		_, err := w.Write([]byte(h.getBody))
+		if err != nil {
+			panic(err)
+		}
 	case "POST":
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(h.postBody))
+		_, err := w.Write([]byte(h.postBody))
+		if err != nil {
+			panic(err)
+		}
 	default:
 		http.Error(w, h.errBody, http.StatusMethodNotAllowed)
 	}
