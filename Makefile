@@ -33,6 +33,7 @@ lint-docker:
 .PHONY: test
 test:
 	go test ./... -count=1
+	(cd versionware/example; go generate . && go test ./... -count=1)
 
 .PHONY: test-coverage
 test-coverage:

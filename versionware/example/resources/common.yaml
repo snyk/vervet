@@ -1,0 +1,32 @@
+schemas:
+  ThingAttributes:
+    type: object
+    properties:
+      name:
+        type: string
+      color:
+        type: string
+        enum: [red, green, blue]
+      strangeness:
+        type: number
+    required: [name, color, strangeness]
+  ThingResponse:
+    type: object
+    properties:
+      id:
+        type: string
+      attributes: { $ref: "#/schemas/ThingAttributes" }
+  ThingCollectionResponse:
+    type: object
+    properties:
+      things:
+        type: array
+        items: { $ref: "#/schemas/ThingResponse" }
+parameters:
+  ThingsId:
+    name: thingsId
+    in: path
+    required: true
+    description: Unique identifier for things instances
+    schema:
+      type: string
