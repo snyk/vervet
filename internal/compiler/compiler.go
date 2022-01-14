@@ -375,8 +375,9 @@ import "embed"
 {{ range .VersionSpecFiles -}}
 //go:embed {{ . }}
 {{ end -}}
+// Versions contains OpenAPI specs for each distinct release version.
 var Versions embed.FS
-`))
+`[1:]))
 
 // BuildAll builds all APIs in the project.
 func (c *Compiler) BuildAll(ctx context.Context) error {

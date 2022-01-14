@@ -12,9 +12,9 @@ import (
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	promware "github.com/slok/go-http-metrics/middleware"
 	promware_std "github.com/slok/go-http-metrics/middleware/std"
+
 	"github.com/snyk/vervet"
 	"github.com/snyk/vervet/versionware"
-
 	. "github.com/snyk/vervet/versionware/example"
 	"github.com/snyk/vervet/versionware/example/releases"
 	release_2021_11_01 "github.com/snyk/vervet/versionware/example/resources/things/2021-11-01"
@@ -23,7 +23,7 @@ import (
 	"github.com/snyk/vervet/versionware/example/store"
 )
 
-func ExampleGorilla() {
+func Example() {
 	// Set up a test HTTP server
 	var h http.Handler
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,10 @@ func ExampleGorilla() {
 	// Observability stuff at the top-level, not part of the API
 	root.Handle("/metrics", promhttp.Handler())
 	root.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
+		_, err := w.Write([]byte("OK"))
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	// Do a health check

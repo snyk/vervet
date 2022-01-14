@@ -5,7 +5,6 @@ import (
 	"path"
 
 	"github.com/snyk/vervet"
-
 	"github.com/snyk/vervet/versionware/example/store"
 )
 
