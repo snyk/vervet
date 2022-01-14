@@ -20,7 +20,7 @@ if [ -z $(git config user.email) ]; then
     git config user.name "Vervet CI"
 fi
 git tag ${VERSION}
-git push -q https://${GITHUB_TOKEN}@github.com/snyk/vervet.git --tags
+git push -q https://${GH_TOKEN}@github.com/snyk/vervet.git --tags
 
 # Publish npm package
 (cd dist; npm publish)
@@ -29,4 +29,4 @@ git push -q https://${GITHUB_TOKEN}@github.com/snyk/vervet.git --tags
 # Do this last; if it fails, it's easy to create a release in the UI.
 # Pushing the tags and publishing to NPM are more important.
 go install github.com/goreleaser/goreleaser@latest
-goreleaser release --rm-dist
+GITHUB_TOKEN=${GH_TOKEN} goreleaser release --rm-dist
