@@ -13,14 +13,20 @@ if [ -z "${GOPATH:-}" ]; then
 fi
 export PATH=$GOPATH/bin:$PATH
 
-go install github.com/goreleaser/goreleaser@latest
-
-# Push tags
+# Push tags in CI environment
+if [ -z $(git config user.email) ]; then
+    git config credential.helper 'cache --timeout=120'
+    git config user.email "vervet-ci@noreply.snyk.io"
+    git config user.name "Vervet CI"
+fi
 git tag ${VERSION}
-git push --tags ${GIT_REMOTE:-origin}
+git push -q https://${GITHUB_TOKEN}@github.com/snyk/vervet.git --tags
 
 # Publish npm package
 (cd dist; npm publish)
 
 # Github release
+# Do this last; if it fails, it's easy to create a release in the UI.
+# Pushing the tags and publishing to NPM are more important.
+go install github.com/goreleaser/goreleaser@latest
 goreleaser release --rm-dist
