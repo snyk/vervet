@@ -96,12 +96,13 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - run:
-          name: Build package
-          command: ./scripts/dist.bash
-      - run:
-          name: Release package
-          command: cd dist; npx semantic-release -b main --dry-run
+      - run: |-
+          go install github.com/smlx/ccv@latest
+          export VERSION=$(ccv)
+          if [ -z $(git tag -l $(ccv)) ]; then
+            ./scripts/dist.bash
+            ./scripts/release.bash
+          fi
 
 workflows:
   version: 2
