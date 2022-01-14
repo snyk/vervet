@@ -22,6 +22,7 @@ update-deps:
 .PHONY: lint
 lint:
 	golangci-lint run -v ./...
+	(cd versionware/example; golangci-lint run -v ./...)
 
 .PHONY: lint-docker
 lint-docker:

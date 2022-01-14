@@ -7,7 +7,6 @@ import (
 	"path"
 
 	"github.com/snyk/vervet"
-
 	"github.com/snyk/vervet/versionware/example/resources/things"
 	"github.com/snyk/vervet/versionware/example/store"
 )
@@ -15,7 +14,7 @@ import (
 // Version is the resource release version of handlers in this package.
 var Version = vervet.MustParseVersion("2021-11-01~experimental")
 
-// GetThing returns a request handler that uses the given data store.
+// CreateThing returns a request handler that uses the given data store.
 // It creates a new thing.
 func CreateThing(s *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

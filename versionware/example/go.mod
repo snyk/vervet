@@ -3,6 +3,7 @@ module github.com/snyk/vervet/versionware/example
 go 1.16
 
 require (
+	github.com/frankban/quicktest v1.13.0 // indirect
 	github.com/getkin/kin-openapi v0.87.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/gorilla/mux v1.8.0

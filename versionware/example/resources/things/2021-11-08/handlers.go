@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/snyk/vervet"
-
 	"github.com/snyk/vervet/versionware/example/resources/things"
 	"github.com/snyk/vervet/versionware/example/store"
 )
