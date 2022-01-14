@@ -23,6 +23,9 @@ git tag ${VERSION}
 git push -q https://${GH_TOKEN}@github.com/snyk/vervet.git --tags
 
 # Publish npm package
+if [ ! -e "dist/.npmrc" ]; then
+    echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > dist/.npmrc
+fi
 (cd dist; npm publish)
 
 # Github release

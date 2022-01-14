@@ -96,6 +96,8 @@ jobs:
     <<: *defaults
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/vervet
       - run: |-
           go install github.com/smlx/ccv@latest
           export VERSION=$(ccv)
