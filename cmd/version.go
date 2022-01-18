@@ -11,10 +11,10 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet"
-	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/compiler"
-	"github.com/snyk/vervet/internal/generator"
+	"github.com/snyk/vervet/v3"
+	"github.com/snyk/vervet/v3/config"
+	"github.com/snyk/vervet/v3/internal/compiler"
+	"github.com/snyk/vervet/v3/internal/generator"
 )
 
 // VersionList is a command that lists all the versions of matching resources.

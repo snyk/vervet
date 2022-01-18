@@ -10,10 +10,10 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/files"
-	"github.com/snyk/vervet/internal/linter"
-	"github.com/snyk/vervet/testdata"
+	"github.com/snyk/vervet/v3/config"
+	"github.com/snyk/vervet/v3/internal/files"
+	"github.com/snyk/vervet/v3/internal/linter"
+	"github.com/snyk/vervet/v3/testdata"
 )
 
 func setup(c *qt.C) {

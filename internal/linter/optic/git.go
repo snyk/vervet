@@ -13,7 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"go.uber.org/multierr"
 
-	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/v3/config"
 )
 
 // gitRepoSource is a fileSource that resolves files out of a specific git

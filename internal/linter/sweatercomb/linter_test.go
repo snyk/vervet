@@ -11,7 +11,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/config"
+	"github.com/snyk/vervet/v3/config"
 )
 
 func TestLinter(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/testdata"
+	"github.com/snyk/vervet/v3/config"
+	"github.com/snyk/vervet/v3/testdata"
 )
 
 func setup(c *qt.C) {

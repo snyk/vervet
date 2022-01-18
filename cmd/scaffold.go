@@ -7,7 +7,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/internal/scaffold"
+	"github.com/snyk/vervet/v3/internal/scaffold"
 )
 
 // ScaffoldInit creates a new project configuration from a provided scaffold directory.

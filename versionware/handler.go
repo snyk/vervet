@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/v3"
 )
 
 const (

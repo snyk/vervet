@@ -8,8 +8,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/cmd"
-	"github.com/snyk/vervet/testdata"
+	"github.com/snyk/vervet/v3/cmd"
+	"github.com/snyk/vervet/v3/testdata"
 )
 
 var vervetConfigFile = "./.vervet.yaml"

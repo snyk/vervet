@@ -6,8 +6,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/config"
-	"github.com/snyk/vervet/internal/compiler"
+	"github.com/snyk/vervet/v3/config"
+	"github.com/snyk/vervet/v3/internal/compiler"
 )
 
 // Compile compiles versioned resources into versioned API specs.
