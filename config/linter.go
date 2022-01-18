@@ -4,7 +4,7 @@ import "fmt"
 
 const (
 	defaultSweaterCombImage = "gcr.io/snyk-main/sweater-comb:latest"
-	defaultOpticCIImage     = "ghcr.io/snyk/sweater-comb:latest"
+	defaultOpticCIImage     = "snyk/sweater-comb:latest"
 )
 
 var defaultSpectralExtraArgs = []string{"--format", "text"}
