@@ -153,14 +153,25 @@ func (o *Optic) Run(ctx context.Context, root string, paths ...string) error {
 		return err
 	}
 	var dockerArgs []string
+	var fromFilter, toFilter func(string) string
 	if localFrom != "" {
 		dockerArgs = append(dockerArgs, "-v", localFrom+":/from/"+root)
+		if o.isDocker() {
+			fromFilter = func(s string) string {
+				return strings.Replace(s, localFrom, "/from/"+root, 1)
+			}
+		}
 	}
 	if localTo != "" {
 		dockerArgs = append(dockerArgs, "-v", localTo+":/to/"+root)
+		if o.isDocker() {
+			toFilter = func(s string) string {
+				return strings.Replace(s, localTo, "/to/"+root, 1)
+			}
+		}
 	}
 	for i := range paths {
-		comparison, volumeArgs, err := o.newComparison(paths[i])
+		comparison, volumeArgs, err := o.newComparison(paths[i], fromFilter, toFilter)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 		} else {
@@ -191,7 +202,7 @@ type bulkCompareInput struct {
 	Comparisons []comparison `json:"comparisons,omitempty"`
 }
 
-func (o *Optic) newComparison(path string) (comparison, []string, error) {
+func (o *Optic) newComparison(path string, fromFilter, toFilter func(string) string) (comparison, []string, error) {
 	var volumeArgs []string
 
 	// TODO: This assumes the file being linted is a resource version spec
@@ -212,12 +223,18 @@ func (o *Optic) newComparison(path string) (comparison, []string, error) {
 		return comparison{}, nil, err
 	}
 	cmp.From = fromFile
+	if fromFilter != nil {
+		cmp.From = fromFilter(cmp.From)
+	}
 
 	toFile, err := o.toSource.Fetch(path)
 	if err != nil {
 		return comparison{}, nil, err
 	}
 	cmp.To = toFile
+	if toFilter != nil {
+		cmp.To = toFilter(cmp.To)
+	}
 
 	return cmp, volumeArgs, nil
 }
@@ -234,6 +251,13 @@ func (o *Optic) bulkCompareScript(ctx context.Context, comparisons []comparison)
 	err = json.NewEncoder(inputFile).Encode(&input)
 	if err != nil {
 		return err
+	}
+	if o.debug {
+		log.Println("input.json:")
+		err = json.NewEncoder(os.Stderr).Encode(&input)
+		if err != nil {
+			return err
+		}
 	}
 	if err := inputFile.Sync(); err != nil {
 		return err

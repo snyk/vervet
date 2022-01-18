@@ -2,11 +2,13 @@ package optic
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -145,10 +147,15 @@ func TestNewGitFile(t *testing.T) {
 	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs, qt.HasLen, 1)
-	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
+	cmdline := strings.Join(runner.runs[0], " ")
+	c.Assert(cmdline, qt.Matches,
 		``+
 			`^docker run --rm -v .*:/input.json -v .*/hello:/to/hello `+
 			`some-image bulk-compare --input /input.json`)
+	assertInputJSON(c, `^.* -v (.*):/input.json .*`, cmdline, func(c *qt.C, cmp comparison) {
+		c.Assert(cmp.From, qt.Matches, `^/from/.*`)
+		c.Assert(cmp.To, qt.Matches, `^/to/.*`)
+	})
 
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
@@ -195,14 +202,34 @@ func TestGitScript(t *testing.T) {
 	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.IsNil)
 	c.Assert(runner.runs, qt.HasLen, 1)
-	c.Assert(strings.Join(runner.runs[0], " "), qt.Matches,
+	cmdline := strings.Join(runner.runs[0], " ")
+	c.Assert(cmdline, qt.Matches,
 		`/usr/local/lib/node_modules/.bin/sweater-comb bulk-compare --input `+filepath.Clean(os.TempDir())+`.*-input.json`)
+	assertInputJSON(c, `^.* --input (.*-input\.json).*`, cmdline, func(c *qt.C, cmp comparison) {
+		c.Assert(cmp.From, qt.Not(qt.Contains), "/from")
+		c.Assert(cmp.To, qt.Not(qt.Contains), "/to")
+	})
 
 	// Command failed.
 	runner = &mockRunner{err: fmt.Errorf("bad wolf")}
 	l.runner = runner
 	err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
 	c.Assert(err, qt.ErrorMatches, ".*: bad wolf")
+}
+
+func assertInputJSON(c *qt.C, pattern, s string, f func(*qt.C, comparison)) {
+	re, err := regexp.Compile(pattern)
+	c.Assert(err, qt.IsNil)
+	matches := re.FindAllStringSubmatch(s, -1)
+	s = matches[0][1]
+	contents, err := ioutil.ReadFile(s)
+	c.Assert(err, qt.IsNil)
+	var input bulkCompareInput
+	err = json.Unmarshal(contents, &input)
+	c.Assert(err, qt.IsNil)
+	for i := range input.Comparisons {
+		f(c, input.Comparisons[i])
+	}
 }
 
 func TestMatchDisjointSources(t *testing.T) {
