@@ -5,7 +5,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/v3"
 )
 
 // Localize references and validate a single OpenAPI spec file

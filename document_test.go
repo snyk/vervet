@@ -6,8 +6,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet"
-	"github.com/snyk/vervet/testdata"
+	"github.com/snyk/vervet/v3"
+	"github.com/snyk/vervet/v3/testdata"
 )
 
 func TestNewDocumentFile(t *testing.T) {

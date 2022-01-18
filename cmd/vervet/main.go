@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/snyk/vervet/cmd"
+	"github.com/snyk/vervet/v3/cmd"
 )
 
 func main() {
