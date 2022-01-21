@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -19,6 +20,7 @@ type Validator struct {
 	versions   vervet.VersionSlice
 	validators []*openapi3filter.Validator
 	errFunc    VersionErrorHandler
+	today      func() time.Time
 }
 
 // ValidatorConfig defines how a new Validator may be configured.
@@ -54,6 +56,11 @@ var defaultValidatorConfig = ValidatorConfig{
 	},
 }
 
+func today() time.Time {
+	now := time.Now().UTC()
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+}
+
 // NewValidator returns a new validation middleware, which validates versioned
 // requests according to the given OpenAPI spec versions. For configuration
 // defaults, a nil config may be used.
@@ -84,6 +91,7 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		versions:   make([]vervet.Version, len(docs)),
 		validators: make([]*openapi3filter.Validator, len(docs)),
 		errFunc:    config.VersionError,
+		today:      today,
 	}
 	validatorVersions := map[string]*openapi3filter.Validator{}
 	for i := range docs {
@@ -128,6 +136,11 @@ func (v *Validator) Middleware(h http.Handler) http.Handler {
 		requested, err := vervet.ParseVersion(versionParam)
 		if err != nil {
 			v.errFunc(w, req, http.StatusBadRequest, err)
+			return
+		}
+		if t := v.today(); requested.Date.After(t) {
+			v.errFunc(w, req, http.StatusBadRequest,
+				fmt.Errorf("requested version newer than present date %s", t))
 			return
 		}
 		resolvedIndex, err := v.versions.ResolveIndex(*requested)
