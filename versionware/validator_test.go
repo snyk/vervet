@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"testing"
+	"time"
 
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -414,6 +415,17 @@ func TestValidator(t *testing.T) {
 			body:       `{"id": "42", "contents": {"name": "foo", "expected": 9, "actual": 10}, "extra": true}`,
 		},
 		strict: false,
+	}, {
+		name:    "invalid GET for API in the future",
+		handler: validatorTestHandler{}.withDefaults(),
+		request: testRequest{
+			method: "GET",
+			path:   "/test/42?version=2023-09-17",
+		},
+		response: testResponse{
+			400, "Bad Request\n",
+		},
+		strict: true,
 	}}
 	for i, test := range tests {
 		c.Run(fmt.Sprintf("%d %s", i, test.name), func(c *qt.C) {
@@ -429,6 +441,9 @@ func TestValidator(t *testing.T) {
 			config.Options = append(config.Options, append(test.options, openapi3filter.Strict(test.strict))...)
 			v, err := versionware.NewValidator(&config, docs...)
 			c.Assert(err, qt.IsNil)
+			v.SetToday(func() time.Time {
+				return time.Date(2022, time.January, 21, 0, 0, 0, 0, time.UTC)
+			})
 			h = v.Middleware(&test.handler)
 
 			// Test: make a client request
