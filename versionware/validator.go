@@ -3,6 +3,7 @@ package versionware
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -61,8 +62,19 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		config = &defaultValidatorConfig
 	}
 	if config.ServerURL != "" {
+		serverURL, err := url.Parse(config.ServerURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ServerURL: %w", err)
+		}
+		switch serverURL.Scheme {
+		case "http", "https":
+		case "":
+			return nil, fmt.Errorf("invalid ServerURL: missing scheme")
+		default:
+			return nil, fmt.Errorf("invalid ServerURL: unsupported scheme %q (did you forget to specify the scheme://?)", serverURL.Scheme)
+		}
 		for i := range docs {
-			docs[i].Servers = []*openapi3.Server{{URL: config.ServerURL}}
+			docs[i].Servers = []*openapi3.Server{{URL: serverURL.String()}}
 		}
 	}
 	if config.VersionError == nil {

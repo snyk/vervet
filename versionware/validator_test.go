@@ -453,3 +453,23 @@ func TestValidator(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatorConfig(t *testing.T) {
+	c := qt.New(t)
+	_, err := versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "://"})
+	c.Assert(err, qt.ErrorMatches, `invalid ServerURL: parse "://": missing protocol scheme`)
+
+	docs := make([]*openapi3.T, 2)
+	for i, specStr := range []string{v20210820, v20210916} {
+		doc, err := openapi3.NewLoader().LoadFromData([]byte(specStr))
+		c.Assert(err, qt.IsNil)
+		err = doc.Validate(context.Background())
+		c.Assert(err, qt.IsNil)
+		docs[i] = doc
+	}
+	_, err = versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "localhost:8080"}, docs...)
+	c.Assert(err, qt.ErrorMatches, `invalid ServerURL: unsupported scheme "localhost" \(did you forget to specify the scheme://\?\)`)
+	_, err = versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "http://localhost:8080"}, docs...)
+	c.Assert(err, qt.IsNil)
+	c.Assert(docs[0].Servers[0].URL, qt.Equals, "http://localhost:8080")
+}
