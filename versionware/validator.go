@@ -65,6 +65,9 @@ func today() time.Time {
 // requests according to the given OpenAPI spec versions. For configuration
 // defaults, a nil config may be used.
 func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, error) {
+	if len(docs) == 0 {
+		return nil, fmt.Errorf("no OpenAPI versions provided")
+	}
 	if config == nil {
 		config = &defaultValidatorConfig
 	}
