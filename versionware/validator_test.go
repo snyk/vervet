@@ -471,8 +471,18 @@ func TestValidator(t *testing.T) {
 
 func TestValidatorConfig(t *testing.T) {
 	c := qt.New(t)
+
+	// No specs provided
 	_, err := versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "://"})
+	c.Assert(err, qt.ErrorMatches, `no OpenAPI versions provided`)
+
+	// Invalid server URL
+	_, err = versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "://"}, &openapi3.T{})
 	c.Assert(err, qt.ErrorMatches, `invalid ServerURL: parse "://": missing protocol scheme`)
+
+	// Missing version in OpenAPI spec
+	_, err = versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "http://example.com"}, &openapi3.T{})
+	c.Assert(err, qt.ErrorMatches, `extension "x-snyk-api-version" not found`)
 
 	docs := make([]*openapi3.T, 2)
 	for i, specStr := range []string{v20210820, v20210916} {
@@ -482,8 +492,12 @@ func TestValidatorConfig(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		docs[i] = doc
 	}
+
+	// Invalid server URL
 	_, err = versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "localhost:8080"}, docs...)
 	c.Assert(err, qt.ErrorMatches, `invalid ServerURL: unsupported scheme "localhost" \(did you forget to specify the scheme://\?\)`)
+
+	// Valid
 	_, err = versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "http://localhost:8080"}, docs...)
 	c.Assert(err, qt.IsNil)
 	c.Assert(docs[0].Servers[0].URL, qt.Equals, "http://localhost:8080")
