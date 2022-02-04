@@ -84,6 +84,31 @@ func TestVersionList(t *testing.T) {
 `[1:])
 }
 
+func TestVersionListResource(t *testing.T) {
+	c := qt.New(t)
+	tmp := c.TempDir()
+	tmpFile := filepath.Join(tmp, "out")
+	c.Run("cmd", func(c *qt.C) {
+		output, err := os.Create(tmpFile)
+		c.Assert(err, qt.IsNil)
+		defer output.Close()
+		c.Patch(&os.Stdout, output)
+		cd(c, testdata.Path("."))
+		err = cmd.Vervet.Run([]string{"vervet", "version", "list", "testdata", "projects"})
+		c.Assert(err, qt.IsNil)
+	})
+	out, err := ioutil.ReadFile(tmpFile)
+	c.Assert(err, qt.IsNil)
+	c.Assert(string(out), qt.Equals, `
++----------+----------+-------------------------+--------------------------------------+--------+-------------------+
+|   API    | RESOURCE |         VERSION         |                 PATH                 | METHOD |     OPERATION     |
++----------+----------+-------------------------+--------------------------------------+--------+-------------------+
+| testdata | projects | 2021-06-04~experimental | /orgs/{orgId}/projects               | GET    | getOrgsProjects   |
+| testdata | projects | 2021-08-20~experimental | /orgs/{org_id}/projects/{project_id} | DELETE | deleteOrgsProject |
++----------+----------+-------------------------+--------------------------------------+--------+-------------------+
+`[1:])
+}
+
 func TestVersionNew(t *testing.T) {
 	c := qt.New(t)
 
