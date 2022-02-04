@@ -58,6 +58,9 @@ func VersionList(ctx *cli.Context) error {
 				if err != nil {
 					return err
 				}
+				if rcArg := ctx.Args().Get(1); rcArg != "" && rcArg != rc.Name {
+					continue
+				}
 				var pathNames []string
 				for k := range rc.Paths {
 					pathNames = append(pathNames, k)
