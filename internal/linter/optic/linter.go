@@ -353,13 +353,22 @@ func (o *Optic) bulkCompareDocker(ctx context.Context, comparisons []comparison,
 		log.Println()
 	}
 
-	// TODO: link to command line arguments for optic-ci when available.
+	// Pull latest image
+	cmd := exec.CommandContext(ctx, "docker", "pull", o.image)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = o.runner.run(cmd)
+	if err != nil {
+		return err
+	}
+
+	// Optic CI documentation: https://www.useoptic.com/docs/optic-ci
 	cmdline := append([]string{"run", "--rm", "-v", inputFile.Name() + ":/input.json"}, dockerArgs...)
 	cmdline = append(cmdline, o.image, "bulk-compare", "--input", "/input.json")
 	if o.debug {
 		log.Printf("running: docker %s", strings.Join(cmdline, " "))
 	}
-	cmd := exec.CommandContext(ctx, "docker", cmdline...)
+	cmd = exec.CommandContext(ctx, "docker", cmdline...)
 
 	pipeReader, pipeWriter := io.Pipe()
 	ch := make(chan struct{})
