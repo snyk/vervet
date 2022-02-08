@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    circleci.com/project-slug: github/snyk/vervet
+    github.com/project-slug: snyk/vervet
+  description: Vervet vets the versions, builds, checks and routes your versioned API. A helpful monkey friend.
+  labels:
+    snyk.io/visibility: public
+  name: vervet
+spec:
+  lifecycle: production
+  owner: '@snyk/elk'
+  type: library
