@@ -12,8 +12,10 @@ paths:
       description: Get a list of an organization's projects.
       operationId: getOrgsProjects
       parameters:
-        - { $ref: '../../schemas/parameters/version.yaml#/Version' }
-        - { $ref: '../../schemas/parameters/pagination.yaml#/Pagination' }
+        - { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/parameters/version.yaml#/Version' }
+        - { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/parameters/pagination.yaml#/parameters/StartingAfter' }
+        - { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/parameters/pagination.yaml#/parameters/EndingBefore' }
+        - { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/parameters/pagination.yaml#/parameters/Limit' }
         - name: orgId
           in: path
           required: true
@@ -55,10 +57,10 @@ paths:
                 items:
                   type: string
       responses:
-        '400': { $ref: '../../schemas/responses/400.yaml#/400' }
-        '401': { $ref: '../../schemas/responses/401.yaml#/401' }
-        '404': { $ref: '../../schemas/responses/404.yaml#/404' }
-        '500': { $ref: '../../schemas/responses/500.yaml#/500' }
+        '400': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/400.yaml#/400' }
+        '401': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/401.yaml#/401' }
+        '404': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/404.yaml#/404' }
+        '500': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/500.yaml#/500' }
         '200':
           description: 'A list of projects is returned for the targeted org'
           x-snyk-include-headers: { $ref: '../../schemas/headers/common-response.yaml#/Common' }
@@ -67,10 +69,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  jsonapi: { $ref: '../../schemas/common.yaml#/JSONAPI' }
+                  jsonapi: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/common.yaml#/JsonApi' }
                   data:
                     type: array
                     items: { $ref: '../../schemas/models/project.yaml#/Project' }
-                  links: { $ref: '../../schemas/common.yaml#/Links' }
+                  links: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/common.yaml#/Links' }
                 required: ['jsonapi', 'data', 'links' ]
                 additionalProperties: false

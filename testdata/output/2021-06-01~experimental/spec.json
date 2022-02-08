@@ -1,10 +1,34 @@
 {
   "components": {
     "headers": {
+      "DeprecationHeader": {
+        "description": "A header containing the deprecation date of the underlying endpoint. For more information, please refer to the deprecation header RFC:\nhttps://tools.ietf.org/id/draft-dalal-deprecation-header-01.html\n",
+        "example": "2021-07-01T00:00:00Z",
+        "schema": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
       "RequestIDResponseHeader": {
         "description": "A header containing a unique id used for tracking this request. If you are reporting an issue to Snyk it's very helpful to provide this ID.\n",
         "schema": {
           "format": "uuid",
+          "type": "string"
+        }
+      },
+      "RequestIdResponseHeader": {
+        "description": "A header containing a unique id used for tracking this request. If you are reporting an issue to Snyk it's very helpful to provide this ID.\n",
+        "example": "4b58e274-ec62-4fab-917b-1d2c48d6bdef",
+        "schema": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "SunsetHeader": {
+        "description": "A header containing the date of when the underlying endpoint will be removed. This header is only present if the endpoint has been deprecated. Please refer to the RFC for more information:\nhttps://datatracker.ietf.org/doc/html/rfc8594\n",
+        "example": "2021-08-02T00:00:00Z",
+        "schema": {
+          "format": "date-time",
           "type": "string"
         }
       },
@@ -18,6 +42,21 @@
         "description": "A header containing the version of the endpoint that was served by the API.",
         "schema": {
           "$ref": "#/components/schemas/Version"
+        }
+      },
+      "VersionStageResponseHeader": {
+        "description": "A header containing the version stage of the endpoint. This stage describes the guarantees snyk provides surrounding stability of the endpoint.\n",
+        "schema": {
+          "enum": [
+            "wip",
+            "experimental",
+            "beta",
+            "ga",
+            "deprecated",
+            "sunset"
+          ],
+          "example": "ga",
+          "type": "string"
         }
       }
     },
@@ -45,11 +84,12 @@
       },
       "Version": {
         "description": "The requested version of the endpoint to process the request",
+        "example": "2021-06-04",
         "in": "query",
         "name": "version",
         "required": true,
         "schema": {
-          "type": "string"
+          "$ref": "#/components/schemas/QueryVersion"
         }
       }
     },
@@ -140,6 +180,11 @@
       }
     },
     "schemas": {
+      "ActualVersion": {
+        "description": "Resolved API version",
+        "pattern": "^((([0-9]{4})-([0-1][0-9]))-((3[01])|(0[1-9])|([12][0-9]))(~(wip|work-in-progress|experimental|beta))?)$",
+        "type": "string"
+      },
       "Error": {
         "additionalProperties": false,
         "properties": {
@@ -260,25 +305,49 @@
         ],
         "type": "object"
       },
+      "JsonApi": {
+        "additionalProperties": false,
+        "example": {
+          "version": "1.0"
+        },
+        "properties": {
+          "version": {
+            "description": "Version of the JSON API specification this server supports.",
+            "example": "1.0",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "type": "object"
+      },
       "LinkProperty": {
+        "example": "https://example.com/api/resource",
         "oneOf": [
           {
+            "description": "A string containing the link’s URL.",
+            "example": "https://example.com/api/resource",
             "type": "string"
           },
           {
             "additionalProperties": false,
+            "example": {
+              "href": "https://example.com/api/resource"
+            },
             "properties": {
               "href": {
+                "description": "A string containing the link’s URL.",
+                "example": "https://example.com/api/resource",
                 "type": "string"
               },
               "meta": {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/Meta"
               }
             },
             "required": [
-              "href",
-              "meta"
+              "href"
             ],
             "type": "object"
           }
@@ -307,6 +376,26 @@
           }
         },
         "type": "object"
+      },
+      "Meta": {
+        "additionalProperties": true,
+        "description": "Free-form object that may contain non-standard information.",
+        "example": {
+          "key1": "value1",
+          "key2": {
+            "sub_key": "sub_value"
+          },
+          "key3": [
+            "array_value1",
+            "array_value2"
+          ]
+        },
+        "type": "object"
+      },
+      "QueryVersion": {
+        "description": "Requested API version",
+        "pattern": "^(wip|work-in-progress|experimental|beta|((([0-9]{4})-([0-1][0-9]))-((3[01])|(0[1-9])|([12][0-9]))(~(wip|work-in-progress|experimental|beta))?))$",
+        "type": "string"
       },
       "Version": {
         "pattern": "^(wip|work-in-progress|experimental|beta|(([0-9]{4})-([0-1][0-9]))-((3[01])|(0[1-9])|([12][0-9])))$",
@@ -352,7 +441,7 @@
                       "$ref": "#/components/schemas/HelloWorld"
                     },
                     "jsonapi": {
-                      "$ref": "#/components/schemas/JSONAPI"
+                      "$ref": "#/components/schemas/JsonApi"
                     },
                     "links": {
                       "$ref": "#/components/schemas/Links"

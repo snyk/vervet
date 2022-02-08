@@ -21,6 +21,10 @@ func init() {
 		_, err := uuid.Parse(v)
 		return err
 	})
+	openapi3.DefineStringFormatCallback("url", func(v string) error {
+		_, err := url.Parse(v)
+		return err
+	})
 }
 
 // Document is an OpenAPI 3 document object model.
