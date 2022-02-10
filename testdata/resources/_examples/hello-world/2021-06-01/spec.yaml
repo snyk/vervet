@@ -12,7 +12,7 @@ paths:
       description: Get a single result from the hello-world example
       operationId: helloWorldGetOne
       parameters:
-        - { $ref: '../../../schemas/parameters/version.yaml#/Version' }
+        - { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/parameters/version.yaml#/Version' }
         - { $ref: '../../../schemas/parameters/pagination.yaml#/Pagination' }
         - name: id
           description: The id of the hello-world example entity to be retrieved.
@@ -21,10 +21,10 @@ paths:
           schema:
             type: string
       responses:
-        '400': { $ref: '../../../schemas/responses/400.yaml#/400' }
-        '401': { $ref: '../../../schemas/responses/401.yaml#/401' }
-        '404': { $ref: '../../../schemas/responses/404.yaml#/404' }
-        '500': { $ref: '../../../schemas/responses/500.yaml#/500' }
+        '400': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/400.yaml#/400' }
+        '401': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/401.yaml#/401' }
+        '404': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/404.yaml#/404' }
+        '500': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/500.yaml#/500' }
         '200':
           description: 'A hello world entity being requested is returned'
           x-snyk-include-headers: { $ref: '../../../schemas/headers/common-response.yaml#/Common' }
@@ -33,8 +33,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  jsonapi: { $ref: '../../../schemas/common.yaml#/JSONAPI'}
-                  links: { $ref: '../../../schemas/common.yaml#/Links'}
+                  jsonapi: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/common.yaml#/JsonApi' }
+                  links: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/common.yaml#/Links' }
                   data: { $ref: '#/components/schemas/HelloWorld'}
                 required: ['jsonapi', 'data', 'links']
                 additionalProperties: false

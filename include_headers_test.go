@@ -23,7 +23,8 @@ func TestCommonResponseHeaders(t *testing.T) {
 	c.Assert(pathItem, qt.Not(qt.IsNil))
 	resp := pathItem.Post.Responses["201"].Value
 	c.Assert(resp, qt.Not(qt.IsNil))
-	c.Assert(resp.Headers, qt.HasLen, 0)
+	// There's a Location header defined outside of the common includes
+	c.Assert(resp.Headers, qt.HasLen, 1)
 
 	err = vervet.IncludeHeaders(doc)
 	c.Assert(err, qt.IsNil)
@@ -33,7 +34,8 @@ func TestCommonResponseHeaders(t *testing.T) {
 	c.Assert(pathItem, qt.Not(qt.IsNil))
 	resp = pathItem.Post.Responses["201"].Value
 	c.Assert(resp, qt.Not(qt.IsNil))
-	c.Assert(resp.Headers, qt.HasLen, 3)
+	// Now add 3 more common included headers
+	c.Assert(resp.Headers, qt.HasLen, 4)
 	for _, name := range []string{"snyk-version-requested", "snyk-version-served", "snyk-request-id"} {
 		// All of these headers are string type
 		c.Assert(resp.Headers[name].Value.Schema.Value.Type, qt.Equals, "string")
