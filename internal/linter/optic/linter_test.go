@@ -260,6 +260,10 @@ type mockRunner struct {
 }
 
 func (r *mockRunner) run(cmd *exec.Cmd) error {
+	// Only mock the optic-ci run
+	if strings.Join(cmd.Args, " ") == "docker pull some-image" {
+		return nil
+	}
 	fmt.Fprintln(cmd.Stdout, "/from/here.yaml /to/eternity.yaml")
 	r.runs = append(r.runs, cmd.Args)
 	return r.err
