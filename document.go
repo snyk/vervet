@@ -3,7 +3,6 @@ package vervet
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -112,43 +111,32 @@ func (d *Document) ResolveRefs() error {
 // target. The relative path of the reference is returned, so that references
 // may be chain-loaded with successive calls.
 func (d *Document) LoadReference(relPath, refPath string, target interface{}) (_ string, returnErr error) {
-	cwd, err := os.Getwd()
+	refUrl, err := url.Parse(refPath)
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		err := os.Chdir(cwd)
+	if refUrl.Scheme == "" || refUrl.Scheme == "file" {
+		refPath, err = filepath.Abs(filepath.Join(relPath, refUrl.Path))
 		if err != nil {
-			log.Println("warning: failed to restore working directory: %w", err)
-			if returnErr == nil {
-				returnErr = err
-			}
+			return "", err
 		}
-	}()
-	err = os.Chdir(relPath)
-	if err != nil {
-		return "", err
+		refUrl.Path = refPath
 	}
 
 	// Parse and load the contents of the referenced document.
-	u, err := url.Parse(refPath)
+	l := openapi3.NewLoader()
+	l.IsExternalRefsAllowed = true
+	contents, err := openapi3.DefaultReadFromURI(l, refUrl)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse %q: %w", refPath, err)
-	}
-	if u.Scheme != "" || u.Host != "" {
-		return "", fmt.Errorf("URL %q not supported", refPath)
-	}
-	contents, err := ioutil.ReadFile(u.Path)
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read %q: %w", refUrl, err)
 	}
 	// If the reference is to an element in the referenced document, further resolve that.
-	if u.Fragment != "" {
-		parts := strings.Split(u.Fragment, "/")
+	if refUrl.Fragment != "" {
+		parts := strings.Split(refUrl.Fragment, "/")
 		// TODO: support actual jsonpaths if/when needed. For now only
 		// top-level properties are supported.
 		if parts[0] != "" || len(parts) > 2 {
-			return "", fmt.Errorf("URL %q not supported", u.String())
+			return "", fmt.Errorf("URL %q not supported", refUrl)
 		}
 		elements := map[string]interface{}{}
 		err := yaml.Unmarshal(contents, &elements)
@@ -157,7 +145,7 @@ func (d *Document) LoadReference(relPath, refPath string, target interface{}) (_
 		}
 		elementDoc, ok := elements[parts[1]]
 		if !ok {
-			return "", fmt.Errorf("element %q not found in %q", parts[1], u.Path)
+			return "", fmt.Errorf("element %q not found in %q", parts[1], refUrl.Path)
 		}
 		contents, err = json.Marshal(elementDoc)
 		if err != nil {
@@ -171,5 +159,5 @@ func (d *Document) LoadReference(relPath, refPath string, target interface{}) (_
 		return "", err
 	}
 
-	return filepath.Abs(filepath.Dir(u.Path))
+	return filepath.Abs(filepath.Dir(refUrl.Path))
 }
