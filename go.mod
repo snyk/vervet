@@ -17,6 +17,9 @@ require (
 	go.uber.org/multierr v1.7.0
 )
 
+// TODO: remove once https://github.com/getkin/kin-openapi/pull/469 lands
+replace github.com/getkin/kin-openapi => github.com/cmars/kin-openapi v0.0.0-20220216164516-8ffc85653bfb
+
 require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20220113124808-70ae35bab23f // indirect
