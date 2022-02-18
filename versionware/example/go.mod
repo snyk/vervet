@@ -14,3 +14,6 @@ require (
 )
 
 replace github.com/snyk/vervet/v3 => ../..
+
+// TODO: remove once https://github.com/getkin/kin-openapi/pull/469 lands
+replace github.com/getkin/kin-openapi => github.com/cmars/kin-openapi v0.0.0-20220216164516-8ffc85653bfb

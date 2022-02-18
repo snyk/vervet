@@ -35,6 +35,8 @@ type Optic struct {
 	runner     commandRunner
 	timeNow    func() time.Time
 	debug      bool
+	extraArgs  []string
+	ciContext  string
 }
 
 type commandRunner interface {
@@ -97,6 +99,8 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 		runner:     &execCommandRunner{},
 		timeNow:    time.Now,
 		debug:      cfg.Debug,
+		extraArgs:  cfg.ExtraArgs,
+		ciContext:  cfg.CIContext,
 	}, nil
 }
 
@@ -271,7 +275,13 @@ func (o *Optic) bulkCompareScript(ctx context.Context, comparisons []comparison)
 		log.Println()
 	}
 
-	cmd := exec.CommandContext(ctx, o.script, "bulk-compare", "--input", inputFile.Name())
+	extraArgs := o.extraArgs
+	if _, err := os.Stat(o.ciContext); err == nil {
+		extraArgs = append(extraArgs, "--ci-context", o.ciContext)
+	}
+
+	args := append([]string{"bulk-compare", "--input", inputFile.Name()}, extraArgs...)
+	cmd := exec.CommandContext(ctx, o.script, args...)
 
 	pipeReader, pipeWriter := io.Pipe()
 	ch := make(chan struct{})
@@ -362,9 +372,16 @@ func (o *Optic) bulkCompareDocker(ctx context.Context, comparisons []comparison,
 		return err
 	}
 
+	extraArgs := o.extraArgs
+	if _, err := os.Stat(o.ciContext); err == nil {
+		extraArgs = append(extraArgs, "--ci-context", "/ci-context.json")
+		dockerArgs = append(dockerArgs, "-v", o.ciContext+":/ci-context.json")
+	}
+
 	// Optic CI documentation: https://www.useoptic.com/docs/optic-ci
 	cmdline := append([]string{"run", "--rm", "-v", inputFile.Name() + ":/input.json"}, dockerArgs...)
 	cmdline = append(cmdline, o.image, "bulk-compare", "--input", "/input.json")
+	cmdline = append(cmdline, extraArgs...)
 	if o.debug {
 		log.Printf("running: docker %s", strings.Join(cmdline, " "))
 	}
