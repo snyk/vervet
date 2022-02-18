@@ -15,6 +15,10 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// VervetVersion contains vervet's version, set by ldflags at build time:
+// go build -ldflags "-X 'github.com/snyk/vervet/cmd.VervetVersion=$VERSION'"
+var VervetVersion = "0.0.1"
+
 // VervetParams contains configuration parameters for the Vervet CLI application.
 type VervetParams struct {
 	Stdin  io.ReadCloser
@@ -67,6 +71,7 @@ func NewApp(vp VervetParams) *VervetApp {
 			Reader:    vp.Stdin,
 			Writer:    vp.Stdout,
 			ErrWriter: vp.Stderr,
+			Version:   VervetVersion,
 			Flags: []cli.Flag{
 				&cli.BoolFlag{
 					Name:  "debug",
