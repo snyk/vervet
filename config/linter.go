@@ -97,6 +97,17 @@ type OpticCILinter struct {
 
 	// Debug turns on debug logging.
 	Debug bool `json:"debug,omitempty"`
+
+	// CIContext specifies the location of an optional CI context JSON file to
+	// use when performing an optic-ci compare or bulk-compare. If this file is
+	// present when vervet lints, it will be passed to optic using the
+	// --ci-context option.
+	//
+	// See https://www.npmjs.com/package/@useoptic/api-checks#expected-contexts for more information.
+	CIContext string `json:"ciContext"`
+
+	// ExtraArgs may be used to pass extra arguments to `optic-ci`.
+	ExtraArgs []string `json:"extraArgs"`
 }
 
 func (l Linters) init() error {
