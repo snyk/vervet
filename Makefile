@@ -4,7 +4,7 @@ all: lint test build
 
 .PHONY: build
 build:
-	go build -ldflags "-X 'github.com/snyk/vervet/cmd.VervetVersion=`git tag --sort=-version:refname | head -n 1`'" -a -o vervet ./cmd/vervet
+	go build -a -o vervet ./cmd/vervet
 
 # Run go mod tidy yourself
 
