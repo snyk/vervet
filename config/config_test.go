@@ -28,6 +28,8 @@ linters:
   ci-rules:
     optic-ci:
       original: target-branch
+      ciContext: ci-context.json
+      uploadResults: true
 apis:
   test:
     resources:
@@ -77,8 +79,10 @@ apis:
 			"ci-rules": {
 				Name: "ci-rules",
 				OpticCI: &config.OpticCILinter{
-					Image:    "snyk/sweater-comb:latest",
-					Original: "target-branch",
+					Image:         "snyk/sweater-comb:latest",
+					Original:      "target-branch",
+					CIContext:     "ci-context.json",
+					UploadResults: true,
 				},
 			},
 		},

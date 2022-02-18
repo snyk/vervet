@@ -28,15 +28,16 @@ import (
 
 // Optic runs a Docker image containing Optic CI and built-in rules.
 type Optic struct {
-	image      string
-	script     string
-	fromSource files.FileSource
-	toSource   files.FileSource
-	runner     commandRunner
-	timeNow    func() time.Time
-	debug      bool
-	extraArgs  []string
-	ciContext  string
+	image         string
+	script        string
+	fromSource    files.FileSource
+	toSource      files.FileSource
+	runner        commandRunner
+	timeNow       func() time.Time
+	debug         bool
+	extraArgs     []string
+	ciContext     string
+	uploadResults bool
 }
 
 type commandRunner interface {
@@ -92,15 +93,16 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 		toSource.Close()
 	}()
 	return &Optic{
-		image:      image,
-		script:     script,
-		fromSource: fromSource,
-		toSource:   toSource,
-		runner:     &execCommandRunner{},
-		timeNow:    time.Now,
-		debug:      cfg.Debug,
-		extraArgs:  cfg.ExtraArgs,
-		ciContext:  cfg.CIContext,
+		image:         image,
+		script:        script,
+		fromSource:    fromSource,
+		toSource:      toSource,
+		runner:        &execCommandRunner{},
+		timeNow:       time.Now,
+		debug:         cfg.Debug,
+		extraArgs:     cfg.ExtraArgs,
+		ciContext:     cfg.CIContext,
+		uploadResults: cfg.UploadResults,
 	}, nil
 }
 
@@ -276,8 +278,10 @@ func (o *Optic) bulkCompareScript(ctx context.Context, comparisons []comparison)
 	}
 
 	extraArgs := o.extraArgs
-	if _, err := os.Stat(o.ciContext); err == nil {
-		extraArgs = append(extraArgs, "--ci-context", o.ciContext)
+	if ok, reason := o.checkUploadEnabled(); ok {
+		extraArgs = append(extraArgs, "--upload-results", "--ci-context", o.ciContext)
+	} else {
+		log.Printf("not uploading to Optic Cloud: %s", reason)
 	}
 
 	args := append([]string{"bulk-compare", "--input", inputFile.Name()}, extraArgs...)
@@ -335,6 +339,25 @@ func (o *Optic) bulkCompareScript(ctx context.Context, comparisons []comparison)
 	return nil
 }
 
+func (o *Optic) checkUploadEnabled() (bool, string) {
+	if !o.uploadResults {
+		return false, "uploadResults not enabled"
+	}
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		return false, "GITHUB_TOKEN not set"
+	}
+	if os.Getenv("OPTIC_TOKEN") == "" {
+		return false, "OPTIC_TOKEN not set"
+	}
+	if _, err := os.Stat(o.ciContext); err != nil {
+		if os.IsNotExist(err) {
+			return false, fmt.Sprintf("CI context file %q not found", o.ciContext)
+		}
+		return false, fmt.Sprintf("error opening CI context file %q: %v", o.ciContext, err)
+	}
+	return true, ""
+}
+
 var fromDockerOutputRE = regexp.MustCompile(`/from/`)
 var toDockerOutputRE = regexp.MustCompile(`/to/`)
 
@@ -373,9 +396,18 @@ func (o *Optic) bulkCompareDocker(ctx context.Context, comparisons []comparison,
 	}
 
 	extraArgs := o.extraArgs
-	if _, err := os.Stat(o.ciContext); err == nil {
-		extraArgs = append(extraArgs, "--ci-context", "/ci-context.json")
-		dockerArgs = append(dockerArgs, "-v", o.ciContext+":/ci-context.json")
+	if ok, reason := o.checkUploadEnabled(); ok {
+		ciContext, err := filepath.Abs(o.ciContext)
+		if err != nil {
+			return err
+		}
+		extraArgs = append(extraArgs, "--upload-results", "--ci-context", "/ci-context.json")
+		dockerArgs = append(dockerArgs,
+			"-e", "GITHUB_TOKEN="+os.Getenv("GITHUB_TOKEN"),
+			"-e", "OPTIC_TOKEN="+os.Getenv("OPTIC_TOKEN"),
+			"-v", ciContext+":/ci-context.json")
+	} else {
+		log.Printf("not uploading to Optic Cloud: %s", reason)
 	}
 
 	// Optic CI documentation: https://www.useoptic.com/docs/optic-ci

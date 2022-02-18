@@ -103,8 +103,14 @@ type OpticCILinter struct {
 	// present when vervet lints, it will be passed to optic using the
 	// --ci-context option.
 	//
-	// See https://www.npmjs.com/package/@useoptic/api-checks#expected-contexts for more information.
+	// See https://www.npmjs.com/package/@useoptic/api-checks#expected-contexts
+	// for more information.
 	CIContext string `json:"ciContext"`
+
+	// UploadResults indicates that the comparison results from optic-ci should
+	// be uploaded to Optic Cloud. This only happens if the file specified by
+	// CIContext exists.
+	UploadResults bool `json:"uploadResults"`
 
 	// ExtraArgs may be used to pass extra arguments to `optic-ci`.
 	ExtraArgs []string `json:"extraArgs"`

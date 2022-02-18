@@ -175,11 +175,20 @@ func TestGitScript(t *testing.T) {
 	c.Cleanup(func() { c.Assert(os.Chdir(origWd), qt.IsNil) })
 	c.Assert(os.Chdir(testRepo), qt.IsNil)
 
+	// Write a CI context file to test the Optic Cloud logic
+	c.Assert(ioutil.WriteFile("ci-context.json", []byte("{}"), 0666), qt.IsNil)
+
+	// Set environment variables necessary for Optic Cloud upload to enable
+	c.Setenv("GITHUB_TOKEN", "github-token")
+	c.Setenv("OPTIC_TOKEN", "optic-token")
+
 	// Sanity check constructor
 	l, err := New(ctx, &config.OpticCILinter{
-		Script:   "/usr/local/lib/node_modules/.bin/sweater-comb",
-		Original: commitHash.String(),
-		Proposed: "",
+		Script:        "/usr/local/lib/node_modules/.bin/sweater-comb",
+		Original:      commitHash.String(),
+		Proposed:      "",
+		CIContext:     "ci-context.json",
+		UploadResults: true,
 	})
 	c.Assert(err, qt.IsNil)
 	c.Assert(l.image, qt.Equals, "")
@@ -204,7 +213,8 @@ func TestGitScript(t *testing.T) {
 	c.Assert(runner.runs, qt.HasLen, 1)
 	cmdline := strings.Join(runner.runs[0], " ")
 	c.Assert(cmdline, qt.Matches,
-		`/usr/local/lib/node_modules/.bin/sweater-comb bulk-compare --input `+filepath.Clean(os.TempDir())+`.*-input.json`)
+		`/usr/local/lib/node_modules/.bin/sweater-comb bulk-compare --input `+filepath.Clean(os.TempDir())+`.*-input.json `+
+			`--upload-results --ci-context ci-context.json`)
 	assertInputJSON(c, `^.* --input (.*-input\.json).*`, cmdline, func(c *qt.C, cmp comparison) {
 		c.Assert(cmp.From, qt.Not(qt.Contains), "/from")
 		c.Assert(cmp.To, qt.Not(qt.Contains), "/to")
