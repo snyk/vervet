@@ -17,6 +17,8 @@ rm -rf dist
 
 mkdir -p ./dist/bin
 
+go generate ./cmd/...
+
 for GOOS in linux darwin; do
     GOOS=$GOOS GOARCH=amd64 go build -a -o ./dist/bin/vervet-$GOOS-amd64 ./cmd/vervet
 done

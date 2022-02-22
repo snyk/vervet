@@ -19,6 +19,9 @@ if [ -z $(git config user.email) ]; then
     git config user.email "vervet-ci@noreply.snyk.io"
     git config user.name "Vervet CI"
 fi
+
+go generate ./cmd/...
+
 git tag ${VERSION}
 git push -q https://${GH_TOKEN}@github.com/snyk/vervet.git --tags
 

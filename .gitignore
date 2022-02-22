@@ -4,6 +4,7 @@
 .idea
 .dccache
 .vscode
+/cmd/generate_version_init.go
 
 **/server
 config.json
