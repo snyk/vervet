@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/bmatcuk/doublestar/v4 v4.0.2
 	github.com/frankban/quicktest v1.13.0
-	github.com/getkin/kin-openapi v0.88.0
+	github.com/getkin/kin-openapi v0.90.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-cmp v0.5.5
@@ -16,9 +16,6 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/multierr v1.7.0
 )
-
-// TODO: remove once https://github.com/getkin/kin-openapi/pull/469 lands
-replace github.com/getkin/kin-openapi => github.com/cmars/kin-openapi v0.0.0-20220216164516-8ffc85653bfb
 
 require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
