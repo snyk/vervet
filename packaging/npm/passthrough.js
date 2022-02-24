@@ -3,7 +3,7 @@ var path = require('path');
 
 // os and arch restrictions are handled by the package.json
 var os = process.platform;
-var arch = 'amd64';
+var arch = process.arch;
 
 // Select the right binary for this platform, then exec it with the original
 // arguments. This is a true exec(3), which will take over the pid, env, and

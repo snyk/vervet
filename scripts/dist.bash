@@ -20,9 +20,9 @@ mkdir -p ./dist/bin
 go generate ./cmd/...
 
 for GOOS in linux darwin; do
-    GOOS=$GOOS GOARCH=amd64 go build -a -o ./dist/bin/vervet-$GOOS-amd64 ./cmd/vervet
+    GOOS=$GOOS GOARCH=amd64 go build -a -o ./dist/bin/vervet-$GOOS-x64 ./cmd/vervet
+    GOOS=$GOOS GOARCH=arm64 go build -a -o ./dist/bin/vervet-$GOOS-arm64 ./cmd/vervet
 done
-GOOS=darwin GOARCH=arm64 go build -a -o ./dist/bin/vervet-darwin-arm64 ./cmd/vervet
 GOOS=windows GOARCH=amd64 go build -a -o ./dist/bin/vervet.exe ./cmd/vervet
 
 cp packaging/npm/passthrough.js dist/bin/vervet
