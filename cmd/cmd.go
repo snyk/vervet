@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
@@ -85,23 +84,25 @@ func NewApp(vp VervetParams) *VervetApp {
 				},
 				Action: Resolve,
 			}, {
-				Name: "scaffold",
-				Subcommands: []*cli.Command{{
-					Name:      "init",
-					Usage:     "Initialize a new project from a scaffold",
-					ArgsUsage: "[path to scaffold directory]",
-					Flags: []cli.Flag{
-						&cli.BoolFlag{
-							Name:    "force",
-							Aliases: []string{"f", "overwrite"},
-							Usage:   "Overwrite existing files",
-						},
+				Name:      "generate",
+				Usage:     "Generate artifacts from resource versioned OpenAPI specs",
+				ArgsUsage: "<generator> [<generator2>...]",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "config",
+						Aliases: []string{"c", "conf"},
+						Usage:   "Project configuration file",
 					},
-					Action: ScaffoldInit,
-				}},
+					&cli.StringFlag{
+						Name:    "generators",
+						Aliases: []string{"g", "gen", "generator"},
+						Usage:   "Generators definition file",
+					},
+				},
+				Action: Generate,
 			}, {
-				Name:      "compile",
-				Usage:     "Compile versioned resources into versioned OpenAPI specs",
+				Name:      "build",
+				Usage:     "Build versioned resources into versioned OpenAPI specs",
 				ArgsUsage: "[input resources root] [output api root]",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -117,7 +118,7 @@ func NewApp(vp VervetParams) *VervetApp {
 					&cli.StringFlag{
 						Name:    "include",
 						Aliases: []string{"I"},
-						Usage:   "OpenAPI specification to include in all compiled versions",
+						Usage:   "OpenAPI specification to include in build output",
 					},
 				},
 				Action: Compile,
@@ -139,7 +140,8 @@ func NewApp(vp VervetParams) *VervetApp {
 				ArgsUsage: "[spec.yaml file]",
 				Action:    Localize,
 			}, {
-				Name: "version",
+				Name:    "resource",
+				Aliases: []string{"rc"},
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "config",
@@ -151,34 +153,13 @@ func NewApp(vp VervetParams) *VervetApp {
 					Name:      "files",
 					Usage:     "List resource spec files in a vervet project",
 					ArgsUsage: "[api [resource]]",
-					Action:    VersionFiles,
+					Action:    ResourceFiles,
 				}, {
-					Name:      "list",
-					Usage:     "List resource versions in a vervet project",
+					Name:      "operations",
+					Aliases:   []string{"op", "ops"},
+					Usage:     "List versioned resource operations in a vervet project",
 					ArgsUsage: "[api [resource]]",
-					Action:    VersionList,
-				}, {
-					Name:      "new",
-					Usage:     "Create a new resource version",
-					ArgsUsage: "<api> <resource>",
-					Flags: []cli.Flag{
-						&cli.BoolFlag{
-							Name:    "force",
-							Aliases: []string{"f", "overwrite"},
-							Usage:   "Overwrite existing files",
-						},
-						&cli.StringFlag{
-							Name:  "version",
-							Usage: "Set version date (defaults to today UTC)",
-							Value: time.Now().UTC().Format("2006-01-02"),
-						},
-						&cli.StringFlag{
-							Name:  "stability",
-							Usage: "Stability level of this version",
-							Value: "wip",
-						},
-					},
-					Action: VersionNew,
+					Action:    ResourceOperations,
 				}},
 			}},
 		},

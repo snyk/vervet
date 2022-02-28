@@ -13,10 +13,10 @@ import (
 	"github.com/snyk/vervet/v3/testdata"
 )
 
-func TestCompile(t *testing.T) {
+func TestBuild(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.TempDir()
-	err := cmd.Vervet.Run([]string{"vervet", "compile", testdata.Path("resources"), dstDir})
+	err := cmd.Vervet.Run([]string{"vervet", "build", testdata.Path("resources"), dstDir})
 	c.Assert(err, qt.IsNil)
 	tests := []struct {
 		version string
@@ -35,7 +35,7 @@ func TestCompile(t *testing.T) {
 		paths:   []string{"/examples/hello-world/{id}", "/orgs/{orgId}/projects"},
 	}}
 	for _, test := range tests {
-		c.Run("compiled version "+test.version, func(c *qt.C) {
+		c.Run("built version "+test.version, func(c *qt.C) {
 			doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + "/spec.yaml")
 			c.Assert(err, qt.IsNil)
 			c.Assert(doc.Validate(context.TODO()), qt.IsNil)
@@ -46,10 +46,10 @@ func TestCompile(t *testing.T) {
 	}
 }
 
-func TestCompileInclude(t *testing.T) {
+func TestBuildInclude(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.TempDir()
-	err := cmd.Vervet.Run([]string{"vervet", "compile", "-I", testdata.Path("resources/include.yaml"), testdata.Path("resources"), dstDir})
+	err := cmd.Vervet.Run([]string{"vervet", "build", "-I", testdata.Path("resources/include.yaml"), testdata.Path("resources"), dstDir})
 	c.Assert(err, qt.IsNil)
 
 	tests := []struct {
@@ -65,7 +65,7 @@ func TestCompileInclude(t *testing.T) {
 	}}
 	for _, test := range tests {
 		c.Assert(err, qt.IsNil)
-		// Load just-compiled OpenAPI YAML file
+		// Load just-built OpenAPI YAML file
 		doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + "/spec.yaml")
 		c.Assert(err, qt.IsNil)
 
@@ -84,9 +84,9 @@ func TestCompileInclude(t *testing.T) {
 	}
 }
 
-func TestCompileConflict(t *testing.T) {
+func TestBuildConflict(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.TempDir()
-	err := cmd.Vervet.Run([]string{"vervet", "compile", "../testdata/conflict", dstDir})
+	err := cmd.Vervet.Run([]string{"vervet", "build", "../testdata/conflict", dstDir})
 	c.Assert(err, qt.ErrorMatches, `failed to load spec versions: conflict: .*`)
 }

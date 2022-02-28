@@ -1,5 +1,5 @@
-{{ range $path, $pathItem := .Data.Spec.paths -}}
-{{ range $method, $operation := $pathItem -}}
-export {{ "{" }} {{ $operation.operationId }} {{ "}" }} from './{{ $operation.operationId }}';
+{{ range $path, $pathItem := .Resource.Document.Paths -}}
+{{ range $method, $operation := $pathItem|operations -}}
+export {{ "{" }} {{ $operation.OperationID }} {{ "}" }} from './{{ $operation.OperationID }}';
 {{ end }}
 {{- end -}}

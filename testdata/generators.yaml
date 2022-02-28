@@ -1,0 +1,25 @@
+version-readme:
+  scope: version
+  filename: "{{ .Path }}/README"
+  template: ".vervet/resource/version/README.tmpl"
+version-controller:
+  scope: version
+  files: |-
+    {{- $path := .Path -}}
+    {{- range $_, $pathItem := .Resource.Document.Paths -}}
+    {{- range $method, $operation := $pathItem|operations -}}
+    {{- $operationId := $operation.OperationID -}}
+    {{- $ctx := map "Context" . "OperationId" $operationId }}
+    {{ $path }}/{{ $operationId }}.ts: |-
+      {{ include "contents" $ctx | indent 2 }}
+    {{ end }}
+    {{- end -}}
+  template: ".vervet/resource/version/controller.ts.tmpl"
+version-index:
+  scope: version
+  filename: "{{ .Path }}/index.ts"
+  template: ".vervet/resource/version/index.ts.tmpl"
+resource-routes:
+  scope: resource
+  filename: "{{ .Path }}/routes.ts"
+  template: ".vervet/resource/routes.ts.tmpl"

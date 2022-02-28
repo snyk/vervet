@@ -18,7 +18,7 @@ type Generator struct {
 func (g *Generator) validate() error {
 	switch g.Scope {
 	case GeneratorScopeVersion:
-	//case GeneratorScopeResource:  // TODO: support resource scope
+	case GeneratorScopeResource:
 	default:
 		return fmt.Errorf("invalid scope %q (generators.%s.scope)", g.Scope, g.Name)
 	}
@@ -27,14 +27,6 @@ func (g *Generator) validate() error {
 	}
 	if g.Filename == "" && g.Files == "" {
 		return fmt.Errorf("filename or files must be specified (generators.%s)", g.Name)
-	}
-	for k, v := range g.Data {
-		if k == "" {
-			return fmt.Errorf("empty key not allowed (generators.%s.data)", g.Name)
-		}
-		if v.Include == "" {
-			return fmt.Errorf("required field not specified (generators.%s.data.%s.include)", g.Name, k)
-		}
 	}
 	return nil
 }

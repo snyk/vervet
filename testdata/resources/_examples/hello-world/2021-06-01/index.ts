@@ -1,0 +1,1 @@
+export { helloWorldGetOne } from './helloWorldGetOne';

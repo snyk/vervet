@@ -1,0 +1,8 @@
+import type * as express from 'express';
+import type { V3Request, V3Response } from '../../../../framework';
+
+{{- $ctx := . -}}
+{{- range $v := .ResourceVersions.Versions -}}
+{{- $r := $ctx.ResourceVersions.At $v.String }}
+// TODO: route {{ $r.Name }} {{ $r.Version.String }}
+{{ end -}}
