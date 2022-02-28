@@ -1,0 +1,20 @@
+import { versions } from '@snyk/rest-node-libs';
+{{- range $opId, $opVersions := .ResourceVersions|resourceOperations -}}
+{{- range $opVersion := $opVersions -}}
+{{- $modName := $opVersion.Version.Date.Format "v2006_01_02" }}
+import * as {{ $modName }} './{{ $opVersion.Version.DateString }}';
+{{- end -}}
+{{- end }}
+
+{{ $ctx := . -}}
+{{- range $opId, $opVersions := .ResourceVersions|resourceOperations -}}
+export const {{ $opId }} = versions([
+{{- range $opVersion := $opVersions }}
+{{- $modName := $opVersion.Version.Date.Format "v2006_01_02" }}
+  {
+    handler: {{ $modName }}.{{ $opId }},
+    version: '{{ $opVersion.Version.String }}',
+  },
+{{ end -}}
+]);
+{{ end -}}

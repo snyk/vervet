@@ -1,7 +1,7 @@
 import type * as express from 'express';
 import type { V3Request, V3Response } from '../../../../framework';
 
-export const deleteNewthing = async (
+export const deleteOrgsProject = async (
   req: V3Request,
   res: V3Response,
   next: express.NextFunction,

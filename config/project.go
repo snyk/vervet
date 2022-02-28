@@ -76,6 +76,20 @@ func Load(r io.Reader) (*Project, error) {
 	return &p, p.validate()
 }
 
+// LoadGenerators loads Generators from their YAML representation.
+func LoadGenerators(r io.Reader) (Generators, error) {
+	var g Generators
+	buf, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read generators: %w", err)
+	}
+	err = yaml.Unmarshal(buf, &g)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal generators: %w", err)
+	}
+	return g, g.init()
+}
+
 // Save saves a Project configuration to YAML.
 func Save(w io.Writer, proj *Project) error {
 	buf, err := yaml.Marshal(proj)
