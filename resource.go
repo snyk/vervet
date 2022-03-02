@@ -120,7 +120,7 @@ func (e *ResourceVersions) At(vs string) (*Resource, error) {
 	}
 	for i := len(e.versions) - 1; i >= 0; i-- {
 		ev := e.versions[i].Version
-		if dateCmp, stabilityCmp := ev.compareDateStability(v); dateCmp <= 0 && stabilityCmp >= 0 {
+		if dateCmp, stabilityCmp := ev.compareDateStability(&v); dateCmp <= 0 && stabilityCmp >= 0 {
 			return e.versions[i], nil
 		}
 	}
@@ -131,7 +131,7 @@ type resourceVersionSlice []*Resource
 
 // Less implements sort.Interface.
 func (e resourceVersionSlice) Less(i, j int) bool {
-	return e[i].Version.Compare(&e[j].Version) < 0
+	return e[i].Version.Compare(e[j].Version) < 0
 }
 
 // Len implements sort.Interface.
@@ -292,7 +292,7 @@ func loadResource(specPath string, versionStr string) (*Resource, error) {
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}
 
-	ep := &Resource{Name: name, Document: doc, Version: *version}
+	ep := &Resource{Name: name, Document: doc, Version: version}
 	for path := range doc.T.Paths {
 		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiResource] = name
 	}

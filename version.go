@@ -16,13 +16,13 @@ type Version struct {
 
 // DateString returns the string representation of the version date in
 // YYYY-mm-dd form.
-func (v *Version) DateString() string {
+func (v Version) DateString() string {
 	return v.Date.Format("2006-01-02")
 }
 
 // String returns the string representation of the version in
 // YYYY-mm-dd~Stability form. This method will panic if the value is empty.
-func (v *Version) String() string {
+func (v Version) String() string {
 	d := v.Date.Format("2006-01-02")
 	if v.Stability != StabilityGA {
 		return d + "~" + v.Stability.String()
@@ -32,7 +32,7 @@ func (v *Version) String() string {
 
 // AddDays returns the version corresponding to adding the given number of days
 // to the version date.
-func (v *Version) AddDays(days int) Version {
+func (v Version) AddDays(days int) Version {
 	return Version{
 		Date:      v.Date.AddDate(0, 0, days),
 		Stability: v.Stability,
@@ -78,23 +78,23 @@ func (s Stability) String() string {
 
 // ParseVersion parses a version string into a Version type, returning an error
 // if the string is invalid.
-func ParseVersion(s string) (*Version, error) {
+func ParseVersion(s string) (Version, error) {
 	parts := strings.Split(s, "~")
 	if len(parts) < 1 {
-		return nil, fmt.Errorf("invalid version %q", s)
+		return Version{}, fmt.Errorf("invalid version %q", s)
 	}
 	d, err := time.ParseInLocation("2006-01-02", parts[0], time.UTC)
 	if err != nil {
-		return nil, fmt.Errorf("invalid version %q", s)
+		return Version{}, fmt.Errorf("invalid version %q", s)
 	}
 	stab := StabilityGA
 	if len(parts) > 1 {
 		stab, err = ParseStability(parts[1])
 		if err != nil {
-			return nil, err
+			return Version{}, err
 		}
 	}
-	return &Version{Date: d.UTC(), Stability: stab}, nil
+	return Version{Date: d.UTC(), Stability: stab}, nil
 }
 
 // MustParseVersion parses a version string into a Version type, panicking if
@@ -104,7 +104,7 @@ func MustParseVersion(s string) Version {
 	if err != nil {
 		panic(err)
 	}
-	return *v
+	return v
 }
 
 // ParseStability parses a stability string into a Stability type, returning an
@@ -147,8 +147,8 @@ func (s Stability) Compare(sr Stability) int {
 
 // Compare returns -1 if the given version is less than, 0 if equal to, and 1
 // if greater than the caller target version.
-func (v *Version) Compare(vr *Version) int {
-	dateCmp, stabilityCmp := v.compareDateStability(vr)
+func (v Version) Compare(vr Version) int {
+	dateCmp, stabilityCmp := v.compareDateStability(&vr)
 	if dateCmp != 0 {
 		return dateCmp
 	}
@@ -157,8 +157,8 @@ func (v *Version) Compare(vr *Version) int {
 
 // DeprecatedBy returns true if the given version deprecates the caller target
 // version.
-func (v *Version) DeprecatedBy(vr *Version) bool {
-	dateCmp, stabilityCmp := v.compareDateStability(vr)
+func (v Version) DeprecatedBy(vr Version) bool {
+	dateCmp, stabilityCmp := v.compareDateStability(&vr)
 	// A version is deprecated by a newer version of equal or greater stability.
 	return dateCmp == -1 && stabilityCmp <= 0
 }
@@ -180,7 +180,7 @@ const (
 // Sunset returns, given a potentially deprecating version, the eligible sunset
 // date and whether the caller target version would actually be deprecated and
 // sunset by the given version.
-func (v *Version) Sunset(vr *Version) (time.Time, bool) {
+func (v Version) Sunset(vr Version) (time.Time, bool) {
 	if !v.DeprecatedBy(vr) {
 		return time.Time{}, false
 	}
@@ -232,13 +232,12 @@ type VersionSlice []Version
 //
 // This method requires that the VersionSlice has already been sorted with
 // sort.Sort, otherwise behavior is undefined.
-func (vs VersionSlice) Resolve(q Version) (*Version, error) {
+func (vs VersionSlice) Resolve(q Version) (Version, error) {
 	i, err := vs.ResolveIndex(q)
 	if err != nil {
-		return nil, err
+		return Version{}, err
 	}
-	v := vs[i]
-	return &v, nil
+	return vs[i], nil
 }
 
 // ResolveIndex returns the slice index of the most recent Version in the slice
@@ -279,11 +278,12 @@ func (vs VersionSlice) ResolveIndex(q Version) (int, error) {
 
 // Deprecates returns the version that deprecates the given version in the
 // slice.
-func (vs VersionSlice) Deprecates(q Version) (*Version, bool) {
+func (vs VersionSlice) Deprecates(q Version) (Version, bool) {
 	match, err := vs.ResolveIndex(q)
 	if err == ErrNoMatchingVersion {
-		return nil, false
-	} else if err != nil {
+		return Version{}, false
+	}
+	if err != nil {
 		panic(err)
 	}
 	for i := match + 1; i < len(vs); i++ {
@@ -292,11 +292,10 @@ func (vs VersionSlice) Deprecates(q Version) (*Version, bool) {
 			continue
 		}
 		if dateCmp < 0 {
-			v := vs[i]
-			return &v, true
+			return vs[i], true
 		}
 	}
-	return nil, false
+	return Version{}, false
 }
 
 // Len implements sort.Interface.
@@ -304,7 +303,7 @@ func (vs VersionSlice) Len() int { return len(vs) }
 
 // Less implements sort.Interface.
 func (vs VersionSlice) Less(i, j int) bool {
-	return vs[i].Compare(&vs[j]) < 0
+	return vs[i].Compare(vs[j]) < 0
 }
 
 // Swap implements sort.Interface.
