@@ -6,7 +6,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v3/config"
+	"github.com/snyk/vervet/v4/config"
 )
 
 func TestLoad(t *testing.T) {

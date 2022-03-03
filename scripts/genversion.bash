@@ -4,7 +4,7 @@ cd $(dirname $0)/..
 
 [ -n "${VERSION}" ]
 
-cat << EOF > cmd/generate_version_init.go
+cat << EOF > internal/cmd/generate_version_init.go
 // THIS IS A GENERATED FILE. DO NOT EDIT.
 
 package cmd

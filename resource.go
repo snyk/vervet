@@ -13,13 +13,16 @@ import (
 )
 
 const (
-	// ExtSnykApiStability is used to annotate a top-level endpoint version spec with its API release stability level.
+	// ExtSnykApiStability is used to annotate a top-level resource version
+	// spec with its API release stability level.
 	ExtSnykApiStability = "x-snyk-api-stability"
 
-	// ExtSnykApiResource is used to annotate a path in a compiled OpenAPI spec with its source resource name.
+	// ExtSnykApiResource is used to annotate a path in a compiled OpenAPI spec
+	// with its source resource name.
 	ExtSnykApiResource = "x-snyk-api-resource"
 
-	// ExtSnykApiVersion is used to annotate a path in a compiled OpenAPI spec with its resolved release version.
+	// ExtSnykApiVersion is used to annotate a path in a compiled OpenAPI spec
+	// with its resolved release version.
 	ExtSnykApiVersion = "x-snyk-api-version"
 
 	// ExtSnykApiReleases is used to annotate a path in a compiled OpenAPI spec
@@ -39,11 +42,11 @@ const (
 	ExtSnykSunsetEligible = "x-snyk-sunset-eligible"
 )
 
-// Resource defines a specific version of a resource, corresponding to a
+// ResourceVersion defines a specific version of a resource, corresponding to a
 // standalone OpenAPI specification document that defines its operations,
 // schema, etc. While a resource spec may declare multiple paths, they should
 // all describe operations on a single conceptual resource.
-type Resource struct {
+type ResourceVersion struct {
 	*Document
 	Name         string
 	Version      Version
@@ -65,9 +68,9 @@ func (e *extensionNotFoundError) Is(err error) bool {
 	return ok
 }
 
-// Validate returns whether the Resource is valid. The OpenAPI specification
-// must be valid, and must declare at least one path.
-func (e *Resource) Validate(ctx context.Context) error {
+// Validate returns whether the ResourceVersion is valid. The OpenAPI
+// specification must be valid, and must declare at least one path.
+func (e *ResourceVersion) Validate(ctx context.Context) error {
 	// Validate the OpenAPI spec
 	err := e.Document.Validate(ctx)
 	if err != nil {
@@ -80,7 +83,7 @@ func (e *Resource) Validate(ctx context.Context) error {
 	return nil
 }
 
-// ResourceVersions defines a collection of multiple versions of an Resource.
+// ResourceVersions defines a collection of multiple versions of a resource.
 type ResourceVersions struct {
 	versions resourceVersionSlice
 }
@@ -93,7 +96,7 @@ func (e *ResourceVersions) Name() string {
 	return ""
 }
 
-// Versions returns a slice containing each Version defined for this endpoint.
+// Versions returns a slice containing each Version defined for this resource.
 func (e *ResourceVersions) Versions() []Version {
 	result := make([]Version, len(e.versions))
 	for i := range e.versions {
@@ -102,15 +105,15 @@ func (e *ResourceVersions) Versions() []Version {
 	return result
 }
 
-// ErrNoMatchingVersion indicates the requested endpoint version cannot be
-// satisfied by the declared Resource versions that are available.
+// ErrNoMatchingVersion indicates the requested version cannot be satisfied by
+// the declared versions that are available.
 var ErrNoMatchingVersion = fmt.Errorf("no matching version")
 
-// At returns the Resource matching a version string. The endpoint returned
-// will be the latest available version with a stability equal to or greater
-// than the requested version, or ErrNoMatchingVersion if no matching version
-// is available.
-func (e *ResourceVersions) At(vs string) (*Resource, error) {
+// At returns the ResourceVersion matching a version string. The version of the
+// resource returned will be the latest available version with a stability
+// equal to or greater than the requested version, or ErrNoMatchingVersion if
+// no matching version is available.
+func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 	if vs == "" {
 		vs = time.Now().UTC().Format("2006-01-02")
 	}
@@ -120,18 +123,18 @@ func (e *ResourceVersions) At(vs string) (*Resource, error) {
 	}
 	for i := len(e.versions) - 1; i >= 0; i-- {
 		ev := e.versions[i].Version
-		if dateCmp, stabilityCmp := ev.compareDateStability(v); dateCmp <= 0 && stabilityCmp >= 0 {
+		if dateCmp, stabilityCmp := ev.compareDateStability(&v); dateCmp <= 0 && stabilityCmp >= 0 {
 			return e.versions[i], nil
 		}
 	}
 	return nil, ErrNoMatchingVersion
 }
 
-type resourceVersionSlice []*Resource
+type resourceVersionSlice []*ResourceVersion
 
 // Less implements sort.Interface.
 func (e resourceVersionSlice) Less(i, j int) bool {
-	return e[i].Version.Compare(&e[j].Version) < 0
+	return e[i].Version.Compare(e[j].Version) < 0
 }
 
 // Len implements sort.Interface.
@@ -143,7 +146,7 @@ func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 // LoadResourceVersions returns a ResourceVersions slice parsed from a
 // directory structure of resource specs. This directory will be of the form:
 //
-//     endpoint/
+//     resource/
 //     +- 2021-01-01
 //        +- spec.yaml
 //     +- 2021-06-21
@@ -151,7 +154,7 @@ func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 //     +- 2021-07-14
 //        +- spec.yaml
 //
-// The endpoint version stability level is defined by the
+// The resource version stability level is defined by the
 // ExtSnykApiStability extension value at the top-level of the OpenAPI
 // document.
 func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
@@ -257,7 +260,7 @@ func IsExtensionNotFound(err error) bool {
 	return errors.Is(err, &extensionNotFoundError{})
 }
 
-func loadResource(specPath string, versionStr string) (*Resource, error) {
+func loadResource(specPath string, versionStr string) (*ResourceVersion, error) {
 	name := filepath.Base(filepath.Dir(filepath.Dir(specPath)))
 	doc, err := NewDocumentFile(specPath)
 	if err != nil {
@@ -292,7 +295,7 @@ func loadResource(specPath string, versionStr string) (*Resource, error) {
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}
 
-	ep := &Resource{Name: name, Document: doc, Version: *version}
+	ep := &ResourceVersion{Name: name, Document: doc, Version: version}
 	for path := range doc.T.Paths {
 		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiResource] = name
 	}

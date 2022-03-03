@@ -2,7 +2,6 @@ package generator
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,8 +12,8 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/snyk/vervet/v3"
-	"github.com/snyk/vervet/v3/config"
+	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v4/config"
 )
 
 // Generator generates files for new resources from data models and templates.
@@ -23,7 +22,7 @@ type Generator struct {
 	filename *template.Template
 	contents *template.Template
 	files    *template.Template
-	data     map[string]*template.Template
+	scope    config.GeneratorScope
 
 	debug bool
 	force bool
@@ -60,7 +59,9 @@ var (
 			}
 			return s
 		},
-		"replaceall": strings.ReplaceAll,
+		"replaceall":         strings.ReplaceAll,
+		"pathOperations":     MapPathOperations,
+		"resourceOperations": MapResourceOperations,
 	}
 )
 
@@ -76,11 +77,10 @@ func withIncludeFunc(t *template.Template) *template.Template {
 	})
 }
 
-// NewMap instanstiates a map of all Generators defined in a
-// Project.
-func NewMap(proj *config.Project, options ...Option) (map[string]*Generator, error) {
+// NewMap instanstiates a map of Generators from configuration.
+func NewMap(generatorsConf config.Generators, options ...Option) (map[string]*Generator, error) {
 	result := map[string]*Generator{}
-	for name, genConf := range proj.Generators {
+	for name, genConf := range generatorsConf {
 		g, err := New(genConf, options...)
 		if err != nil {
 			return nil, err
@@ -90,11 +90,11 @@ func NewMap(proj *config.Project, options ...Option) (map[string]*Generator, err
 	return result, nil
 }
 
-// New returns a new Generator from config.
+// New returns a new Generator from configuration.
 func New(conf *config.Generator, options ...Option) (*Generator, error) {
 	g := &Generator{
-		name: conf.Name,
-		data: map[string]*template.Template{},
+		name:  conf.Name,
+		scope: conf.Scope,
 	}
 	for i := range options {
 		options[i](g)
@@ -123,14 +123,6 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 			return nil, fmt.Errorf("%w: (generators.%s.files)", err, conf.Name)
 		}
 	}
-	if len(conf.Data) > 0 {
-		for fieldName, genData := range conf.Data {
-			g.data[fieldName], err = template.New("include").Funcs(templateFuncs).Parse(genData.Include)
-			if err != nil {
-				return nil, fmt.Errorf("%w: (generators.%s.data.%s.include)", err, conf.Name, fieldName)
-			}
-		}
-	}
 	return g, nil
 }
 
@@ -151,84 +143,92 @@ func Debug(debug bool) Option {
 	}
 }
 
-// VersionScope identifies a distinct resource version that the generator is
-// building for.
-type VersionScope struct {
-	API       string
-	Resource  string
-	Version   string
-	Stability string
-}
-
-func (s *VersionScope) validate() error {
-	_, err := vervet.ParseVersion(s.Version)
-	if err != nil {
-		return err
-	}
-	_, err = vervet.ParseStability(s.Stability)
-	if err != nil {
-		return err
+// Execute runs the generator on the given resources.
+func (g *Generator) Execute(resources ResourceMap) error {
+	switch g.Scope() {
+	case config.GeneratorScopeDefault, config.GeneratorScopeVersion:
+		for rcKey, rcVersions := range resources {
+			for _, version := range rcVersions.Versions() {
+				rc, err := rcVersions.At(version.String())
+				if err != nil {
+					return err
+				}
+				scope := &VersionScope{
+					API:             rcKey.API,
+					Path:            filepath.Join(rcKey.Path, version.DateString()),
+					ResourceVersion: rc,
+				}
+				err = g.execute(scope)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	case config.GeneratorScopeResource:
+		for rcKey, rcVersions := range resources {
+			scope := &ResourceScope{
+				API:              rcKey.API,
+				Path:             rcKey.Path,
+				ResourceVersions: rcVersions,
+			}
+			err := g.execute(scope)
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		return fmt.Errorf("unsupported generator scope %q", g.Scope())
 	}
 	return nil
 }
 
-type versionScope struct {
-	*VersionScope
-	Data map[string]interface{}
+// ResourceScope identifies a resource that the generator is building for.
+type ResourceScope struct {
+	*vervet.ResourceVersions
+	API  string
+	Path string
 }
 
-// Run executes the Generator. If generated artifacts already exist, a warning
+// Resource returns the name of the resource in scope.
+func (s *ResourceScope) Resource() string {
+	return s.ResourceVersions.Name()
+}
+
+// VersionScope identifies a distinct version of a resource that the generator
+// is building for.
+type VersionScope struct {
+	*vervet.ResourceVersion
+	API  string
+	Path string
+}
+
+// Resource returns the name of the resource in scope.
+func (s *VersionScope) Resource() string {
+	return s.ResourceVersion.Name
+}
+
+// Version returns the version of the resource in scope.
+func (s *VersionScope) Version() *vervet.Version {
+	return &s.ResourceVersion.Version
+}
+
+// Scope returns the configured scope type of the generator.
+func (g *Generator) Scope() config.GeneratorScope {
+	return g.scope
+}
+
+// execute the Generator. If generated artifacts already exist, a warning
 // is logged but the file is not overwritten, unless force is true.
-func (g *Generator) Run(scope *VersionScope) error {
-	err := scope.validate()
-	if err != nil {
-		return err
-	}
-
-	// Derive data
-	data := map[string]interface{}{}
-	for fieldName, tmpl := range g.data {
-		var buf bytes.Buffer
-		err := tmpl.ExecuteTemplate(&buf, "include", scope)
-		if err != nil {
-			return fmt.Errorf("failed to resolve filename: %w (generators.%s.data.%s.include)", err, g.name, fieldName)
-		}
-		filename := strings.TrimSpace(buf.String())
-		if g.debug {
-			log.Printf("interpolated generators.%s.data.%s.include => %q", g.name, fieldName, filename)
-		}
-		contents, err := ioutil.ReadFile(filename)
-		if err != nil {
-			return fmt.Errorf("%w (generators.%s.data.%s.include)", err, g.name, fieldName)
-		}
-		fieldValue := map[string]interface{}{}
-		switch filepath.Ext(filename) {
-		case ".yaml":
-			err = yaml.Unmarshal(contents, &fieldValue)
-			if err != nil {
-				return fmt.Errorf("failed to load %q: %w (generators.%s.data.%s.include)", filename, err, g.name, fieldName)
-			}
-		case ".json":
-			err = json.Unmarshal(contents, &fieldValue)
-			if err != nil {
-				return fmt.Errorf("failed to load %q: %w (generators.%s.data.%s.include)", filename, err, g.name, fieldName)
-			}
-		default:
-			return fmt.Errorf("don't know how to load %q: %w (generators.%s.data.%s.include)", filename, err, g.name, fieldName)
-		}
-		data[fieldName] = fieldValue
-	}
-	gsc := &versionScope{
-		VersionScope: scope,
-		Data:         data,
-	}
+//
+// TODO: in Go 1.18, declare scope as an interface{ VersionScope | ResourceScope }
+func (g *Generator) execute(scope interface{}) error {
 	if g.files != nil {
-		return g.runFiles(gsc)
+		return g.runFiles(scope)
 	}
-	return g.runFile(gsc)
+	return g.runFile(scope)
 }
 
-func (g *Generator) runFile(scope *versionScope) error {
+func (g *Generator) runFile(scope interface{}) error {
 	var filenameBuf bytes.Buffer
 	err := g.filename.ExecuteTemplate(&filenameBuf, "filename", scope)
 	if err != nil {
@@ -259,7 +259,7 @@ func (g *Generator) runFile(scope *versionScope) error {
 	return nil
 }
 
-func (g *Generator) runFiles(scope *versionScope) error {
+func (g *Generator) runFiles(scope interface{}) error {
 	var filesBuf bytes.Buffer
 	err := g.files.ExecuteTemplate(&filesBuf, "files", scope)
 	if err != nil {

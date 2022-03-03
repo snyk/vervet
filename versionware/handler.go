@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/snyk/vervet/v3"
+	"github.com/snyk/vervet/v4"
 )
 
 const (
@@ -96,7 +96,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		h.errFunc(w, req, http.StatusBadRequest, err)
 		return
 	}
-	resolved, handler, err := h.Resolve(*requested)
+	resolved, handler, err := h.Resolve(requested)
 	if err != nil {
 		h.errFunc(w, req, http.StatusNotFound, err)
 		return

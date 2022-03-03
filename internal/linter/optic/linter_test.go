@@ -19,9 +19,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/uuid"
 
-	"github.com/snyk/vervet/v3/config"
-	"github.com/snyk/vervet/v3/internal/files"
-	"github.com/snyk/vervet/v3/testdata"
+	"github.com/snyk/vervet/v4/config"
+	"github.com/snyk/vervet/v4/internal/files"
+	"github.com/snyk/vervet/v4/testdata"
 )
 
 func TestNewLocalFile(t *testing.T) {
