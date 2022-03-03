@@ -23,7 +23,7 @@ func Resolve(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	specVersion, err := specVersions.At(*version)
+	specVersion, err := specVersions.At(version)
 	if err != nil {
 		return err
 	}

@@ -268,7 +268,7 @@ func TestDeprecatedBy(t *testing.T) {
 	for i, test := range tests {
 		c.Logf("test#%d: %#v", i, test)
 		base, deprecatedBy := MustParseVersion(test.base), MustParseVersion(test.deprecatedBy)
-		c.Assert(base.DeprecatedBy(&deprecatedBy), qt.Equals, test.result)
+		c.Assert(base.DeprecatedBy(deprecatedBy), qt.Equals, test.result)
 	}
 }
 
@@ -313,7 +313,7 @@ func TestDeprecates(t *testing.T) {
 		deprecates, ok := versions.Deprecates(test.target)
 		c.Assert(ok, qt.Equals, test.isDeprecated)
 		if test.isDeprecated {
-			c.Assert(&test.deprecatedBy, qt.DeepEquals, deprecates)
+			c.Assert(test.deprecatedBy, qt.DeepEquals, deprecates)
 			sunset, ok := test.target.Sunset(deprecates)
 			c.Assert(ok, qt.IsTrue)
 			c.Assert(test.sunset, qt.Equals, sunset)

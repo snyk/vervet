@@ -109,7 +109,7 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		if err != nil {
 			return nil, err
 		}
-		v.versions[i] = *version
+		v.versions[i] = version
 		router, err := gorillamux.NewRouter(docs[i])
 		if err != nil {
 			return nil, err
@@ -146,7 +146,7 @@ func (v *Validator) Middleware(h http.Handler) http.Handler {
 				fmt.Errorf("requested version newer than present date %s", t))
 			return
 		}
-		resolvedIndex, err := v.versions.ResolveIndex(*requested)
+		resolvedIndex, err := v.versions.ResolveIndex(requested)
 		if err != nil {
 			v.errFunc(w, req, http.StatusNotFound, err)
 			return
