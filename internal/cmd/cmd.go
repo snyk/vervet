@@ -14,7 +14,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-//go:generate ../scripts/genversion.bash
+//go:generate ../../scripts/genversion.bash
 
 // VervetParams contains configuration parameters for the Vervet CLI application.
 type VervetParams struct {
