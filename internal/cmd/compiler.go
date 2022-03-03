@@ -10,13 +10,53 @@ import (
 	"github.com/snyk/vervet/v3/internal/compiler"
 )
 
-// Compile compiles versioned resources into versioned API specs.
-func Compile(ctx *cli.Context) error {
+// BuildCommand is the `vervet build` subcommand.
+var BuildCommand = cli.Command{
+	Name:      "build",
+	Usage:     "Build versioned resources into versioned OpenAPI specs",
+	ArgsUsage: "[input resources root] [output api root]",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c", "conf"},
+			Usage:   "Project configuration file",
+		},
+		&cli.BoolFlag{
+			Name:  "lint",
+			Usage: "Enable linting during build",
+			Value: true,
+		},
+		&cli.StringFlag{
+			Name:    "include",
+			Aliases: []string{"I"},
+			Usage:   "OpenAPI specification to include in build output",
+		},
+	},
+	Action: Build,
+}
+
+// Build compiles versioned resources into versioned API specs.
+func Build(ctx *cli.Context) error {
 	project, err := projectFromContext(ctx)
 	if err != nil {
 		return err
 	}
 	return runCompiler(ctx, project, ctx.Bool("lint"), true)
+}
+
+// LintCommand is the `vervet lint` subcommand.
+var LintCommand = cli.Command{
+	Name:      "lint",
+	Usage:     "Lint  versioned resources",
+	ArgsUsage: "[input resources root] [output api root]",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c", "conf"},
+			Usage:   "Project configuration file",
+		},
+	},
+	Action: Lint,
 }
 
 // Lint checks versioned resources against linting rules.

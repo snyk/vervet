@@ -21,7 +21,6 @@ import (
 	"github.com/snyk/vervet/v3/internal/linter"
 	"github.com/snyk/vervet/v3/internal/linter/optic"
 	"github.com/snyk/vervet/v3/internal/linter/spectral"
-	"github.com/snyk/vervet/v3/internal/linter/sweatercomb"
 )
 
 // A Compiler checks and builds versioned API resource inputs into aggregated
@@ -49,7 +48,7 @@ func defaultLinterFactory(ctx context.Context, lc *config.Linter) (linter.Linter
 	if lc.Spectral != nil {
 		return spectral.New(ctx, lc.Spectral)
 	} else if lc.SweaterComb != nil {
-		return sweatercomb.New(ctx, lc.SweaterComb)
+		return optic.New(ctx, lc.SweaterComb)
 	} else if lc.OpticCI != nil {
 		return optic.New(ctx, lc.OpticCI)
 	}

@@ -9,6 +9,26 @@ import (
 	"github.com/snyk/vervet/v3/internal/generator"
 )
 
+// GenerateCommand is the `vervet generate` subcommand.
+var GenerateCommand = cli.Command{
+	Name:      "generate",
+	Usage:     "Generate artifacts from resource versioned OpenAPI specs",
+	ArgsUsage: "<generator> [<generator2>...]",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c", "conf"},
+			Usage:   "Project configuration file",
+		},
+		&cli.StringFlag{
+			Name:    "generators",
+			Aliases: []string{"g", "gen", "generator"},
+			Usage:   "Generators definition file",
+		},
+	},
+	Action: Generate,
+}
+
 // Generate executes code generators against OpenAPI specs.
 func Generate(ctx *cli.Context) error {
 	projectDir, configFile, err := projectConfig(ctx)

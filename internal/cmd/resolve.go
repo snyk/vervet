@@ -8,6 +8,17 @@ import (
 	"github.com/snyk/vervet/v3"
 )
 
+// ResolveCommand is the `vervet resolve` subcommand.
+var ResolveCommand = cli.Command{
+	Name:      "resolve",
+	Usage:     "Aggregate, render and validate resource specs at a particular version",
+	ArgsUsage: "[resource root]",
+	Flags: []cli.Flag{
+		&cli.StringFlag{Name: "at"},
+	},
+	Action: Resolve,
+}
+
 // Resolve aggregates, renders and validates resource specs at a particular
 // version.
 func Resolve(ctx *cli.Context) error {

@@ -52,111 +52,34 @@ func (v *VervetApp) Run(args []string) error {
 }
 
 // NewApp returns a new VervetApp with the provided params.
-func NewApp(vp VervetParams) *VervetApp {
+func NewApp(app *cli.App, vp VervetParams) *VervetApp {
+	app.Reader = vp.Stdin
+	app.Writer = vp.Stdout
+	app.ErrWriter = vp.Stderr
 	return &VervetApp{
-		App: &cli.App{
-			Name:      "vervet",
-			Usage:     "OpenAPI resource versioning tool",
-			Reader:    vp.Stdin,
-			Writer:    vp.Stdout,
-			ErrWriter: vp.Stderr,
-			Version:   "develop", // Set in init created with go generate.
-			Flags: []cli.Flag{
-				&cli.BoolFlag{
-					Name:  "debug",
-					Usage: "Turn on debug logging",
-				},
-			},
-			Commands: []*cli.Command{{
-				Name:      "resolve",
-				Usage:     "Aggregate, render and validate resource specs at a particular version",
-				ArgsUsage: "[resource root]",
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "at"},
-				},
-				Action: Resolve,
-			}, {
-				Name:      "generate",
-				Usage:     "Generate artifacts from resource versioned OpenAPI specs",
-				ArgsUsage: "<generator> [<generator2>...]",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "config",
-						Aliases: []string{"c", "conf"},
-						Usage:   "Project configuration file",
-					},
-					&cli.StringFlag{
-						Name:    "generators",
-						Aliases: []string{"g", "gen", "generator"},
-						Usage:   "Generators definition file",
-					},
-				},
-				Action: Generate,
-			}, {
-				Name:      "build",
-				Usage:     "Build versioned resources into versioned OpenAPI specs",
-				ArgsUsage: "[input resources root] [output api root]",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "config",
-						Aliases: []string{"c", "conf"},
-						Usage:   "Project configuration file",
-					},
-					&cli.BoolFlag{
-						Name:  "lint",
-						Usage: "Enable linting during build",
-						Value: true,
-					},
-					&cli.StringFlag{
-						Name:    "include",
-						Aliases: []string{"I"},
-						Usage:   "OpenAPI specification to include in build output",
-					},
-				},
-				Action: Compile,
-			}, {
-				Name:      "lint",
-				Usage:     "Lint  versioned resources",
-				ArgsUsage: "[input resources root] [output api root]",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "config",
-						Aliases: []string{"c", "conf"},
-						Usage:   "Project configuration file",
-					},
-				},
-				Action: Lint,
-			}, {
-				Name:      "localize",
-				Usage:     "Localize references and validate a single OpenAPI spec file",
-				ArgsUsage: "[spec.yaml file]",
-				Action:    Localize,
-			}, {
-				Name:    "resource",
-				Aliases: []string{"rc"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "config",
-						Aliases: []string{"c", "conf"},
-						Usage:   "Project configuration file",
-					},
-				},
-				Subcommands: []*cli.Command{{
-					Name:      "files",
-					Usage:     "List resource spec files in a vervet project",
-					ArgsUsage: "[api [resource]]",
-					Action:    ResourceFiles,
-				}, {
-					Name:      "operations",
-					Aliases:   []string{"op", "ops"},
-					Usage:     "List versioned resource operations in a vervet project",
-					ArgsUsage: "[api [resource]]",
-					Action:    ResourceOperations,
-				}},
-			}},
-		},
+		App:    app,
 		Params: vp,
 	}
+}
+
+var CLIApp = cli.App{
+	Name:    "vervet",
+	Usage:   "OpenAPI resource versioning tool",
+	Version: "develop", // Set in init created with go generate.
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Turn on debug logging",
+		},
+	},
+	Commands: []*cli.Command{
+		&BuildCommand,
+		&GenerateCommand,
+		&LintCommand,
+		&LocalizeCommand,
+		&ResourceCommand,
+		&ResolveCommand,
+	},
 }
 
 // Prompt is the default interactive prompt for vervet.
@@ -214,7 +137,7 @@ func (p Prompt) Select(label string, items []string) (string, error) {
 }
 
 // Vervet is the vervet application with the CLI application.
-var Vervet = NewApp(VervetParams{
+var Vervet = NewApp(&CLIApp, VervetParams{
 	Stdin:  os.Stdin,
 	Stdout: os.Stdout,
 	Stderr: os.Stderr,

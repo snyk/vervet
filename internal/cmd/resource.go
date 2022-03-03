@@ -14,9 +14,33 @@ import (
 	"github.com/snyk/vervet/v3/internal/compiler"
 )
 
-// ResourceOperations is a command that lists all the versions of matching resources.
+// ResourceCommand is the `vervet resource` subcommand.
+var ResourceCommand = cli.Command{
+	Name:    "resource",
+	Aliases: []string{"rc"},
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c", "conf"},
+			Usage:   "Project configuration file",
+		},
+	},
+	Subcommands: []*cli.Command{{
+		Name:      "files",
+		Usage:     "List OpenAPI files of versioned resources in a vervet project",
+		ArgsUsage: "[api [resource]]",
+		Action:    ResourceFiles,
+	}, {
+		Name:      "info",
+		Usage:     "Information about versioned resources in a vervet project",
+		ArgsUsage: "[api [resource]]",
+		Action:    ResourceShow,
+	}},
+}
+
+// ResourceShow is a command that lists all the versions of matching resources.
 // It takes optional arguments to filter the output: api resource
-func ResourceOperations(ctx *cli.Context) error {
+func ResourceShow(ctx *cli.Context) error {
 	projectDir, configFile, err := projectConfig(ctx)
 	if err != nil {
 		return err

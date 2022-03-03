@@ -8,7 +8,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v3/cmd"
+	"github.com/snyk/vervet/v3/internal/cmd"
 	"github.com/snyk/vervet/v3/testdata"
 )
 
@@ -47,7 +47,7 @@ resources/projects/2021-08-20/spec.yaml
 `[1:])
 }
 
-func TestResourceList(t *testing.T) {
+func TestResourceInfo(t *testing.T) {
 	c := qt.New(t)
 	tmp := c.TempDir()
 	tmpFile := filepath.Join(tmp, "out")
@@ -57,7 +57,7 @@ func TestResourceList(t *testing.T) {
 		defer output.Close()
 		c.Patch(&os.Stdout, output)
 		cd(c, testdata.Path("."))
-		err = cmd.Vervet.Run([]string{"vervet", "resource", "operations"})
+		err = cmd.Vervet.Run([]string{"vervet", "resource", "info"})
 		c.Assert(err, qt.IsNil)
 	})
 	out, err := ioutil.ReadFile(tmpFile)
@@ -76,7 +76,7 @@ func TestResourceList(t *testing.T) {
 `[1:])
 }
 
-func TestResourceListResource(t *testing.T) {
+func TestResourceInfoResource(t *testing.T) {
 	c := qt.New(t)
 	tmp := c.TempDir()
 	tmpFile := filepath.Join(tmp, "out")
@@ -86,7 +86,7 @@ func TestResourceListResource(t *testing.T) {
 		defer output.Close()
 		c.Patch(&os.Stdout, output)
 		cd(c, testdata.Path("."))
-		err = cmd.Vervet.Run([]string{"vervet", "resource", "operations", "testdata", "projects"})
+		err = cmd.Vervet.Run([]string{"vervet", "resource", "info", "testdata", "projects"})
 		c.Assert(err, qt.IsNil)
 	})
 	out, err := ioutil.ReadFile(tmpFile)

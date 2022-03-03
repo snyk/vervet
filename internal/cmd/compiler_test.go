@@ -9,7 +9,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/snyk/vervet/v3"
-	"github.com/snyk/vervet/v3/cmd"
+	"github.com/snyk/vervet/v3/internal/cmd"
 	"github.com/snyk/vervet/v3/testdata"
 )
 
@@ -87,6 +87,6 @@ func TestBuildInclude(t *testing.T) {
 func TestBuildConflict(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.TempDir()
-	err := cmd.Vervet.Run([]string{"vervet", "build", "../testdata/conflict", dstDir})
+	err := cmd.Vervet.Run([]string{"vervet", "build", testdata.Path("conflict"), dstDir})
 	c.Assert(err, qt.ErrorMatches, `failed to load spec versions: conflict: .*`)
 }

@@ -3,8 +3,7 @@ package config
 import "fmt"
 
 const (
-	defaultSweaterCombImage = "gcr.io/snyk-main/sweater-comb:latest"
-	defaultOpticCIImage     = "snyk/sweater-comb:latest"
+	defaultOpticCIImage = "snyk/sweater-comb:latest"
 )
 
 var defaultSpectralExtraArgs = []string{"--format", "text"}
@@ -14,11 +13,11 @@ type Linters map[string]*Linter
 
 // Linter describes a set of standards and rules that an API should satisfy.
 type Linter struct {
-	Name        string             `json:"-"`
-	Description string             `json:"description,omitempty"`
-	Spectral    *SpectralLinter    `json:"spectral"`
-	SweaterComb *SweaterCombLinter `json:"sweater-comb"`
-	OpticCI     *OpticCILinter     `json:"optic-ci"`
+	Name        string          `json:"-"`
+	Description string          `json:"description,omitempty"`
+	Spectral    *SpectralLinter `json:"spectral"`
+	SweaterComb *OpticCILinter  `json:"sweater-comb"`
+	OpticCI     *OpticCILinter  `json:"optic-ci"`
 }
 
 func (l *Linter) validate() error {
@@ -55,23 +54,6 @@ type SpectralLinter struct {
 	//
 	// See https://meta.stoplight.io/docs/spectral/ZG9jOjI1MTg1-spectral-cli
 	// for the options supported.
-	ExtraArgs []string `json:"extraArgs"`
-}
-
-// SweaterCombLinter identifies a Sweater Comb Linter, which is distributed as
-// a self-contained docker image.
-type SweaterCombLinter struct {
-	// Image identifies the Sweater Comb docker image to use for linting.
-	Image string
-
-	// Rules are a list of Spectral ruleset file locations
-	// These may be absolute paths to Sweater Comb rules, such as /rules/apinext.yaml.
-	// Or, they may be relative paths to files in this project.
-	Rules []string `json:"rules"`
-
-	// ExtraArgs may be used to pass extra arguments to `spectral lint`. The
-	// Sweater Comb image includes Spectral. This has the same function as
-	// SpectralLinter.ExtraArgs above.
 	ExtraArgs []string `json:"extraArgs"`
 }
 
@@ -129,11 +111,8 @@ func (l Linters) init() error {
 			linter.Spectral.ExtraArgs = defaultSpectralExtraArgs
 		}
 		if linter.SweaterComb != nil {
-			if len(linter.SweaterComb.ExtraArgs) == 0 {
-				linter.SweaterComb.ExtraArgs = defaultSpectralExtraArgs
-			}
-			if linter.SweaterComb.Image == "" {
-				linter.SweaterComb.Image = defaultSweaterCombImage
+			if linter.SweaterComb.Image == "" && linter.SweaterComb.Script == "" {
+				linter.SweaterComb.Image = defaultOpticCIImage
 			}
 		}
 		if linter.OpticCI != nil {
