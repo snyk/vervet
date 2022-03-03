@@ -24,8 +24,8 @@ type ResourceMap map[ResourceKey]*vervet.ResourceVersions
 // of that operation within a resource.
 type OperationMap map[string][]OperationVersion
 
-// OperationVersion represents a version of an operation, also known as an
-// endpoint.
+// OperationVersion represents a version of an operation within a collection of
+// resource versions.
 type OperationVersion struct {
 	*vervet.ResourceVersion
 	Path      string

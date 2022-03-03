@@ -13,13 +13,16 @@ import (
 )
 
 const (
-	// ExtSnykApiStability is used to annotate a top-level endpoint version spec with its API release stability level.
+	// ExtSnykApiStability is used to annotate a top-level resource version
+	// spec with its API release stability level.
 	ExtSnykApiStability = "x-snyk-api-stability"
 
-	// ExtSnykApiResource is used to annotate a path in a compiled OpenAPI spec with its source resource name.
+	// ExtSnykApiResource is used to annotate a path in a compiled OpenAPI spec
+	// with its source resource name.
 	ExtSnykApiResource = "x-snyk-api-resource"
 
-	// ExtSnykApiVersion is used to annotate a path in a compiled OpenAPI spec with its resolved release version.
+	// ExtSnykApiVersion is used to annotate a path in a compiled OpenAPI spec
+	// with its resolved release version.
 	ExtSnykApiVersion = "x-snyk-api-version"
 
 	// ExtSnykApiReleases is used to annotate a path in a compiled OpenAPI spec
@@ -93,7 +96,7 @@ func (e *ResourceVersions) Name() string {
 	return ""
 }
 
-// Versions returns a slice containing each Version defined for this endpoint.
+// Versions returns a slice containing each Version defined for this resource.
 func (e *ResourceVersions) Versions() []Version {
 	result := make([]Version, len(e.versions))
 	for i := range e.versions {
@@ -106,10 +109,10 @@ func (e *ResourceVersions) Versions() []Version {
 // the declared versions that are available.
 var ErrNoMatchingVersion = fmt.Errorf("no matching version")
 
-// At returns the ResourceVersion matching a version string. The endpoint
-// returned will be the latest available version with a stability equal to or
-// greater than the requested version, or ErrNoMatchingVersion if no matching
-// version is available.
+// At returns the ResourceVersion matching a version string. The version of the
+// resource returned will be the latest available version with a stability
+// equal to or greater than the requested version, or ErrNoMatchingVersion if
+// no matching version is available.
 func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 	if vs == "" {
 		vs = time.Now().UTC().Format("2006-01-02")
@@ -143,7 +146,7 @@ func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 // LoadResourceVersions returns a ResourceVersions slice parsed from a
 // directory structure of resource specs. This directory will be of the form:
 //
-//     endpoint/
+//     resource/
 //     +- 2021-01-01
 //        +- spec.yaml
 //     +- 2021-06-21
@@ -151,7 +154,7 @@ func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 //     +- 2021-07-14
 //        +- spec.yaml
 //
-// The endpoint version stability level is defined by the
+// The resource version stability level is defined by the
 // ExtSnykApiStability extension value at the top-level of the OpenAPI
 // document.
 func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
