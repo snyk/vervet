@@ -10,6 +10,24 @@ import (
 	"github.com/snyk/vervet/v3/internal/scaffold"
 )
 
+// Scaffold is the `vervet scaffold` subcommand.
+var Scaffold = cli.Command{
+	Name: "scaffold",
+	Subcommands: []*cli.Command{{
+		Name:      "init",
+		Usage:     "Initialize a new project from a scaffold",
+		ArgsUsage: "[path to scaffold directory]",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "force",
+				Aliases: []string{"f", "overwrite"},
+				Usage:   "Overwrite existing files",
+			},
+		},
+		Action: ScaffoldInit,
+	}},
+}
+
 // ScaffoldInit creates a new project configuration from a provided scaffold directory.
 func ScaffoldInit(ctx *cli.Context) error {
 	scaffoldDir := ctx.Args().Get(0)

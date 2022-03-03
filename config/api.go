@@ -45,7 +45,6 @@ type ResourceSet struct {
 	Description     string             `json:"description"`
 	Linter          string             `json:"linter"`
 	LinterOverrides map[string]Linters `json:"linter-overrides"`
-	Generators      []string           `json:"generators"`
 	Path            string             `json:"path"`
 	Excludes        []string           `json:"excludes"`
 }
@@ -90,12 +89,6 @@ func (a APIs) init(p *Project) error {
 				if _, ok := p.Linters[resource.Linter]; !ok {
 					return fmt.Errorf("linter %q not found (apis.%s.resources[%d].linter)",
 						resource.Linter, api.Name, rcIndex)
-				}
-			}
-			for genIndex, genName := range resource.Generators {
-				if _, ok := p.Generators[genName]; !ok {
-					return fmt.Errorf("generator %q not found (apis.%s.resources[%d].generator[%d])",
-						genName, api.Name, rcIndex, genIndex)
 				}
 			}
 			if err := resource.validate(); err != nil {

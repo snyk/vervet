@@ -8,6 +8,15 @@ import (
 	"github.com/snyk/vervet/v3"
 )
 
+// LocalizeCommand is the `vervet localize` subcommand
+var LocalizeCommand = cli.Command{
+	Name:      "localize",
+	Aliases:   []string{"localise"},
+	Usage:     "Localize references and validate a single OpenAPI spec file",
+	ArgsUsage: "[spec.yaml file]",
+	Action:    Localize,
+}
+
 // Localize references and validate a single OpenAPI spec file
 func Localize(ctx *cli.Context) error {
 	if ctx.Args().Len() < 1 {

@@ -1,7 +1,7 @@
 import type * as express from 'express';
 import type { V3Request, V3Response } from '../../../../framework';
 
-export const updateNewthing = async (
+export const helloWorldCreate = async (
   req: V3Request,
   res: V3Response,
   next: express.NextFunction,
