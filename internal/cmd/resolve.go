@@ -5,7 +5,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v3"
+	"github.com/snyk/vervet/v4"
 )
 
 // ResolveCommand is the `vervet resolve` subcommand.

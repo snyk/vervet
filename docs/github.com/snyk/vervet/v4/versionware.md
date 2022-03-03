@@ -1,7 +1,7 @@
 # versionware
 
 ```go
-import "github.com/snyk/vervet/v3/versionware"
+import "github.com/snyk/vervet/v4/versionware"
 ```
 
 Package versionware provides routing and middleware for building versioned HTTP services\.

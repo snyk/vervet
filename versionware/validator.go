@@ -11,7 +11,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/getkin/kin-openapi/routers/gorillamux"
 
-	"github.com/snyk/vervet/v3"
+	"github.com/snyk/vervet/v4"
 )
 
 // Validator provides versioned OpenAPI validation middleware for HTTP requests

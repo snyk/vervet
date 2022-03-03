@@ -1,17 +1,8 @@
 nav:
 - Go packages:
-  - github.com/snyk/vervet/v3: github.com/snyk/vervet/v3.md
-  - github.com/snyk/vervet/v3/cmd: github.com/snyk/vervet/v3/cmd.md
-  - github.com/snyk/vervet/v3/config: github.com/snyk/vervet/v3/config.md
-  - github.com/snyk/vervet/v3/internal/compiler: github.com/snyk/vervet/v3/internal/compiler.md
-  - github.com/snyk/vervet/v3/internal/files: github.com/snyk/vervet/v3/internal/files.md
-  - github.com/snyk/vervet/v3/internal/generator: github.com/snyk/vervet/v3/internal/generator.md
-  - github.com/snyk/vervet/v3/internal/linter: github.com/snyk/vervet/v3/internal/linter.md
-  - github.com/snyk/vervet/v3/internal/linter/optic: github.com/snyk/vervet/v3/internal/linter/optic.md
-  - github.com/snyk/vervet/v3/internal/linter/spectral: github.com/snyk/vervet/v3/internal/linter/spectral.md
-  - github.com/snyk/vervet/v3/internal/linter/sweatercomb: github.com/snyk/vervet/v3/internal/linter/sweatercomb.md
-  - github.com/snyk/vervet/v3/internal/scaffold: github.com/snyk/vervet/v3/internal/scaffold.md
-  - github.com/snyk/vervet/v3/versionware: github.com/snyk/vervet/v3/versionware.md
+  - github.com/snyk/vervet/v4: github.com/snyk/vervet/v4.md
+  - github.com/snyk/vervet/v4/config: github.com/snyk/vervet/v4/config.md
+  - github.com/snyk/vervet/v4/versionware: github.com/snyk/vervet/v4/versionware.md
 plugins:
 - techdocs-core
 site_name: vervet

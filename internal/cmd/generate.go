@@ -5,8 +5,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v3/config"
-	"github.com/snyk/vervet/v3/internal/generator"
+	"github.com/snyk/vervet/v4/config"
+	"github.com/snyk/vervet/v4/internal/generator"
 )
 
 // GenerateCommand is the `vervet generate` subcommand.

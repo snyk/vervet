@@ -15,12 +15,12 @@ import (
 	"github.com/ghodss/yaml"
 	"go.uber.org/multierr"
 
-	"github.com/snyk/vervet/v3"
-	"github.com/snyk/vervet/v3/config"
-	"github.com/snyk/vervet/v3/internal/files"
-	"github.com/snyk/vervet/v3/internal/linter"
-	"github.com/snyk/vervet/v3/internal/linter/optic"
-	"github.com/snyk/vervet/v3/internal/linter/spectral"
+	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v4/config"
+	"github.com/snyk/vervet/v4/internal/files"
+	"github.com/snyk/vervet/v4/internal/linter"
+	"github.com/snyk/vervet/v4/internal/linter/optic"
+	"github.com/snyk/vervet/v4/internal/linter/spectral"
 )
 
 // A Compiler checks and builds versioned API resource inputs into aggregated

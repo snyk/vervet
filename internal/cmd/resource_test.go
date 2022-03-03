@@ -8,8 +8,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v3/internal/cmd"
-	"github.com/snyk/vervet/v3/testdata"
+	"github.com/snyk/vervet/v4/internal/cmd"
+	"github.com/snyk/vervet/v4/testdata"
 )
 
 func cd(c *qt.C, path string) {

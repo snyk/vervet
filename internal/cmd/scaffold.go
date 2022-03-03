@@ -7,7 +7,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v3/internal/scaffold"
+	"github.com/snyk/vervet/v4/internal/scaffold"
 )
 
 // Scaffold is the `vervet scaffold` subcommand.

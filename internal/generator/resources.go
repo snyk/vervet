@@ -5,9 +5,9 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v3"
-	"github.com/snyk/vervet/v3/config"
-	"github.com/snyk/vervet/v3/internal/compiler"
+	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v4/config"
+	"github.com/snyk/vervet/v4/internal/compiler"
 )
 
 // ResourceKey uniquely identifies an API resource.

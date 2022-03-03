@@ -1,7 +1,7 @@
 # config
 
 ```go
-import "github.com/snyk/vervet/v3/config"
+import "github.com/snyk/vervet/v4/config"
 ```
 
 ## Index
@@ -14,6 +14,7 @@ import "github.com/snyk/vervet/v3/config"
 - [type GeneratorData](<#type-generatordata>)
 - [type GeneratorScope](<#type-generatorscope>)
 - [type Generators](<#type-generators>)
+  - [func LoadGenerators(r io.Reader) (Generators, error)](<#func-loadgenerators>)
 - [type Linter](<#type-linter>)
 - [type Linters](<#type-linters>)
 - [type OpticCILinter](<#type-opticcilinter>)
@@ -24,7 +25,6 @@ import "github.com/snyk/vervet/v3/config"
   - [func (p *Project) APINames() []string](<#func-project-apinames>)
 - [type ResourceSet](<#type-resourceset>)
 - [type SpectralLinter](<#type-spectrallinter>)
-- [type SweaterCombLinter](<#type-sweatercomblinter>)
 
 
 ## Constants
@@ -117,17 +117,25 @@ Generators defines a named map of Generator instances\.
 type Generators map[string]*Generator
 ```
 
+### func LoadGenerators
+
+```go
+func LoadGenerators(r io.Reader) (Generators, error)
+```
+
+LoadGenerators loads Generators from their YAML representation\.
+
 ## type Linter
 
 Linter describes a set of standards and rules that an API should satisfy\.
 
 ```go
 type Linter struct {
-    Name        string             `json:"-"`
-    Description string             `json:"description,omitempty"`
-    Spectral    *SpectralLinter    `json:"spectral"`
-    SweaterComb *SweaterCombLinter `json:"sweater-comb"`
-    OpticCI     *OpticCILinter     `json:"optic-ci"`
+    Name        string          `json:"-"`
+    Description string          `json:"description,omitempty"`
+    Spectral    *SpectralLinter `json:"spectral"`
+    SweaterComb *OpticCILinter  `json:"sweater-comb"`
+    OpticCI     *OpticCILinter  `json:"optic-ci"`
 }
 ```
 
@@ -164,6 +172,23 @@ type OpticCILinter struct {
 
     // Debug turns on debug logging.
     Debug bool `json:"debug,omitempty"`
+
+    // CIContext specifies the location of an optional CI context JSON file to
+    // use when performing an optic-ci compare or bulk-compare. If this file is
+    // present when vervet lints, it will be passed to optic using the
+    // --ci-context option.
+    //
+    // See https://www.npmjs.com/package/@useoptic/api-checks#expected-contexts
+    // for more information.
+    CIContext string `json:"ciContext"`
+
+    // UploadResults indicates that the comparison results from optic-ci should
+    // be uploaded to Optic Cloud. This only happens if the file specified by
+    // CIContext exists.
+    UploadResults bool `json:"uploadResults"`
+
+    // ExtraArgs may be used to pass extra arguments to `optic-ci`.
+    ExtraArgs []string `json:"extraArgs"`
 }
 ```
 
@@ -233,7 +258,6 @@ type ResourceSet struct {
     Description     string             `json:"description"`
     Linter          string             `json:"linter"`
     LinterOverrides map[string]Linters `json:"linter-overrides"`
-    Generators      []string           `json:"generators"`
     Path            string             `json:"path"`
     Excludes        []string           `json:"excludes"`
 }
@@ -256,27 +280,6 @@ type SpectralLinter struct {
     //
     // See https://meta.stoplight.io/docs/spectral/ZG9jOjI1MTg1-spectral-cli
     // for the options supported.
-    ExtraArgs []string `json:"extraArgs"`
-}
-```
-
-## type SweaterCombLinter
-
-SweaterCombLinter identifies a Sweater Comb Linter\, which is distributed as a self\-contained docker image\.
-
-```go
-type SweaterCombLinter struct {
-    // Image identifies the Sweater Comb docker image to use for linting.
-    Image string
-
-    // Rules are a list of Spectral ruleset file locations
-    // These may be absolute paths to Sweater Comb rules, such as /rules/apinext.yaml.
-    // Or, they may be relative paths to files in this project.
-    Rules []string `json:"rules"`
-
-    // ExtraArgs may be used to pass extra arguments to `spectral lint`. The
-    // Sweater Comb image includes Spectral. This has the same function as
-    // SpectralLinter.ExtraArgs above.
     ExtraArgs []string `json:"extraArgs"`
 }
 ```

@@ -8,8 +8,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v3/config"
-	"github.com/snyk/vervet/v3/testdata"
+	"github.com/snyk/vervet/v4/config"
+	"github.com/snyk/vervet/v4/testdata"
 )
 
 func setup(c *qt.C) {
