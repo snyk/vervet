@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 
@@ -51,6 +52,7 @@ func Generate(ctx *cli.Context) error {
 	}
 
 	// Option to load generators and overlay onto project config
+	generatorsHere := map[string]string{}
 	if genFile := ctx.String("generators"); genFile != "" {
 		f, err := os.Open(genFile)
 		if err != nil {
@@ -63,6 +65,7 @@ func Generate(ctx *cli.Context) error {
 		}
 		for k, v := range generators {
 			proj.Generators[k] = v
+			generatorsHere[k] = filepath.Dir(genFile)
 		}
 	}
 	// If a list of specific generators were specified, only instantiate those.
@@ -78,10 +81,22 @@ func Generate(ctx *cli.Context) error {
 	if ctx.Bool("debug") {
 		options = append(options, generator.Debug(true))
 	}
-
-	generators, err := generator.NewMap(proj.Generators, options...)
-	if err != nil {
-		return err
+	projectHere := filepath.Dir(configFile)
+	generators := map[string]*generator.Generator{}
+	for k, genConf := range proj.Generators {
+		genHere, ok := generatorsHere[k]
+		if !ok {
+			genHere = projectHere
+		}
+		genHere, err = filepath.Abs(genHere)
+		if err != nil {
+			return err
+		}
+		gen, err := generator.New(genConf, append(options, generator.Here(genHere))...)
+		if err != nil {
+			return err
+		}
+		generators[k] = gen
 	}
 
 	err = os.Chdir(projectDir)

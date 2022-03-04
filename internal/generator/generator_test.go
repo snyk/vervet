@@ -38,13 +38,13 @@ func TestVersionScope(t *testing.T) {
 	versionReadme := `
 version-readme:
   scope: version
-  filename: "` + out + `/{{.API}}/{{.Resource}}/{{.Version.DateString}}/README"
+  filename: "{{.Here}}/{{.API}}/{{.Resource}}/{{.Version.DateString}}/README"
   template: ".vervet/resource/version/README.tmpl"
 `
 	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
 	c.Assert(err, qt.IsNil)
 
-	genReadme, err := New(generatorsConf["version-readme"], Debug(true))
+	genReadme, err := New(generatorsConf["version-readme"], Debug(true), Here(out))
 	c.Assert(err, qt.IsNil)
 
 	resources, err := MapResources(proj)
@@ -81,13 +81,13 @@ func TestResourceScope(t *testing.T) {
 	versionReadme := `
 resource-routes:
   scope: resource
-  filename: "` + out + `/{{ .API }}/{{ .Resource }}/routes.ts"
+  filename: "{{.Here}}/{{ .API }}/{{ .Resource }}/routes.ts"
   template: ".vervet/resource/routes.ts.tmpl"
 `
 	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
 	c.Assert(err, qt.IsNil)
 
-	genReadme, err := New(generatorsConf["resource-routes"], Debug(true))
+	genReadme, err := New(generatorsConf["resource-routes"], Debug(true), Here(out))
 	c.Assert(err, qt.IsNil)
 
 	resources, err := MapResources(proj)
