@@ -26,6 +26,7 @@ type Generator struct {
 
 	debug bool
 	force bool
+	here  string
 }
 
 var (
@@ -103,7 +104,33 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 		log.Printf("generator %s: debug logging enabled", g.name)
 	}
 
-	contentsTemplate, err := ioutil.ReadFile(conf.Template)
+	// If .Here isn't specified, we'll assume cwd.
+	var err error
+	if g.here == "" {
+		g.here, err = os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Resolve the template filename... with a template. Only .Here is
+	// supported, not full scope. Just enough to locate files relative to the
+	// config.
+	templateTemplate, err := template.New("template").Parse(string(conf.Template))
+	if err != nil {
+		return nil, fmt.Errorf("%w: (generators.%s.template)", err, conf.Name)
+	}
+	var templateFilenameBuf bytes.Buffer
+	err = templateTemplate.ExecuteTemplate(&templateFilenameBuf, "template", map[string]string{
+		"Here": g.here,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("%w: (generators.%s.template)", err, conf.Name)
+	}
+
+	// Parse & wire up other templates: contents, filename or files. These do
+	// support full scope.
+	contentsTemplate, err := ioutil.ReadFile(templateFilenameBuf.String())
 	if err != nil {
 		return nil, fmt.Errorf("%w: (generators.%s.contents)", err, conf.Name)
 	}
@@ -143,6 +170,14 @@ func Debug(debug bool) Option {
 	}
 }
 
+// Here sets the .Here scope property. This is typically relative to the
+// location of the generators config file.
+func Here(here string) Option {
+	return func(g *Generator) {
+		g.here = here
+	}
+}
+
 // Execute runs the generator on the given resources.
 func (g *Generator) Execute(resources ResourceMap) error {
 	switch g.Scope() {
@@ -157,6 +192,7 @@ func (g *Generator) Execute(resources ResourceMap) error {
 					API:             rcKey.API,
 					Path:            filepath.Join(rcKey.Path, version.DateString()),
 					ResourceVersion: rc,
+					Here:            g.here,
 				}
 				err = g.execute(scope)
 				if err != nil {
@@ -170,6 +206,7 @@ func (g *Generator) Execute(resources ResourceMap) error {
 				API:              rcKey.API,
 				Path:             rcKey.Path,
 				ResourceVersions: rcVersions,
+				Here:             g.here,
 			}
 			err := g.execute(scope)
 			if err != nil {
@@ -184,9 +221,14 @@ func (g *Generator) Execute(resources ResourceMap) error {
 
 // ResourceScope identifies a resource that the generator is building for.
 type ResourceScope struct {
+	// ResourceVersions contains all the versions of this resource.
 	*vervet.ResourceVersions
-	API  string
+	// API is name of the API containing this resource.
+	API string
+	// Path is the path to the resource directory.
 	Path string
+	// Here is the directory containing the executing template.
+	Here string
 }
 
 // Resource returns the name of the resource in scope.
@@ -198,8 +240,12 @@ func (s *ResourceScope) Resource() string {
 // is building for.
 type VersionScope struct {
 	*vervet.ResourceVersion
-	API  string
+	// API is name of the API containing this resource.
+	API string
+	// Path is the path to the resource directory.
 	Path string
+	// Here is the directory containing the generator template.
+	Here string
 }
 
 // Resource returns the name of the resource in scope.
