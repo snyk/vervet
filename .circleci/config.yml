@@ -123,7 +123,9 @@ workflows:
           name: Test
           filters:
             branches:
-              only: 'main'
+              only:
+                - main
+                - v3
       - build-vu:
           name: Build app
           context: snyk-docker-build
