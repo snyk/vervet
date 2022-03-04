@@ -90,6 +90,71 @@ func TestNoSuchWorkingCopyFile(t *testing.T) {
 	c.Assert(path, qt.Equals, "")
 }
 
+func TestLocalException(t *testing.T) {
+	c := qt.New(t)
+	ctx, cancel := context.WithCancel(context.TODO())
+	c.Cleanup(cancel)
+
+	tests := []struct {
+		file, hash, result string
+	}{{
+		file:   "hello/2021-06-01/spec.yaml",
+		hash:   "ff5a50934cfe2f275bce6b19b737ce25e042310b5d4537c80820e1d2d6d9c413",
+		result: "{}",
+	}, {
+		file:   "hello/2021-06-01/spec.yaml",
+		hash:   "nope",
+		result: `{"comparisons":[{"to":"/to/hello/2021-06-01/spec.yaml","context":{"changeDate":"2021-10-30","changeResource":"hello","changeVersion":{"date":"2021-06-01","stability":"experimental"}}}]}`,
+	}}
+
+	for i, test := range tests {
+		c.Run(fmt.Sprintf("test#%d", i), func(c *qt.C) {
+			testProject := c.TempDir()
+
+			// Sanity check constructor
+			l, err := New(ctx, &config.OpticCILinter{
+				Image:    "some-image",
+				Original: "",
+				Proposed: "",
+				Exceptions: map[string][]string{
+					test.file: {test.hash},
+				},
+			})
+			c.Assert(err, qt.IsNil)
+			c.Assert(l.image, qt.Equals, "some-image")
+			c.Assert(l.fromSource, qt.DeepEquals, files.NilSource{})
+			c.Assert(l.toSource, qt.DeepEquals, files.LocalFSSource{})
+
+			// Set up a local example project
+			versionDir := testProject + "/hello/2021-06-01"
+			c.Assert(os.MkdirAll(versionDir, 0777), qt.IsNil)
+			copyFile(c, filepath.Join(versionDir, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
+			origWd, err := os.Getwd()
+			c.Assert(err, qt.IsNil)
+			c.Cleanup(func() { c.Assert(os.Chdir(origWd), qt.IsNil) })
+			c.Assert(os.Chdir(testProject), qt.IsNil)
+
+			// Mock time for repeatable tests
+			l.timeNow = func() time.Time { return time.Date(2021, time.October, 30, 1, 2, 3, 0, time.UTC) }
+
+			// Capture stdout to a file
+			tempFile, err := os.Create(c.TempDir() + "/stdout")
+			c.Assert(err, qt.IsNil)
+			c.Patch(&os.Stdout, tempFile)
+			defer tempFile.Close()
+
+			runner := &mockRunner{}
+			l.runner = runner
+			err = l.Run(ctx, "hello", "hello/2021-06-01/spec.yaml")
+			c.Assert(err, qt.IsNil)
+			c.Assert(runner.bulkInputs, qt.HasLen, 1)
+			buf, err := json.Marshal(runner.bulkInputs[0])
+			c.Assert(err, qt.IsNil)
+			c.Assert(string(buf), qt.Equals, test.result)
+		})
+	}
+}
+
 func TestNoSuchGitFile(t *testing.T) {
 	c := qt.New(t)
 	testRepo, commitHash := setupGitRepo(c)
@@ -265,8 +330,13 @@ func TestMatchIntersectSources(t *testing.T) {
 }
 
 type mockRunner struct {
-	runs [][]string
-	err  error
+	bulkInputs []interface{}
+	runs       [][]string
+	err        error
+}
+
+func (r *mockRunner) bulkInput(input interface{}) {
+	r.bulkInputs = append(r.bulkInputs, input)
 }
 
 func (r *mockRunner) run(cmd *exec.Cmd) error {
