@@ -4,6 +4,8 @@ package optic
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -38,13 +40,17 @@ type Optic struct {
 	extraArgs     []string
 	ciContext     string
 	uploadResults bool
+	exceptions    map[string][]string
 }
 
 type commandRunner interface {
 	run(cmd *exec.Cmd) error
+	bulkInput(interface{})
 }
 
 type execCommandRunner struct{}
+
+func (*execCommandRunner) bulkInput(interface{}) {}
 
 func (*execCommandRunner) run(cmd *exec.Cmd) error {
 	return cmd.Run()
@@ -103,6 +109,7 @@ func New(ctx context.Context, cfg *config.OpticCILinter) (*Optic, error) {
 		extraArgs:     cfg.ExtraArgs,
 		ciContext:     cfg.CIContext,
 		uploadResults: cfg.UploadResults,
+		exceptions:    cfg.Exceptions,
 	}, nil
 }
 
@@ -178,7 +185,9 @@ func (o *Optic) Run(ctx context.Context, root string, paths ...string) error {
 	}
 	for i := range paths {
 		comparison, volumeArgs, err := o.newComparison(paths[i], fromFilter, toFilter)
-		if err != nil {
+		if err == errHasException {
+			continue
+		} else if err != nil {
 			errs = multierr.Append(errs, err)
 		} else {
 			comparisons = append(comparisons, comparison)
@@ -228,6 +237,11 @@ func (o *Optic) newComparison(path string, fromFilter, toFilter func(string) str
 	if err != nil {
 		return comparison{}, nil, err
 	}
+	if ok, err := o.hasException(path, fromFile); err != nil {
+		return comparison{}, nil, err
+	} else if ok {
+		return comparison{}, nil, errHasException
+	}
 	cmp.From = fromFile
 	if fromFilter != nil {
 		cmp.From = fromFilter(cmp.From)
@@ -237,6 +251,11 @@ func (o *Optic) newComparison(path string, fromFilter, toFilter func(string) str
 	if err != nil {
 		return comparison{}, nil, err
 	}
+	if ok, err := o.hasException(path, toFile); err != nil {
+		return comparison{}, nil, err
+	} else if ok {
+		return comparison{}, nil, errHasException
+	}
 	cmp.To = toFile
 	if toFilter != nil {
 		cmp.To = toFilter(cmp.To)
@@ -245,10 +264,36 @@ func (o *Optic) newComparison(path string, fromFilter, toFilter func(string) str
 	return cmp, volumeArgs, nil
 }
 
+var errHasException = fmt.Errorf("file is skipped due to lint exception")
+
+func (o *Optic) hasException(key, path string) (bool, error) {
+	log.Println("key", key, "path", path)
+	if path == "" {
+		return false, nil
+	}
+	sum, ok := o.exceptions[key]
+	if !ok {
+		return false, nil
+	}
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return false, err
+	}
+	fileSum := sha256.Sum256(contents)
+	matchSum := hex.EncodeToString(fileSum[:])
+	for i := range sum {
+		if strings.ToLower(sum[i]) == matchSum {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (o *Optic) bulkCompareScript(ctx context.Context, comparisons []comparison) error {
 	input := &bulkCompareInput{
 		Comparisons: comparisons,
 	}
+	o.runner.bulkInput(input)
 	inputFile, err := ioutil.TempFile("", "*-input.json")
 	if err != nil {
 		return err
@@ -365,6 +410,7 @@ func (o *Optic) bulkCompareDocker(ctx context.Context, comparisons []comparison,
 	input := &bulkCompareInput{
 		Comparisons: comparisons,
 	}
+	o.runner.bulkInput(input)
 	inputFile, err := ioutil.TempFile("", "*-input.json")
 	if err != nil {
 		return err

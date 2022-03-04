@@ -94,6 +94,14 @@ type OpticCILinter struct {
 	// CIContext exists.
 	UploadResults bool `json:"uploadResults"`
 
+	// Exceptions are files that are excluded from CI checks. This is an escape
+	// hatch of last resort, if a file needs to land and can't pass CI yet.
+	// They are specified as a mapping from project relative path to sha256
+	// sums of that spec file that is exempt. This makes the exception very
+	// narrow -- only a specific version of a specific file is skipped, after
+	// outside review and approval.
+	Exceptions map[string][]string
+
 	// ExtraArgs may be used to pass extra arguments to `optic-ci`.
 	ExtraArgs []string `json:"extraArgs"`
 }
