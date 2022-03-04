@@ -131,6 +131,7 @@ workflows:
             branches:
               only:
                 - main
+                - v3
       - release:
           name: Release
           context: nodejs-app-release
@@ -140,6 +141,7 @@ workflows:
             branches:
               only:
                 - main
+                - v3
       - publish-vu:
           name: Build and publish image
           context: snyk-docker-build
@@ -149,3 +151,4 @@ workflows:
             branches:
               only:
                 - main
+                - v3
