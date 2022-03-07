@@ -149,3 +149,230 @@ export const getOrgsProjects = versions([
 ]);
 `[1:])
 }
+
+func TestFunctions(t *testing.T) {
+	c := qt.New(t)
+	setup(c)
+
+	configBuf, err := ioutil.ReadFile(".vervet.yaml")
+	c.Assert(err, qt.IsNil)
+	proj, err := config.Load(bytes.NewBuffer(configBuf))
+	c.Assert(err, qt.IsNil)
+
+	out := c.TempDir()
+	c.Assert(ioutil.WriteFile(out+"/tsfuncs.js", []byte(`
+function tsType(oasType) {
+	switch (String(oasType)) {
+	case "string":
+		return "string";
+	case "integer":
+		return "number";
+	case "boolean":
+		return "boolean";
+	}
+	console.log("warning: failed to resolve type of", oasType);
+	return "any";
+}
+`[1:]), 0666), qt.IsNil)
+	c.Assert(ioutil.WriteFile(out+"/models.ts.tmpl", []byte(`
+{{- /*
+
+	Template interfaceProperties produces the contents of an interface.
+
+*/ -}}
+{{- define "interfaceProperties" -}}
+{{- range $propName, $prop := .Properties }}
+{{ $propName }}: {{ template "schemaTypeDef" $prop.Value }},
+{{- end -}}
+{{- end -}}
+
+{{- /*
+
+	Template resolveSchemaRef either resolves a local component ref to a
+	generated type name, or emits an inline type declaration.
+
+*/ -}}
+{{- define "resolveSchemaRef" -}}
+{{- if .Ref }}{{ .Ref | basename }}
+{{- else }}{{ template "schemaTypeDef" .Value }}
+{{- end -}}
+{{- end -}}
+
+{{- /*
+
+	Template schemaTypeDef produces the definition of a type.
+
+*/ -}}
+{{- define "schemaTypeDef" -}}
+
+{{- if isOneOf . }}
+{{- range $i, $oneOf := .OneOf }} {{ if ne $i 0 }}| {{ end }}{{ template "resolveSchemaRef" $oneOf }}{{ end }}
+
+{{- else if isAnyOf . }}
+{{- range $i, $anyOf := .AnyOf }} {{ if ne $i 0 }}| {{ end }}{{ template "resolveSchemaRef" $anyOf }}{{ end }}
+
+{{- else if isAllOf . }}
+{{- range $i, $allOf := .AllOf }} {{ if ne $i 0 }}| {{ end }}{{ template "resolveSchemaRef" $allOf }}{{ end }}
+
+{{- else if isAssociativeArray . }}{
+  [key: string]: object;
+}
+
+{{- else if eq .Type "object" }}{
+{{- include "interfaceProperties" . | indent 2 }}
+}
+
+{{- else if eq .Type "array" }}Array<{{ template "resolveSchemaRef" .Items }}>
+
+{{- else }}{{ .Type | tsType }}
+
+{{- end -}}
+{{- end -}}
+
+{{- /*
+
+	Template schemaTypeDecl produces a complete Typescript type declaration.
+	It might be an interface, union, intersection or alias.
+
+*/ -}}
+{{- define "schemaTypeDecl" -}}
+
+{{- if isAssociativeArray .Schema.Value }}
+export interface {{ .Name }} {{ template "schemaTypeDef" .Schema.Value }};
+
+{{- else if eq .Schema.Value.Type "object" }}
+export interface {{ .Name }} {{ template "schemaTypeDef" .Schema.Value }};
+
+{{- else }}
+export type {{ .Name }} = {{ template "schemaTypeDef" .Schema.Value }};
+
+{{- end -}}
+{{- end -}}
+
+{{- /*
+
+	Top-level template.
+
+*/ -}}
+{{ range $schemaName, $schema := .ResourceVersion.Document.Components.Schemas -}}
+{{- if $schema.Value -}}
+{{ with $ctx := map "Name" $schemaName "Schema" $schema }}{{ template "schemaTypeDecl" $ctx }}{{ end }}
+{{ end -}}
+{{ end -}}
+`[1:]), 0666), qt.IsNil)
+
+	versionReadme := `
+version-models:
+  scope: version
+  filename: "{{.Here}}/{{.API}}/{{.Resource}}/{{.Version.DateString}}/models.ts"
+  functions: "{{.Here}}/tsfuncs.js"
+  template: "{{.Here}}/models.ts.tmpl"
+`
+	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
+	c.Assert(err, qt.IsNil)
+
+	genReadme, err := New(generatorsConf["version-models"], Debug(true), Here(out))
+	c.Assert(err, qt.IsNil)
+
+	resources, err := MapResources(proj)
+	c.Assert(err, qt.IsNil)
+	err = genReadme.Execute(resources)
+	c.Assert(err, qt.IsNil)
+
+	jsFile, err := ioutil.ReadFile(out + "/testdata/projects/2021-06-04/models.ts")
+	c.Assert(err, qt.IsNil)
+	c.Assert(string(jsFile), qt.Equals, `
+export type ActualVersion = string;
+
+export interface Error {
+  detail: string,
+  id: string,
+  meta: {
+    [key: string]: object;
+  },
+  source: {
+    parameter: string,
+    pointer: string,
+  },
+  status: string,
+};
+
+export interface ErrorDocument {
+  errors: Array<Error>,
+  jsonapi: {
+    version: string,
+  },
+};
+
+export interface JsonApi {
+  version: string,
+};
+
+export type LinkProperty =  string | {
+  href: string,
+  meta: {
+    [key: string]: object;
+  },
+};
+
+export interface Links {
+  first:  string | {
+    href: string,
+    meta: {
+      [key: string]: object;
+    },
+  },
+  last:  string | {
+    href: string,
+    meta: {
+      [key: string]: object;
+    },
+  },
+  next:  string | {
+    href: string,
+    meta: {
+      [key: string]: object;
+    },
+  },
+  prev:  string | {
+    href: string,
+    meta: {
+      [key: string]: object;
+    },
+  },
+  related:  string | {
+    href: string,
+    meta: {
+      [key: string]: object;
+    },
+  },
+  self:  string | {
+    href: string,
+    meta: {
+      [key: string]: object;
+    },
+  },
+};
+
+export interface Meta {
+  [key: string]: object;
+};
+
+export interface Project {
+  attributes: {
+    created: string,
+    hostname: string,
+    name: string,
+    origin: string,
+    status: string,
+    type: string,
+  },
+  id: string,
+  type: string,
+};
+
+export type QueryVersion = string;
+
+export type Version = string;
+`)
+}

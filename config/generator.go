@@ -7,12 +7,12 @@ type Generators map[string]*Generator
 
 // Generator describes how files are generated for a resource.
 type Generator struct {
-	Name     string                    `json:"-"`
-	Scope    GeneratorScope            `json:"scope"`
-	Filename string                    `json:"filename,omitempty"`
-	Template string                    `json:"template"`
-	Files    string                    `json:"files,omitempty"`
-	Data     map[string]*GeneratorData `json:"data,omitempty"`
+	Name      string         `json:"-"`
+	Scope     GeneratorScope `json:"scope"`
+	Filename  string         `json:"filename,omitempty"`
+	Template  string         `json:"template"`
+	Files     string         `json:"files,omitempty"`
+	Functions string         `json:"functions,omitempty"`
 }
 
 func (g *Generator) validate() error {
@@ -50,13 +50,6 @@ const (
 	// example.
 	GeneratorScopeResource = "resource"
 )
-
-// GeneratorData describes an item that is added to a generator's template data
-// context.
-type GeneratorData struct {
-	FieldName string `json:"-"`
-	Include   string `json:"include"`
-}
 
 func (g Generators) init() error {
 	for name, gen := range g {
