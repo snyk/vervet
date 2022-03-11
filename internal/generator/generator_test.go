@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -49,8 +50,15 @@ version-readme:
 
 	resources, err := MapResources(proj)
 	c.Assert(err, qt.IsNil)
-	err = genReadme.Execute(resources)
+	files, err := genReadme.Execute(resources)
 	c.Assert(err, qt.IsNil)
+	c.Assert(files, qt.ContentEquals, []string{
+		out + "/testdata/hello-world/2021-06-01/README",
+		out + "/testdata/hello-world/2021-06-07/README",
+		out + "/testdata/hello-world/2021-06-13/README",
+		out + "/testdata/projects/2021-06-04/README",
+		out + "/testdata/projects/2021-08-20/README",
+	})
 
 	for _, test := range []struct {
 		resource, version string
@@ -92,8 +100,12 @@ resource-routes:
 
 	resources, err := MapResources(proj)
 	c.Assert(err, qt.IsNil)
-	err = genReadme.Execute(resources)
+	files, err := genReadme.Execute(resources)
 	c.Assert(err, qt.IsNil)
+	c.Assert(files, qt.ContentEquals, []string{
+		out + "/testdata/hello-world/routes.ts",
+		out + "/testdata/projects/routes.ts",
+	})
 
 	routes, err := ioutil.ReadFile(out + "/testdata/hello-world/routes.ts")
 	c.Assert(err, qt.IsNil)
@@ -276,8 +288,15 @@ version-models:
 
 	resources, err := MapResources(proj)
 	c.Assert(err, qt.IsNil)
-	err = genReadme.Execute(resources)
+	files, err := genReadme.Execute(resources)
 	c.Assert(err, qt.IsNil)
+	c.Assert(files, qt.ContentEquals, []string{
+		out + "/testdata/hello-world/2021-06-01/models.ts",
+		out + "/testdata/hello-world/2021-06-07/models.ts",
+		out + "/testdata/hello-world/2021-06-13/models.ts",
+		out + "/testdata/projects/2021-06-04/models.ts",
+		out + "/testdata/projects/2021-08-20/models.ts",
+	})
 
 	jsFile, err := ioutil.ReadFile(out + "/testdata/projects/2021-06-04/models.ts")
 	c.Assert(err, qt.IsNil)
@@ -375,4 +394,44 @@ export type QueryVersion = string;
 
 export type Version = string;
 `)
+}
+
+func TestDryRun(t *testing.T) {
+	c := qt.New(t)
+	setup(c)
+
+	configBuf, err := ioutil.ReadFile(".vervet.yaml")
+	c.Assert(err, qt.IsNil)
+	proj, err := config.Load(bytes.NewBuffer(configBuf))
+	c.Assert(err, qt.IsNil)
+
+	out := c.TempDir()
+
+	versionReadme := `
+version-readme:
+  scope: version
+  filename: "{{.Here}}/{{.API}}/{{.Resource}}/{{.Version.DateString}}/README"
+  template: ".vervet/resource/version/README.tmpl"
+`
+	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
+	c.Assert(err, qt.IsNil)
+
+	genReadme, err := New(generatorsConf["version-readme"], Debug(true), Here(out), DryRun(true))
+	c.Assert(err, qt.IsNil)
+
+	resources, err := MapResources(proj)
+	c.Assert(err, qt.IsNil)
+	files, err := genReadme.Execute(resources)
+	c.Assert(err, qt.IsNil)
+	c.Assert(files, qt.ContentEquals, []string{
+		out + "/testdata/hello-world/2021-06-01/README",
+		out + "/testdata/hello-world/2021-06-07/README",
+		out + "/testdata/hello-world/2021-06-13/README",
+		out + "/testdata/projects/2021-06-04/README",
+		out + "/testdata/projects/2021-08-20/README",
+	})
+
+	actualFiles, err := filepath.Glob(out + "/*/*/*/README")
+	c.Assert(err, qt.IsNil)
+	c.Assert(actualFiles, qt.HasLen, 0)
 }

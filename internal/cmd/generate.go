@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -20,6 +21,11 @@ var GenerateCommand = cli.Command{
 			Name:    "config",
 			Aliases: []string{"c", "conf"},
 			Usage:   "Project configuration file",
+		},
+		&cli.BoolFlag{
+			Name:    "dry-run",
+			Aliases: []string{"n"},
+			Usage:   "Dry-run, listing files that would be generated",
 		},
 		&cli.StringFlag{
 			Name:    "generators",
@@ -81,6 +87,9 @@ func Generate(ctx *cli.Context) error {
 	if ctx.Bool("debug") {
 		options = append(options, generator.Debug(true))
 	}
+	if ctx.Bool("dry-run") {
+		options = append(options, generator.DryRun(true))
+	}
 	projectHere := filepath.Dir(configFile)
 	generators := map[string]*generator.Generator{}
 	for k, genConf := range proj.Generators {
@@ -109,11 +118,18 @@ func Generate(ctx *cli.Context) error {
 		return err
 	}
 
+	var allGeneratedFiles []string
 	for _, gen := range generators {
-		err := gen.Execute(resources)
+		generatedFiles, err := gen.Execute(resources)
 		if err != nil {
 			return err
 		}
+		allGeneratedFiles = append(allGeneratedFiles, generatedFiles...)
 	}
+
+	for _, generatedFile := range allGeneratedFiles {
+		fmt.Println(generatedFile)
+	}
+
 	return nil
 }
