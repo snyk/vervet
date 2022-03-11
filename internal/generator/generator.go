@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -24,9 +25,10 @@ type Generator struct {
 	functions template.FuncMap
 	scope     config.GeneratorScope
 
-	debug bool
-	force bool
-	here  string
+	debug  bool
+	dryRun bool
+	force  bool
+	here   string
 }
 
 // NewMap instanstiates a map of Generators from configuration.
@@ -150,6 +152,14 @@ func Debug(debug bool) Option {
 	}
 }
 
+// DryRun executes templates and lists the files that would be generated
+// without actually generating them.
+func DryRun(dryRun bool) Option {
+	return func(g *Generator) {
+		g.dryRun = dryRun
+	}
+}
+
 // Here sets the .Here scope property. This is typically relative to the
 // location of the generators config file.
 func Here(here string) Option {
@@ -159,14 +169,15 @@ func Here(here string) Option {
 }
 
 // Execute runs the generator on the given resources.
-func (g *Generator) Execute(resources ResourceMap) error {
+func (g *Generator) Execute(resources ResourceMap) ([]string, error) {
+	var allFiles []string
 	switch g.Scope() {
 	case config.GeneratorScopeDefault, config.GeneratorScopeVersion:
 		for rcKey, rcVersions := range resources {
 			for _, version := range rcVersions.Versions() {
 				rc, err := rcVersions.At(version.String())
 				if err != nil {
-					return err
+					return nil, err
 				}
 				scope := &VersionScope{
 					API:             rcKey.API,
@@ -174,10 +185,11 @@ func (g *Generator) Execute(resources ResourceMap) error {
 					ResourceVersion: rc,
 					Here:            g.here,
 				}
-				err = g.execute(scope)
+				generatedFiles, err := g.execute(scope)
 				if err != nil {
-					return err
+					return nil, err
 				}
+				allFiles = append(allFiles, generatedFiles...)
 			}
 		}
 	case config.GeneratorScopeResource:
@@ -188,15 +200,16 @@ func (g *Generator) Execute(resources ResourceMap) error {
 				ResourceVersions: rcVersions,
 				Here:             g.here,
 			}
-			err := g.execute(scope)
+			generatedFiles, err := g.execute(scope)
 			if err != nil {
-				return err
+				return nil, err
 			}
+			allFiles = append(allFiles, generatedFiles...)
 		}
 	default:
-		return fmt.Errorf("unsupported generator scope %q", g.Scope())
+		return nil, fmt.Errorf("unsupported generator scope %q", g.Scope())
 	}
-	return nil
+	return allFiles, nil
 }
 
 // ResourceScope identifies a resource that the generator is building for.
@@ -247,18 +260,18 @@ func (g *Generator) Scope() config.GeneratorScope {
 // is logged but the file is not overwritten, unless force is true.
 //
 // TODO: in Go 1.18, declare scope as an interface{ VersionScope | ResourceScope }
-func (g *Generator) execute(scope interface{}) error {
+func (g *Generator) execute(scope interface{}) ([]string, error) {
 	if g.files != nil {
 		return g.runFiles(scope)
 	}
 	return g.runFile(scope)
 }
 
-func (g *Generator) runFile(scope interface{}) error {
+func (g *Generator) runFile(scope interface{}) ([]string, error) {
 	var filenameBuf bytes.Buffer
 	err := g.filename.ExecuteTemplate(&filenameBuf, "filename", scope)
 	if err != nil {
-		return fmt.Errorf("failed to resolve filename: %w (generators.%s.filename)", err, g.name)
+		return nil, fmt.Errorf("failed to resolve filename: %w (generators.%s.filename)", err, g.name)
 	}
 	filename := filenameBuf.String()
 	if g.debug {
@@ -266,30 +279,36 @@ func (g *Generator) runFile(scope interface{}) error {
 	}
 	if _, err := os.Stat(filename); err == nil && !g.force {
 		log.Printf("not overwriting existing file %q", filename)
-		return nil
+		return nil, nil
 	}
 	parentDir := filepath.Dir(filename)
 	err = os.MkdirAll(parentDir, 0777)
 	if err != nil {
-		return fmt.Errorf("failed to create %q: %w: (generators.%s.filename)", parentDir, err, g.name)
+		return nil, fmt.Errorf("failed to create %q: %w: (generators.%s.filename)", parentDir, err, g.name)
 	}
-	f, err := os.Create(filename)
+	var out io.Writer
+	if g.dryRun {
+		out = io.Discard
+	} else {
+		f, err := os.Create(filename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create %q: %w: (generators.%s.filename)", filename, err, g.name)
+		}
+		defer f.Close()
+		out = f
+	}
+	err = g.contents.ExecuteTemplate(out, "contents", scope)
 	if err != nil {
-		return fmt.Errorf("failed to create %q: %w: (generators.%s.filename)", filename, err, g.name)
+		return nil, fmt.Errorf("template failed: %w (generators.%s.filename)", err, g.name)
 	}
-	defer f.Close()
-	err = g.contents.ExecuteTemplate(f, "contents", scope)
-	if err != nil {
-		return fmt.Errorf("template failed: %w (generators.%s.filename)", err, g.name)
-	}
-	return nil
+	return []string{filename}, nil
 }
 
-func (g *Generator) runFiles(scope interface{}) error {
+func (g *Generator) runFiles(scope interface{}) ([]string, error) {
 	var filesBuf bytes.Buffer
 	err := g.files.ExecuteTemplate(&filesBuf, "files", scope)
 	if err != nil {
-		return fmt.Errorf("%w: (generators.%s.files)", err, g.name)
+		return nil, fmt.Errorf("%w: (generators.%s.files)", err, g.name)
 	}
 	if g.debug {
 		log.Printf("interpolated generators.%s.files => %q", g.name, filesBuf.String())
@@ -298,22 +317,27 @@ func (g *Generator) runFiles(scope interface{}) error {
 	err = yaml.Unmarshal(filesBuf.Bytes(), &files)
 	if err != nil {
 		// TODO: dump output for debugging?
-		return fmt.Errorf("failed to load output as yaml: %w: (generators.%s.files)", err, g.name)
+		return nil, fmt.Errorf("failed to load output as yaml: %w: (generators.%s.files)", err, g.name)
 	}
+	var generatedFiles []string
 	for filename, contents := range files {
+		generatedFiles = append(generatedFiles, filename)
 		dir := filepath.Dir(filename)
 		err := os.MkdirAll(dir, 0777)
 		if err != nil {
-			return fmt.Errorf("failed to create directory %q: %w (generators.%s.files)", dir, err, g.name)
+			return nil, fmt.Errorf("failed to create directory %q: %w (generators.%s.files)", dir, err, g.name)
 		}
 		if _, err := os.Stat(filename); err == nil && !g.force {
 			log.Printf("not overwriting existing file %q", filename)
 			continue
 		}
+		if g.dryRun {
+			continue
+		}
 		err = ioutil.WriteFile(filename, []byte(contents), 0777)
 		if err != nil {
-			return fmt.Errorf("failed to write file %q: %w (generators.%s.files)", filename, err, g.name)
+			return nil, fmt.Errorf("failed to write file %q: %w (generators.%s.files)", filename, err, g.name)
 		}
 	}
-	return nil
+	return generatedFiles, nil
 }
