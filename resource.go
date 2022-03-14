@@ -298,3 +298,9 @@ func loadResource(specPath string, versionStr string) (*Resource, error) {
 	}
 	return ep, nil
 }
+
+// Localize rewrites all references in an OpenAPI document to local references.
+func Localize(doc *Document) error {
+	doc.InternalizeRefs(context.Background(), nil)
+	return doc.ResolveRefs()
+}

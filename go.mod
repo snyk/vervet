@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/bmatcuk/doublestar/v4 v4.0.2
 	github.com/frankban/quicktest v1.13.0
-	github.com/getkin/kin-openapi v0.90.0
+	github.com/getkin/kin-openapi v0.92.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-cmp v0.5.5
