@@ -299,6 +299,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 	for path := range doc.T.Paths {
 		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiResource] = name
 	}
+	doc.T.ExtensionProps.Extensions[ExtSnykApiVersion] = version.String()
 	return ep, nil
 }
 

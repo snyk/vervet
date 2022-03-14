@@ -40,9 +40,9 @@ func newRefAliasResolver(doc *openapi3.T) (*refAliasResolver, error) {
 	return &refAliasResolver{doc: doc, refAliases: refAliases}, nil
 }
 
-func (l *refAliasResolver) resolveRefAlias(ref string) string {
+func (r *refAliasResolver) resolveRefAlias(ref string) string {
 	if ref != "" && ref[0] == '#' {
-		for refAlias, refTarget := range l.refAliases {
+		for refAlias, refTarget := range r.refAliases {
 			if strings.HasPrefix(ref, refAlias) {
 				return strings.Replace(ref, refAlias, refTarget+"#", 1)
 			}
@@ -52,26 +52,26 @@ func (l *refAliasResolver) resolveRefAlias(ref string) string {
 }
 
 // resolve rewrites all references in the OpenAPI document to local references.
-func (l *refAliasResolver) resolve() error {
-	return reflectwalk.Walk(l.doc, l)
+func (r *refAliasResolver) resolve() error {
+	return reflectwalk.Walk(r.doc, r)
 }
 
 // Struct implements reflectwalk.StructWalker
-func (l *refAliasResolver) Struct(v reflect.Value) error {
-	l.curRefType, l.curRefField = v, v.FieldByName("Ref")
+func (r *refAliasResolver) Struct(v reflect.Value) error {
+	r.curRefType, r.curRefField = v, v.FieldByName("Ref")
 	return nil
 }
 
 // StructField implements reflectwalk.StructWalker
-func (l *refAliasResolver) StructField(sf reflect.StructField, v reflect.Value) error {
-	if !l.curRefField.IsValid() {
+func (r *refAliasResolver) StructField(sf reflect.StructField, v reflect.Value) error {
+	if !r.curRefField.IsValid() {
 		return nil
 	}
-	ref := l.curRefField.String()
+	ref := r.curRefField.String()
 	if ref == "" {
 		return nil
 	}
-	ref = l.resolveRefAlias(ref)
-	l.curRefField.Set(reflect.ValueOf(ref))
+	ref = r.resolveRefAlias(ref)
+	r.curRefField.Set(reflect.ValueOf(ref))
 	return nil
 }

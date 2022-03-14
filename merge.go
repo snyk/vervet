@@ -6,14 +6,12 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-// Merge adds the paths and components from a source OpenAPI document root,
-// to a destination document root.
+// Merge adds the paths and components from a source OpenAPI document root, to
+// a destination document root. When replace is true, conflicting components or
+// paths in dst will be overwritten by those in src. When replace is false,
+// conflicts will panic.
 //
-// TODO: This is a naive implementation that should be improved to detect and
-// resolve conflicts better. For example, distinct resources might have
-// localized references with the same URIs but different content.
-// Content-addressible resource versions may further facilitate governance;
-// this also would facilitate detecting and relocating such conflicts.
+// This function is deprecated and MergeRelocate should be used instead.
 func Merge(dst, src *openapi3.T, replace bool) {
 	mergeComponents(dst, src, replace)
 	mergeInfo(dst, src, replace)
@@ -129,7 +127,7 @@ func mergeInfo(dst, src *openapi3.T, replace bool) {
 	}
 }
 
-func mergePaths(dst, src *openapi3.T, replace bool) {
+func mergePaths(dst, src *openapi3.T, replace bool) error {
 	if src.Paths != nil && dst.Paths == nil {
 		dst.Paths = make(openapi3.Paths)
 	}
@@ -138,6 +136,7 @@ func mergePaths(dst, src *openapi3.T, replace bool) {
 			dst.Paths[k] = v
 		}
 	}
+	return nil
 }
 
 func mergeSecurityRequirements(dst, src *openapi3.T, replace bool) {

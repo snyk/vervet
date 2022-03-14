@@ -46,6 +46,24 @@ func (s resourceVersionsSlice) versions() VersionSlice {
 }
 
 func (s resourceVersionsSlice) at(v Version) (*openapi3.T, error) {
+	dd := NewComponentDeduplicator()
+	for _, eps := range s {
+		ep, err := eps.At(v.String())
+		if err == ErrNoMatchingVersion {
+			continue
+		} else if err != nil {
+			return nil, err
+		}
+		err = dd.Index(ep.path, ep.T)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err := dd.Deduplicate()
+	if err != nil {
+		return nil, err
+	}
+
 	var result *openapi3.T
 	for _, eps := range s {
 		ep, err := eps.At(v.String())

@@ -92,12 +92,14 @@ func TestIsExtensionNotFound(t *testing.T) {
 	resource, err := eps.At("2021-06-04~experimental")
 	c.Assert(err, qt.IsNil)
 
-	_, err = ExtensionString(resource.ExtensionProps, ExtSnykApiVersion)
-	c.Assert(IsExtensionNotFound(err), qt.IsTrue)
-
 	_, err = ExtensionString(resource.ExtensionProps, "some-bogus-value")
 	c.Assert(IsExtensionNotFound(err), qt.IsTrue)
 
+	// Resource specs are annotated with the version on load.
+	_, err = ExtensionString(resource.ExtensionProps, ExtSnykApiVersion)
+	c.Assert(IsExtensionNotFound(err), qt.IsFalse)
+
+	// Resource specs are annotated with the stability on load.
 	_, err = ExtensionString(resource.ExtensionProps, ExtSnykApiStability)
 	c.Assert(IsExtensionNotFound(err), qt.IsFalse)
 }
