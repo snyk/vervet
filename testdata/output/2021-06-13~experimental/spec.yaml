@@ -684,6 +684,8 @@ paths:
           $ref: '#/components/responses/404'
         "500":
           $ref: '#/components/responses/500'
+      tags:
+      - Projects
       x-snyk-api-releases:
       - 2021-06-04~experimental
       x-snyk-api-version: 2021-06-04~experimental
@@ -691,4 +693,9 @@ paths:
 servers:
 - description: Test API v3
   url: https://example.com/api/v3
+tags:
+- description: Projects
+  name: Projects
+- description: Something
+  name: Something
 x-snyk-api-version: 2021-06-13~experimental
