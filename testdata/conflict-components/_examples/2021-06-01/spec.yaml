@@ -13,7 +13,7 @@ paths:
       operationId: helloWorldGetOne
       parameters:
         - { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/parameters/version.yaml#/Version' }
-        - { $ref: '../../../schemas/parameters/pagination.yaml#/Pagination' }
+        - { $ref: '../../../resources/schemas/parameters/pagination.yaml#/Pagination' }
         - name: id
           description: The id of the hello-world example entity to be retrieved.
           in: path

@@ -3,6 +3,7 @@ package vervet
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"path/filepath"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -94,11 +95,20 @@ func (w *includeHeaders) applyOperation(op *openapi3.Operation) error {
 			if _, ok := resp.Headers[headerKey]; ok {
 				continue // Response's declared headers take precedence over includes.
 			}
-			headerRef.Ref = filepath.Join(relPath, headerRef.Ref)
+			if isRelativePath(headerRef.Ref) {
+				headerRef.Ref = filepath.Join(relPath, headerRef.Ref)
+			}
 			resp.Headers[headerKey] = headerRef
 		}
 		// Remove the extension once it has been processed
 		delete(resp.ExtensionProps.Extensions, ExtSnykIncludeHeaders)
 	}
 	return nil
+}
+
+func isRelativePath(s string) bool {
+	if u, err := url.Parse(s); err == nil && u.Scheme != "" {
+		return false
+	}
+	return !filepath.IsAbs(s)
 }

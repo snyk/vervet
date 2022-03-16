@@ -270,7 +270,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	for rcIndex, rc := range api.resources {
 		specVersions, err := vervet.LoadSpecVersionsFileset(rc.sourceFiles)
 		if err != nil {
-			return fmt.Errorf("failed to load spec versions: %w (apis.%s.resources[%d])",
+			return fmt.Errorf("failed to load spec versions: %+v (apis.%s.resources[%d])",
 				err, apiName, rcIndex)
 		}
 		buildErr := func(err error) error {

@@ -46,7 +46,7 @@ func (s resourceVersionsSlice) versions() VersionSlice {
 }
 
 func (s resourceVersionsSlice) at(v Version) (*openapi3.T, error) {
-	var result *openapi3.T
+	coll := NewCollator()
 	for _, eps := range s {
 		ep, err := eps.At(v.String())
 		if err == ErrNoMatchingVersion {
@@ -54,23 +54,12 @@ func (s resourceVersionsSlice) at(v Version) (*openapi3.T, error) {
 		} else if err != nil {
 			return nil, err
 		}
-		if result == nil {
-			// Assign a clean copy of the contents of the first resource to the
-			// resulting spec. Marshaling is used to ensure that references in
-			// the source resource are dropped from the result, which could be
-			// modified on subsequent merges.
-			buf, err := ep.T.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			result = &openapi3.T{}
-			err = result.UnmarshalJSON(buf)
-			if err != nil {
-				return nil, err
-			}
+		err = coll.Collate(ep)
+		if err != nil {
+			return nil, err
 		}
-		Merge(result, ep.T, false)
 	}
+	result := coll.Result()
 	if result == nil {
 		return nil, ErrNoMatchingVersion
 	}

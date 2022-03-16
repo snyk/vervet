@@ -251,6 +251,9 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 	}
 	for i := range versions {
 		sv.documents[i] = documentVersions[versions[i]]
+		if sv.documents[i].ExtensionProps.Extensions == nil {
+			sv.documents[i].ExtensionProps.Extensions = map[string]interface{}{}
+		}
 		sv.documents[i].ExtensionProps.Extensions[ExtSnykApiVersion] = versions[i].String()
 	}
 	err := sv.resolveOperations()

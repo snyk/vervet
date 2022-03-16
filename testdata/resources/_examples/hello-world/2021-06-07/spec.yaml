@@ -27,7 +27,10 @@ paths:
         '500': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/500.yaml#/500' }
         '200':
           description: 'A hello world entity being requested is returned'
-          x-snyk-include-headers: { $ref: '../../../schemas/headers/common-response.yaml#/Common' }
+          headers:
+            snyk-version-requested: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionRequestedResponseHeader' }
+            snyk-version-served: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionServedResponseHeader' }
+            snyk-request-id: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/RequestIdResponseHeader' }
           content:
             application/vnd.api+json:
               schema:

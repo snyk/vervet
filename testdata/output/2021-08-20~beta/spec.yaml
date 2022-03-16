@@ -16,12 +16,6 @@ components:
       schema:
         format: url
         type: string
-    RequestIDResponseHeader:
-      description: |
-        A header containing a unique id used for tracking this request. If you are reporting an issue to Snyk it's very helpful to provide this ID.
-      schema:
-        format: uuid
-        type: string
     RequestIdResponseHeader:
       description: |
         A header containing a unique id used for tracking this request. If you are reporting an issue to Snyk it's very helpful to provide this ID.
@@ -40,13 +34,15 @@ components:
     VersionRequestedResponseHeader:
       description: A header containing the version of the endpoint requested by the
         caller.
+      example: "2021-06-04"
       schema:
-        $ref: '#/components/schemas/Version'
+        $ref: '#/components/schemas/QueryVersion'
     VersionServedResponseHeader:
       description: A header containing the version of the endpoint that was served
         by the API.
+      example: "2021-06-04"
       schema:
-        $ref: '#/components/schemas/Version'
+        $ref: '#/components/schemas/ActualVersion'
     VersionStageResponseHeader:
       description: |
         A header containing the version stage of the endpoint. This stage describes the guarantees snyk provides surrounding stability of the endpoint.
@@ -94,12 +90,18 @@ components:
       description: 'Bad Request: A parameter provided as a part of the request was
         invalid.'
       headers:
+        deprecation:
+          $ref: '#/components/headers/DeprecationHeader'
         snyk-request-id:
-          $ref: '#/components/headers/RequestIDResponseHeader'
+          $ref: '#/components/headers/RequestIdResponseHeader'
+        snyk-version-lifecycle-stage:
+          $ref: '#/components/headers/VersionStageResponseHeader'
         snyk-version-requested:
           $ref: '#/components/headers/VersionRequestedResponseHeader'
         snyk-version-served:
           $ref: '#/components/headers/VersionServedResponseHeader'
+        sunset:
+          $ref: '#/components/headers/SunsetHeader'
     "401":
       content:
         application/vnd.api+json:
@@ -108,12 +110,18 @@ components:
       description: 'Unauthorized: the request requires an authentication token or
         a token with more permissions.'
       headers:
+        deprecation:
+          $ref: '#/components/headers/DeprecationHeader'
         snyk-request-id:
-          $ref: '#/components/headers/RequestIDResponseHeader'
+          $ref: '#/components/headers/RequestIdResponseHeader'
+        snyk-version-lifecycle-stage:
+          $ref: '#/components/headers/VersionStageResponseHeader'
         snyk-version-requested:
           $ref: '#/components/headers/VersionRequestedResponseHeader'
         snyk-version-served:
           $ref: '#/components/headers/VersionServedResponseHeader'
+        sunset:
+          $ref: '#/components/headers/SunsetHeader'
     "404":
       content:
         application/vnd.api+json:
@@ -121,12 +129,18 @@ components:
             $ref: '#/components/schemas/ErrorDocument'
       description: 'Not Found: The resource being operated on could not be found.'
       headers:
+        deprecation:
+          $ref: '#/components/headers/DeprecationHeader'
         snyk-request-id:
-          $ref: '#/components/headers/RequestIDResponseHeader'
+          $ref: '#/components/headers/RequestIdResponseHeader'
+        snyk-version-lifecycle-stage:
+          $ref: '#/components/headers/VersionStageResponseHeader'
         snyk-version-requested:
           $ref: '#/components/headers/VersionRequestedResponseHeader'
         snyk-version-served:
           $ref: '#/components/headers/VersionServedResponseHeader'
+        sunset:
+          $ref: '#/components/headers/SunsetHeader'
     "500":
       content:
         application/vnd.api+json:
@@ -135,12 +149,18 @@ components:
       description: 'Internal Server Error: An error was encountered while attempting
         to process the request.'
       headers:
+        deprecation:
+          $ref: '#/components/headers/DeprecationHeader'
         snyk-request-id:
-          $ref: '#/components/headers/RequestIDResponseHeader'
+          $ref: '#/components/headers/RequestIdResponseHeader'
+        snyk-version-lifecycle-stage:
+          $ref: '#/components/headers/VersionStageResponseHeader'
         snyk-version-requested:
           $ref: '#/components/headers/VersionRequestedResponseHeader'
         snyk-version-served:
           $ref: '#/components/headers/VersionServedResponseHeader'
+        sunset:
+          $ref: '#/components/headers/SunsetHeader'
   schemas:
     ActualVersion:
       description: Resolved API version
@@ -148,24 +168,46 @@ components:
       type: string
     Error:
       additionalProperties: false
+      example:
+        detail: Not Found
+        status: "404"
       properties:
         detail:
+          description: A human-readable explanation specific to this occurrence of
+            the problem.
+          example: 'The request was missing these required fields: ...'
           type: string
         id:
+          description: A unique identifier for this particular occurrence of the problem.
+          example: f16c31b5-6129-4571-add8-d589da9be524
           format: uuid
           type: string
         meta:
           additionalProperties: true
+          example:
+            key: value
           type: object
         source:
           additionalProperties: false
+          example:
+            pointer: /data/attributes
           properties:
             parameter:
+              description: A string indicating which URI query parameter caused the
+                error.
+              example: param1
               type: string
             pointer:
+              description: A JSON Pointer [RFC6901] to the associated entity in the
+                request document.
+              example: /data/attributes
               type: string
           type: object
         status:
+          description: The HTTP status code applicable to this problem, expressed
+            as a string value.
+          example: "400"
+          pattern: ^[45]\d\d$
           type: string
       required:
       - status
@@ -173,14 +215,23 @@ components:
       type: object
     ErrorDocument:
       additionalProperties: false
+      example:
+        errors:
+        - detail: Permission denied for this resource
+          status: "403"
+        jsonapi:
+          version: "1.0"
       properties:
         errors:
+          example:
+          - detail: Permission denied for this resource
+            status: "403"
           items:
             $ref: '#/components/schemas/Error'
           minItems: 1
           type: array
         jsonapi:
-          $ref: '#/components/schemas/JSONAPI'
+          $ref: '#/components/schemas/JsonApi'
       required:
       - jsonapi
       - errors
@@ -221,14 +272,6 @@ components:
       - type
       - id
       - attributes
-      type: object
-    JSONAPI:
-      additionalProperties: false
-      properties:
-        version:
-          type: string
-      required:
-      - version
       type: object
     JsonApi:
       additionalProperties: false
@@ -293,9 +336,6 @@ components:
       description: Requested API version
       pattern: ^(wip|work-in-progress|experimental|beta|((([0-9]{4})-([0-1][0-9]))-((3[01])|(0[1-9])|([12][0-9]))(~(wip|work-in-progress|experimental|beta))?))$
       type: string
-    Version:
-      pattern: ^(wip|work-in-progress|experimental|beta|(([0-9]{4})-([0-1][0-9]))-((3[01])|(0[1-9])|([12][0-9])))$
-      type: string
 info:
   title: Registry
   version: 3.0.0
@@ -350,7 +390,7 @@ paths:
             location:
               $ref: '#/components/headers/LocationHeader'
             snyk-request-id:
-              $ref: '#/components/headers/RequestIDResponseHeader'
+              $ref: '#/components/headers/RequestIdResponseHeader'
             snyk-version-requested:
               $ref: '#/components/headers/VersionRequestedResponseHeader'
             snyk-version-served:
@@ -435,7 +475,7 @@ paths:
           description: List of available versions is returned
           headers:
             snyk-request-id:
-              $ref: '#/components/headers/RequestIDResponseHeader'
+              $ref: '#/components/headers/RequestIdResponseHeader'
             snyk-version-requested:
               $ref: '#/components/headers/VersionRequestedResponseHeader'
             snyk-version-served:
@@ -471,7 +511,7 @@ paths:
           description: OpenAPI specification matching requested version is returned
           headers:
             snyk-request-id:
-              $ref: '#/components/headers/RequestIDResponseHeader'
+              $ref: '#/components/headers/RequestIdResponseHeader'
             snyk-version-requested:
               $ref: '#/components/headers/VersionRequestedResponseHeader'
             snyk-version-served:
