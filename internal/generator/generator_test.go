@@ -391,8 +391,6 @@ export interface Project {
 };
 
 export type QueryVersion = string;
-
-export type Version = string;
 `)
 }
 

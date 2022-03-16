@@ -14,6 +14,11 @@ import (
 // localized references with the same URIs but different content.
 // Content-addressible resource versions may further facilitate governance;
 // this also would facilitate detecting and relocating such conflicts.
+//
+// TODO(next-release):
+// - This function is suitable for overlay merging scenarios only.
+// - Component merging should be removed. Use Collator for safe component
+//   merging.
 func Merge(dst, src *openapi3.T, replace bool) {
 	mergeComponents(dst, src, replace)
 	mergeInfo(dst, src, replace)
@@ -21,6 +26,13 @@ func Merge(dst, src *openapi3.T, replace bool) {
 	mergeSecurityRequirements(dst, src, replace)
 	mergeServers(dst, src, replace)
 	mergeTags(dst, src, replace)
+	mergeOpenAPIVersion(dst, src, replace)
+}
+
+func mergeOpenAPIVersion(dst, src *openapi3.T, replace bool) {
+	if dst.OpenAPI == "" || (src.OpenAPI != "" && replace) {
+		dst.OpenAPI = src.OpenAPI
+	}
 }
 
 func mergeTags(dst, src *openapi3.T, replace bool) {

@@ -1,4 +1,4 @@
 Common:
-  snyk-version-requested: { $ref: './headers.yaml#/VersionRequestedResponseHeader' }
-  snyk-version-served: { $ref: './headers.yaml#/VersionServedResponseHeader' }
-  snyk-request-id: { $ref: './headers.yaml#/RequestIDResponseHeader' }
+  snyk-version-requested: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionRequestedResponseHeader' }
+  snyk-version-served: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionServedResponseHeader' }
+  snyk-request-id: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/RequestIdResponseHeader' }

@@ -11,16 +11,16 @@ paths:
       description: List available versions of OpenAPI specification
       operationId: listAPIVersions
       responses:
-        '400': { $ref: './schemas/responses/400.yaml#/400' }
-        '401': { $ref: './schemas/responses/401.yaml#/401' }
-        '404': { $ref: './schemas/responses/404.yaml#/404' }
-        '500': { $ref: './schemas/responses/500.yaml#/500' }
+        '400': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/400.yaml#/400' }
+        '401': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/401.yaml#/401' }
+        '404': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/404.yaml#/404' }
+        '500': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/500.yaml#/500' }
         '200':
           description: 'List of available versions is returned'
           headers:
-            snyk-version-requested: { $ref: './schemas/headers/headers.yaml#/VersionRequestedResponseHeader' }
-            snyk-version-served: { $ref: './schemas/headers/headers.yaml#/VersionServedResponseHeader' }
-            snyk-request-id: { $ref: './schemas/headers/headers.yaml#/RequestIDResponseHeader' }
+            snyk-version-requested: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionRequestedResponseHeader' }
+            snyk-version-served: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionServedResponseHeader' }
+            snyk-request-id: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/RequestIdResponseHeader' }
           content:
             application/vnd.api+json:
               schema:
@@ -39,16 +39,16 @@ paths:
           schema:
             type: string
       responses:
-        '400': { $ref: './schemas/responses/400.yaml#/400' }
-        '401': { $ref: './schemas/responses/401.yaml#/401' }
-        '404': { $ref: './schemas/responses/404.yaml#/404' }
-        '500': { $ref: './schemas/responses/500.yaml#/500' }
+        '400': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/400.yaml#/400' }
+        '401': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/401.yaml#/401' }
+        '404': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/404.yaml#/404' }
+        '500': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/500.yaml#/500' }
         '200':
           description: 'OpenAPI specification matching requested version is returned'
           headers:
-            snyk-version-requested: { $ref: './schemas/headers/headers.yaml#/VersionRequestedResponseHeader' }
-            snyk-version-served: { $ref: './schemas/headers/headers.yaml#/VersionServedResponseHeader' }
-            snyk-request-id: { $ref: './schemas/headers/headers.yaml#/RequestIDResponseHeader' }
+            snyk-version-requested: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionRequestedResponseHeader' }
+            snyk-version-served: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionServedResponseHeader' }
+            snyk-request-id: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/RequestIdResponseHeader' }
           content:
             application/x-yaml:
               schema:

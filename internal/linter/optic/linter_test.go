@@ -99,7 +99,7 @@ func TestLocalException(t *testing.T) {
 		file, hash, result string
 	}{{
 		file:   "hello/2021-06-01/spec.yaml",
-		hash:   "ff5a50934cfe2f275bce6b19b737ce25e042310b5d4537c80820e1d2d6d9c413",
+		hash:   "71618dbb1452852b6fc277ff4e0ccd376f4ce8961deb9887d32a57e44e556ef9",
 		result: "{}",
 	}, {
 		file:   "hello/2021-06-01/spec.yaml",
