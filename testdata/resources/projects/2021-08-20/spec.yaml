@@ -6,9 +6,15 @@ info:
 servers:
   - url: /api/v3
     description: Snyk Registry
+tags:
+  - name: Projects
+    description: Projects
+  - name: Something
+    description: Something
 paths:
   /orgs/{org_id}/projects/{project_id}:
     delete:
+      tags: ["Projects"]
       description: Delete an organization's project.
       operationId: deleteOrgsProject
       parameters:

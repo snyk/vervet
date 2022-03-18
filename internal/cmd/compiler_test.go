@@ -99,4 +99,5 @@ func TestBuildConflictComponents(t *testing.T) {
 	c.Assert(err.Error(), qt.Contains, `failed to load spec versions: the following errors occurred:`)
 	c.Assert(err.Error(), qt.Contains, "\n -  conflict in #/components/parameters/Version:")
 	c.Assert(err.Error(), qt.Contains, "\n -  conflict in #/components/responses/400:")
+	c.Assert(err.Error(), qt.Contains, "\n -  conflict in #/tags Something:")
 }

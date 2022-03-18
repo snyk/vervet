@@ -9,9 +9,13 @@ servers:
 components:
   x-somewhere-else:
     $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.6.0/components/common.yaml'
+tags:
+  - name: Projects
+    description: Projects
 paths:
   /orgs/{orgId}/projects:
     get:
+      tags: ["Projects"]
       description: Get a list of an organization's projects.
       operationId: getOrgsProjects
       parameters:

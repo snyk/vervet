@@ -6,6 +6,9 @@ info:
 servers:
   - url: /api/v3
     description: Snyk Registry
+tags:
+  - name: Something
+    description: Something Else
 components:
   x-somewhere-else:
     $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.6.0/components/common.yaml'

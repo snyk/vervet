@@ -15,6 +15,7 @@ type Collator struct {
 	result           *openapi3.T
 	componentSources map[string]string
 	pathSources      map[string]string
+	tagSources       map[string]string
 }
 
 // NewCollator returns a new Collator instance.
@@ -22,6 +23,7 @@ func NewCollator() *Collator {
 	return &Collator{
 		componentSources: map[string]string{},
 		pathSources:      map[string]string{},
+		tagSources:       map[string]string{},
 	}
 }
 
@@ -33,26 +35,27 @@ func (c *Collator) Result() *openapi3.T {
 
 // Collate merges a resource version into the current result.
 func (c *Collator) Collate(rv *ResourceVersion) error {
+	var errs error
 	if c.result == nil {
 		c.result = &openapi3.T{}
 	}
 	err := c.mergeComponents(rv)
 	if err != nil {
-		return err
+		errs = multierr.Append(errs, err)
 	}
 	mergeInfo(c.result, rv.T, false)
 	err = c.mergePaths(rv)
 	if err != nil {
-		return err
+		errs = multierr.Append(errs, err)
 	}
 	mergeSecurityRequirements(c.result, rv.T, false)
 	mergeServers(c.result, rv.T, false)
 	err = c.mergeTags(rv)
 	if err != nil {
-		return err
+		errs = multierr.Append(errs, err)
 	}
 	mergeOpenAPIVersion(c.result, rv.T, false)
-	return nil
+	return errs
 }
 
 func (c *Collator) mergeTags(rv *ResourceVersion) error {
@@ -60,12 +63,17 @@ func (c *Collator) mergeTags(rv *ResourceVersion) error {
 	for _, t := range c.result.Tags {
 		m[t.Name] = t
 	}
+	var errs error
 	for _, t := range rv.T.Tags {
-		if _, ok := m[t.Name]; ok {
-			return fmt.Errorf("conflicting tag")
+		if current, ok := m[t.Name]; ok && !tagsEqual(current, t) {
+			errs = multierr.Append(errs, fmt.Errorf("conflict in #/tags %s: %s and %s differ", t.Name, rv.path, c.tagSources[t.Name]))
 		} else {
 			m[t.Name] = t
+			c.tagSources[t.Name] = rv.path
 		}
+	}
+	if errs != nil {
+		return errs
 	}
 	c.result.Tags = openapi3.Tags{}
 	var tagNames []string
@@ -84,7 +92,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	var errs error
 	for k, v := range rv.T.Components.Schemas {
 		ref := "#/components/schemas/" + k
-		if current, ok := c.result.Components.Schemas[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.Schemas[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.Schemas[k] = v
@@ -93,7 +101,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Parameters {
 		ref := "#/components/parameters/" + k
-		if current, ok := c.result.Components.Parameters[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.Parameters[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.Parameters[k] = v
@@ -102,7 +110,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Headers {
 		ref := "#/components/headers/" + k
-		if current, ok := c.result.Components.Headers[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.Headers[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.Headers[k] = v
@@ -111,7 +119,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.RequestBodies {
 		ref := "#/components/requestBodies/" + k
-		if current, ok := c.result.Components.RequestBodies[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.RequestBodies[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.RequestBodies[k] = v
@@ -120,7 +128,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Responses {
 		ref := "#/components/responses/" + k
-		if current, ok := c.result.Components.Responses[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.Responses[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.Responses[k] = v
@@ -129,7 +137,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.SecuritySchemes {
 		ref := "#/components/securitySchemas/" + k
-		if current, ok := c.result.Components.SecuritySchemes[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.SecuritySchemes[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.SecuritySchemes[k] = v
@@ -138,7 +146,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Examples {
 		ref := "#/components/examples/" + k
-		if current, ok := c.result.Components.Examples[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.Examples[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.Examples[k] = v
@@ -147,7 +155,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Links {
 		ref := "#/components/links/" + k
-		if current, ok := c.result.Components.Links[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.Links[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.Links[k] = v
@@ -156,7 +164,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Callbacks {
 		ref := "#/components/callbacks/" + k
-		if current, ok := c.result.Components.Callbacks[k]; ok && !cmpEqual(current, v) {
+		if current, ok := c.result.Components.Callbacks[k]; ok && !componentsEqual(current, v) {
 			errs = multierr.Append(errs, fmt.Errorf("conflict in %s: %s and %s differ", ref, rv.path, c.componentSources[ref]))
 		} else {
 			c.result.Components.Callbacks[k] = v
@@ -181,19 +189,26 @@ var cmpComponents = cmp.Options{
 	}, cmp.Ignore()),
 }
 
-func cmpEqual(x, y interface{}) bool {
+func componentsEqual(x, y interface{}) bool {
 	return cmp.Equal(x, y, cmpComponents)
+}
+
+func tagsEqual(x, y interface{}) bool {
+	return cmp.Equal(x, y)
 }
 
 func (c *Collator) mergePaths(rv *ResourceVersion) error {
 	if rv.T.Paths != nil && c.result.Paths == nil {
 		c.result.Paths = make(openapi3.Paths)
 	}
+	var errs error
 	for k, v := range rv.T.Paths {
 		if _, ok := c.result.Paths[k]; ok {
-			return fmt.Errorf("conflicting paths")
+			errs = multierr.Append(errs, fmt.Errorf("conflict in #/paths %s: declared in both %s and %s", k, rv.path, c.pathSources[k]))
+		} else {
+			c.result.Paths[k] = v
+			c.pathSources[k] = rv.path
 		}
-		c.result.Paths[k] = v
 	}
-	return nil
+	return errs
 }
