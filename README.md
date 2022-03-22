@@ -13,7 +13,7 @@ While Vervet was developed in the context of a RESTful API, Vervet can be used w
 To summarize the API versioning supported by Vervet:
 
 #### What is versioned?
-Resource versions are defined in OpenAPI 3, as if the resource were a standalone service.
+Resource versions are defined in OpenAPI 3, as if each resource were a standalone service.
 
 #### How are resource version specs organized?
 Resources are organized in a standard directory structure by release date, using OpenAPI extensions to define lifecycle concepts like stability.
@@ -29,14 +29,15 @@ Resources are organized in a standard directory structure by release date, using
 
 A brief tour of Vervet's features.
 
-### Compilation
+### Building a service OpenAPI from resources
 
-Vervet compiles the OpenAPI spec of each resource version into a series of OpenAPI specifications that describe the entire application, at each distinct release in its underlying parts.
+Vervet collects the OpenAPI specification of each resource version and merges them into a series of OpenAPI specifications that describe the entire application, at each distinct release version in its underlying parts.
 
-Given a directory structure of resource versions, each defined by an OpenAPI spec as if it were an independent service:
+Given a directory structure of resource versions, each defined by an OpenAPI specification as if it were an independent service:
+
+    tree resources
 
 ```
-$ tree resources
 resources
 ├── _examples
 │   └── hello-world
@@ -53,8 +54,9 @@ resources
 
 and a Vervet project configuration that instructs how to put them together:
 
-```yml
-$ cat .vervet.yaml
+    cat .vervet.yaml
+
+```yaml
 apis:
   my-api:
     resources:
@@ -63,10 +65,11 @@ apis:
       path: 'versions'
 ```
 
-`vervet compile` aggregates these resources' individual OpenAPI specifications to describe the entire service API _at each distinct version date and stability level_ from its component parts.
+`vervet build` aggregates these resources' individual OpenAPI specifications to describe the entire service API _at each distinct version date and stability level_ from its component parts.
+
+    tree versions
 
 ```
-$ tree versions
 versions/
 ├── 2021-06-01
 │   ├── spec.json
@@ -108,53 +111,46 @@ versions/
 
 ### Linting
 
-Vervet is not an OpenAPI linter. It coordinates and frontends OpenAPI linting, allowing different rules to be applied to different parts of an API, or different stages of the compilation process (source component specs, output compiled specs). It also allows exceptions to be made to certain resource versions, so that new rules do not break already-released parts of the API.
+Vervet is not an OpenAPI linter. It coordinates and frontends OpenAPI linting of resource and service-level specifications, allowing different rules to be applied to different parts of an API, or different stages of the compilation process (source component specs, output compiled specs).
 
 Vervet currently supports linting OpenAPI specifications with:
 * [Spectral](https://stoplight.io/open-source/spectral/)
-* [Sweater Comb](https://github.com/snyk/sweater-comb), as a self-contained Docker image which combines a linter and custom opinionated rulesets.
+* [Sweater Comb](https://github.com/snyk/sweater-comb), Snyk's API standards in executable form, powered by [Optic CI](https://www.useoptic.com/optic-ci).
 
-Direct Spectral linting may be soon deprecated in favor of container-based linting.
+### Code generation
 
-### Generation
+Since Vervet models the composition, construction and versioning of an API, it is well positioned to coordinate code and artifact generation through the use of templates.
 
-Since Vervet models the composition and construction of an API, it is well positioned to coordinate code and artifact generation through templates.
+Generators may be defined in a YAML file, such as `generators.yaml`:
 
-Generators are defined in `.vervet.yaml`:
-
-```yml
+```yaml
 generators:
   version-readme:
     scope: version
-    filename: "resources/{{ .Resource }}/{{ .Version }}/README"
-    template: ".vervet/templates/README.tmpl"
-  version-spec:
-    scope: version
-    filename: "resources/{{ .Resource }}/{{ .Version }}/spec.yaml"
-    template: ".vervet/templates/spec.yaml.tmpl"
+    filename: "{{ .Path }}/README"
+    template: "{{ .Here }}/templates/README.tmpl"  # Located relative to the location of generators.yaml
 ```
 
-In this case, generators produce a boilerplate OpenAPI specification containing HTTP methods to create, list, get, update, and delete a resource, and a nice README when a new resource version is created. OpenAPI specifications can be tedious to write from scratch; generators help developers focus on adding the content that matters most.
+The context of `README.tmpl` has full access to the resource version metadata and OpenAPI document object model.
 
-Generators are defined using [Go templates](https://pkg.go.dev/text/template). Template syntax is also used to express filename interpolation per resource, per version.
+```yaml
+Generated by vervet. DO NOT EDIT!
 
-```yml
-apis:
-  my-api:
-    resources:
-      - path: 'resources'
-    generators:
-      - version-readme
-      - version-spec
-    output:
-      path: 'versions'
+# My API
+
+Files in this directory were generated by `@snyk/vervet`
+for resource `{{ .ResourceVersion.Name }}` at version `{{ .ResourceVersion.Version.String }}`.
 ```
 
-Generators are applied during lifecycle commands, such as creating a new resource version:
+In a project with a `.vervet.yaml` configuration, execute the generators with
+
+    vervet generate -g generators.yaml
+
+The simple generator above produces a README in each resource version directory.
+
+    tree resources
 
 ```
-$ vervet version new my-api thing
-$ tree resources
 resources
 └── thing
     └── 2021-10-21
@@ -162,120 +158,67 @@ resources
         └── spec.yaml
 ```
 
-Generators support multiple stages. For example, once a boilerplate spec.yaml is generated, it can be fed into subsequent generators that produce code, API gateway configuration, Grafana dashboards, and HTTP load tests.
+Generators are defined using [Go templates](https://pkg.go.dev/text/template).
 
-A more advanced example, ExpressJS controllers generated from each operation in a resource version OpenAPI spec:
+Template syntax may also be used to express a directory structure of many files. A more advanced example, an Express controller generated from each operation in a resource version OpenAPI spec:
 
-```yml
+```yaml
 generators:
-  version-spec:
-    scope: version
-    filename: "resources/{{ .Resource }}/{{ .Version }}/spec.yaml"
-    template: ".vervet/templates/spec.yaml.tmpl"
   version-controller:
     scope: version
     # `files:` generates a collection of files -- which itself is expressed as a
     # YAML template.  Keys in this YAML are the paths of the files to generate,
     # whose values are the file contents.
     files: |-
-      {{- $resource := .Resource -}}
-      {{- $version := .Version -}}
-      {{- range $path, $pathItem := .Data.Spec.paths -}}
+      {{- $path := .Path -}}
+      {{- $resource := .ResourceVersion -}}
+      {{- $version := .ResourceVersion.Version -}}
+      {{- range $path, $pathItem := .ResourceVersion.Document.Paths -}}
       {{- range $method, $operation := $pathItem -}}
       {{- $operationId := $operation.operationId -}}
       {{/* Construct a context object using the 'map' function */}}
       {{- $ctx := map "Context" . "OperationId" $operationId }}
-      resources/{{ $resource }}/{{ $version }}/{{ $operationId }}.ts: |-
+      {{ $path }}/{{ $operationId }}.ts: |-
         {{/*
              Evaluate the template by including it with the necessary context.
-             The generator's template is included as "contents" from within the
-             `files:` template.
+             The generator's template (controller.ts.tmpl) is included as
+             "contents" from within the `files:` template.
            */}}
         {{ include "contents" $ctx | indent 2 }}
       {{ end }}
       {{- end -}}
-    template: ".vervet/resource/version/controller.ts.tmpl"
-    data:
-      Spec:
-        # generated above in version-spec, accessible from within the `files:`
-        # template as `.Data.Spec`.
-        include: "resources/{{ .Resource }}/{{ .Version }}/spec.yaml"
-apis:
-  my-api:
-    resources:
-      - path: 'resources'
-        generators:
-          # order is important
-          - version-spec
-          - version-controller
-    output:
-      path: 'versions'
+    template: "{{ .Here }}/templates/controller.ts.tmpl"
 ```
 
-In this case, a template is being applied per `operationId` in the `spec.yaml` generated in the prior step. `version-controller` produces a collection of files, a controller module per resource, per version, per operation. This is possible because generators are applied in the order they are declared on each set of resources.
+In this case, a template is being applied per `operationId` in the `spec.yaml` generated in the prior step. `version-controller` produces a collection of files, a controller module per resource, per version, per operation.
 
-### Scaffolding
+Finally, a note on scoping. Generators can be scoped to either a `version` or a `resource`.
 
-Just as generators automate the generation of artifacts as part of the versioning lifecycle, scaffolds are used to bootstrap a new greenfield Vervet API project with useful defaults:
+`scope: version` generator templates execute with [VersionScope](https://pkg.go.dev/github.com/snyk/vervet/v4@v4.6.1/internal/generator#VersionScope). This maps 1:1 with a single resource version OpenAPI specification.
 
-* Vervet project configuration (`.vervet.yaml`)
-* Directory structure and layout for API specifications
-* Generator templates
-* Linter rulesets
-
-Scaffolds are great in a microservice/SOA self-service ecosystem, where new services may be created often, and need a set of sensible defaults to quickly get started.
-
-```
-$ mkdir my-new-service
-$ cd my-new-service
-$ vervet scaffold init ../vervet-api-scaffold/
-$ tree -a
-.
-├── .vervet
-│   ├── components
-│   │   ├── common.yaml
-│   │   ├── errors.yaml
-│   │   ├── headers
-│   │   │   └── headers.yaml
-│   │   ├── parameters
-│   │   │   ├── pagination.yaml
-│   │   │   └── version.yaml
-│   │   ├── responses
-│   │   │   ├── 204.yaml
-│   │   │   ├── 400.yaml
-│   │   │   ├── 401.yaml
-│   │   │   ├── 403.yaml
-│   │   │   ├── 404.yaml
-│   │   │   ├── 409.yaml
-│   │   │   ├── 429.yaml
-│   │   │   └── 500.yaml
-│   │   ├── tag.yaml
-│   │   ├── types.yaml
-│   │   └── version.yaml
-│   ├── openapi
-│   │   └── spec.yaml
-│   └── templates
-│       ├── README.tmpl
-│       └── spec.yaml.tmpl
-├── .vervet.yaml
-└── api
-    ├── resources
-    └── versions
-```
-
-This scaffold sets up a new project with standard OpenAPI components that are referenced by resource OpenAPI boilerplate templates. New resources are generated already conforming to our [JSON API](https://github.com/snyk/sweater-comb/blob/main/docs/jsonapi.md) standards and paginated list operations.
+`scope: resource` generator templates execute with [ResourceScope](https://pkg.go.dev/github.com/snyk/vervet/v4@v4.6.1/internal/generator#ResourceScope). This is a collection of resource versions, useful for building resource routers.
 
 ## Installation
 
 ### NPM
 
+Within a project:
+
+    npm install @snyk/vervet
+
+Or installed globally:
+
     npm install -g @snyk/vervet
 
 NPM packaging adapted from https://github.com/manifoldco/torus-cli.
 
-### Source
+### Go
 
 Go >= 1.16 required.
+
+    go install github.com/snyk/vervet@latest
+
+Building from source locally:
 
     go build ./cmd/vervet
 
