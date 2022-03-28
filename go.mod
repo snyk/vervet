@@ -6,7 +6,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.0.2
 	github.com/dop251/goja v0.0.0-20220214123719-b09a6bfa842f
 	github.com/frankban/quicktest v1.13.0
-	github.com/getkin/kin-openapi v0.92.0
+	github.com/getkin/kin-openapi v0.93.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-cmp v0.5.5
