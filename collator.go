@@ -39,7 +39,13 @@ func (c *Collator) Collate(rv *ResourceVersion) error {
 	if c.result == nil {
 		c.result = &openapi3.T{}
 	}
-	err := c.mergeComponents(rv)
+
+	err := rv.cleanRefs()
+	if err != nil {
+		return err
+	}
+
+	err = c.mergeComponents(rv)
 	if err != nil {
 		errs = multierr.Append(errs, err)
 	}

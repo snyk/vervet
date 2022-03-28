@@ -83,6 +83,22 @@ func (e *ResourceVersion) Validate(ctx context.Context) error {
 	return nil
 }
 
+// cleanRefs removes any shared pointer references that might exist between
+// this resource version document and any others.
+func (rv *ResourceVersion) cleanRefs() error {
+	buf, err := json.Marshal(rv.Document.T)
+	if err != nil {
+		return err
+	}
+	var doc openapi3.T
+	err = json.Unmarshal(buf, &doc)
+	if err != nil {
+		return err
+	}
+	rv.T = &doc
+	return nil
+}
+
 // ResourceVersions defines a collection of multiple versions of a resource.
 type ResourceVersions struct {
 	versions resourceVersionSlice
