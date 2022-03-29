@@ -267,7 +267,6 @@ func (o *Optic) newComparison(path string, fromFilter, toFilter func(string) str
 var errHasException = fmt.Errorf("file is skipped due to lint exception")
 
 func (o *Optic) hasException(key, path string) (bool, error) {
-	log.Println("key", key, "path", path)
 	if path == "" {
 		return false, nil
 	}
