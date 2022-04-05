@@ -1,6 +1,7 @@
 package versionware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -79,12 +80,9 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		switch serverURL.Scheme {
 		case "http", "https":
 		case "":
-			return nil, fmt.Errorf("invalid ServerURL: missing scheme")
+			return nil, errors.New("invalid ServerURL: missing scheme")
 		default:
 			return nil, fmt.Errorf("invalid ServerURL: unsupported scheme %q (did you forget to specify the scheme://?)", serverURL.Scheme)
-		}
-		for i := range docs {
-			docs[i].Servers = []*openapi3.Server{{URL: serverURL.String()}}
 		}
 	}
 	if config.VersionError == nil {
@@ -96,7 +94,7 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		errFunc:    config.VersionError,
 		today:      today,
 	}
-	validatorVersions := map[string]*openapi3filter.Validator{}
+	validatorVersions := make(map[vervet.Version]*openapi3filter.Validator, len(docs))
 	for i := range docs {
 		if config.ServerURL != "" {
 			docs[i].Servers = []*openapi3.Server{{URL: config.ServerURL}}
@@ -114,11 +112,11 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		if err != nil {
 			return nil, err
 		}
-		validatorVersions[version.String()] = openapi3filter.NewValidator(router, config.Options...)
+		validatorVersions[version] = openapi3filter.NewValidator(router, config.Options...)
 	}
 	sort.Sort(v.versions)
-	for i := range v.versions {
-		v.validators[i] = validatorVersions[v.versions[i].String()]
+	for i, version := range v.versions {
+		v.validators[i] = validatorVersions[version]
 	}
 	return v, nil
 }
@@ -127,13 +125,13 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 // request and response validation according to the requested API version.
 func (v *Validator) Middleware(h http.Handler) http.Handler {
 	handlers := make([]http.Handler, len(v.validators))
-	for i := range v.versions {
-		handlers[i] = v.validators[i].Middleware(h)
+	for i, validator := range v.validators {
+		handlers[i] = validator.Middleware(h)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		versionParam := req.URL.Query().Get("version")
 		if versionParam == "" {
-			v.errFunc(w, req, http.StatusBadRequest, fmt.Errorf("missing required query parameter 'version'"))
+			v.errFunc(w, req, http.StatusBadRequest, errors.New("missing required query parameter 'version'"))
 			return
 		}
 		requested, err := vervet.ParseVersion(versionParam)
