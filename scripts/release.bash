@@ -34,5 +34,5 @@ fi
 # Github release
 # Do this last; if it fails, it's easy to create a release in the UI.
 # Pushing the tags and publishing to NPM are more important.
-go install github.com/goreleaser/goreleaser@1.6.3
+go install github.com/goreleaser/goreleaser@v1.6.3
 GITHUB_TOKEN=${GH_TOKEN} goreleaser release --rm-dist
