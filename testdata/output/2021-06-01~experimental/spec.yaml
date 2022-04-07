@@ -454,8 +454,8 @@ paths:
         "500":
           $ref: '#/components/responses/500'
 servers:
-- description: Test API v3
-  url: https://example.com/api/v3
+- description: Test REST API
+  url: https://example.com/api/rest
 tags:
 - description: Something
   name: Something

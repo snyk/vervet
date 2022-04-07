@@ -27,8 +27,8 @@ apis:
       - include: 'resources/include.yaml'
       - inline: |-
           servers:
-            - url: https://example.com/api/v3
-              description: Test API v3
+            - url: https://example.com/api/rest
+              description: Test REST API
     output:
       path: 'output'
       linter: compiled-rules

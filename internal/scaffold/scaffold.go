@@ -2,14 +2,14 @@ package scaffold
 
 import (
 	"fmt"
-	"io"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
+
+	"github.com/snyk/vervet/v4/internal/files"
 )
 
 // ErrAlreadyInitialized is used when scaffolding is being run on a project that is already setup.
@@ -102,7 +102,7 @@ func (s *Scaffold) Organize() error {
 			}
 		}
 		srcPath := filepath.Join(s.src, srcItem)
-		err := s.copyItem(dstPath, srcPath)
+		err := files.CopyItem(dstPath, srcPath, s.force)
 		if err != nil {
 			return fmt.Errorf("failed to copy %q to %q: %w", srcPath, dstPath, err)
 		}
@@ -147,62 +147,6 @@ func (m *Manifest) validate(src string) error {
 		if _, err := os.Stat(srcPath); err != nil {
 			return fmt.Errorf("cannot stat source item %q: %w", srcPath, err)
 		}
-	}
-	return nil
-}
-
-func (s *Scaffold) copyItem(dstPath, srcPath string) error {
-	if st, err := os.Stat(srcPath); err == nil && st.IsDir() {
-		return s.copyDir(dstPath, srcPath)
-	} else if err == nil {
-		return s.copyFile(dstPath, srcPath)
-	} else {
-		return err
-	}
-}
-
-func (s *Scaffold) copyDir(dstPath, srcPath string) error {
-	return filepath.WalkDir(srcPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		name, err := filepath.Rel(srcPath, path)
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		return s.copyFile(filepath.Join(dstPath, name), path)
-	})
-}
-
-func (s *Scaffold) copyFile(dstPath, srcPath string) error {
-	srcf, err := os.Open(srcPath)
-	if err != nil {
-		return err
-	}
-	flags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
-	if !s.force {
-		flags = flags | os.O_EXCL
-	}
-
-	dstDir := filepath.Dir(dstPath)
-	if dstDir != "." {
-		err = os.MkdirAll(dstDir, 0777)
-		if err != nil {
-			return err
-		}
-	}
-
-	dstf, err := os.OpenFile(dstPath, flags, 0666)
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(dstf, srcf)
-	if err != nil {
-		return err
 	}
 	return nil
 }

@@ -71,7 +71,7 @@ type resourceSet struct {
 }
 
 type output struct {
-	path   string
+	paths  []string
 	linter linter.Linter
 }
 
@@ -157,10 +157,16 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 		}
 
 		// Build output
-		if apiConfig.Output != nil && apiConfig.Output.Path != "" {
-			a.output = &output{
-				path:   apiConfig.Output.Path,
-				linter: compiler.linters[apiConfig.Output.Linter],
+		if apiConfig.Output != nil {
+			paths := apiConfig.Output.Paths
+			if len(paths) == 0 && apiConfig.Output.Path != "" {
+				paths = []string{apiConfig.Output.Path}
+			}
+			if len(paths) > 0 {
+				a.output = &output{
+					paths:  paths,
+					linter: compiler.linters[apiConfig.Output.Linter],
+				}
 			}
 		}
 
@@ -254,14 +260,16 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	if !ok {
 		return fmt.Errorf("api not found (apis.%s)", apiName)
 	}
-	if api.output == nil || api.output.path == "" {
+	if api.output == nil || len(api.output.paths) == 0 {
 		return nil
 	}
-	err := os.RemoveAll(api.output.path)
-	if err != nil {
-		return fmt.Errorf("failed to clear output directory: %w", err)
+	for _, path := range api.output.paths {
+		err := os.RemoveAll(path)
+		if err != nil {
+			return fmt.Errorf("failed to clear output directory: %w", err)
+		}
 	}
-	err = os.MkdirAll(api.output.path, 0777)
+	err := os.MkdirAll(api.output.paths[0], 0777)
 	if err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
@@ -286,7 +294,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 			}
 
 			// Create the directories, but only if a spec file exists for it.
-			versionDir := api.output.path + "/" + version.String()
+			versionDir := api.output.paths[0] + "/" + version.String()
 
 			if spec != nil {
 				err = os.MkdirAll(versionDir, 0755)
@@ -309,7 +317,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 				return buildErr(err)
 			}
 			jsonSpecPath := versionDir + "/spec.json"
-			jsonEmbedPath, err := filepath.Rel(api.output.path, jsonSpecPath)
+			jsonEmbedPath, err := filepath.Rel(api.output.paths[0], jsonSpecPath)
 			if err != nil {
 				return buildErr(err)
 			}
@@ -328,7 +336,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 				return buildErr(err)
 			}
 			yamlSpecPath := versionDir + "/spec.yaml"
-			yamlEmbedPath, err := filepath.Rel(api.output.path, yamlSpecPath)
+			yamlEmbedPath, err := filepath.Rel(api.output.paths[0], yamlSpecPath)
 			if err != nil {
 				return buildErr(err)
 			}
@@ -340,20 +348,28 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 			log.Println(yamlSpecPath)
 		}
 	}
-	err = c.writeEmbedGo(filepath.Base(api.output.path), api, versionSpecFiles)
+	err = c.writeEmbedGo(filepath.Base(api.output.paths[0]), api, versionSpecFiles)
 	if err != nil {
 		return fmt.Errorf("failed to create embed.go: %w", err)
+	}
+	// Copy output to multiple paths if specified
+	src := api.output.paths[0]
+	for _, dst := range api.output.paths[1:] {
+		if err := files.CopyDir(dst, src, true); err != nil {
+			return fmt.Errorf("failed to copy %q to %q: %w", src, dst, err)
+		}
 	}
 	return nil
 }
 
 func (c *Compiler) writeEmbedGo(pkgName string, a *api, versionSpecFiles []string) error {
-	f, err := os.Create(filepath.Join(a.output.path, "embed.go"))
+	embedPath := filepath.Join(a.output.paths[0], "embed.go")
+	f, err := os.Create(embedPath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return embedGoTmpl.Execute(f, struct {
+	err = embedGoTmpl.Execute(f, struct {
 		Package          string
 		API              *api
 		VersionSpecFiles []string
@@ -362,6 +378,15 @@ func (c *Compiler) writeEmbedGo(pkgName string, a *api, versionSpecFiles []strin
 		API:              a,
 		VersionSpecFiles: versionSpecFiles,
 	})
+	if err != nil {
+		return err
+	}
+	for _, dst := range a.output.paths[1:] {
+		if err := files.CopyFile(filepath.Join(dst, "embed.go"), embedPath, true); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var embedGoTmpl = template.Must(template.New("embed.go").Parse(`
@@ -389,11 +414,11 @@ func (c *Compiler) LintOutput(ctx context.Context, apiName string) error {
 	if !ok {
 		return fmt.Errorf("api not found (apis.%s)", apiName)
 	}
-	if api.output != nil && api.output.linter != nil {
+	if api.output != nil && len(api.output.paths) > 0 && api.output.linter != nil {
 		var outputFiles []string
-		err := doublestar.GlobWalk(os.DirFS(api.output.path), "**/spec.{json,yaml}",
+		err := doublestar.GlobWalk(os.DirFS(api.output.paths[0]), "**/spec.{json,yaml}",
 			func(path string, d fs.DirEntry) error {
-				outputFiles = append(outputFiles, filepath.Join(api.output.path, path))
+				outputFiles = append(outputFiles, filepath.Join(api.output.paths[0], path))
 				return nil
 			})
 		if err != nil {
@@ -403,7 +428,7 @@ func (c *Compiler) LintOutput(ctx context.Context, apiName string) error {
 		if len(outputFiles) == 0 {
 			return fmt.Errorf("lint failed: no output files were produced")
 		}
-		err = api.output.linter.Run(ctx, api.output.path, outputFiles...)
+		err = api.output.linter.Run(ctx, api.output.paths[0], outputFiles...)
 		if err != nil {
 			return fmt.Errorf("lint failed (apis.%s.output)", apiName)
 		}

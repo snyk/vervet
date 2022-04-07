@@ -76,8 +76,8 @@ func TestBuildInclude(t *testing.T) {
 		// testdata/.vervet.yaml contains an overlay that modifies the servers:
 		// section. This patches the output to match expected.
 		doc.Servers = []*openapi3.Server{{
-			Description: "Test API v3",
-			URL:         "https://example.com/api/v3",
+			Description: "Test REST API",
+			URL:         "https://example.com/api/rest",
 		}}
 
 		c.Assert(expected, qt.JSONEquals, doc)

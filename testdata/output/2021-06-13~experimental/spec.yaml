@@ -691,8 +691,8 @@ paths:
       x-snyk-api-version: 2021-06-04~experimental
     x-snyk-api-resource: projects
 servers:
-- description: Test API v3
-  url: https://example.com/api/v3
+- description: Test REST API
+  url: https://example.com/api/rest
 tags:
 - description: Projects
   name: Projects
