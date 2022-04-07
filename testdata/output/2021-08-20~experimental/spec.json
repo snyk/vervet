@@ -1074,5 +1074,6 @@
       "name": "Something"
     }
   ],
+  "x-snyk-api-lifecycle": "sunset",
   "x-snyk-api-version": "2021-08-20~experimental"
 }

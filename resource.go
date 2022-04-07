@@ -17,12 +17,18 @@ const (
 	// spec with its API release stability level.
 	ExtSnykApiStability = "x-snyk-api-stability"
 
+	// ExtSnykApiLifecycle is used to annotate compiled OpenAPI with lifecycle
+	// stage: releases, deprecated or sunset. It is applied at the top-level as
+	// well as per-operation.
+	ExtSnykApiLifecycle = "x-snyk-api-lifecycle"
+
 	// ExtSnykApiResource is used to annotate a path in a compiled OpenAPI spec
 	// with its source resource name.
 	ExtSnykApiResource = "x-snyk-api-resource"
 
 	// ExtSnykApiVersion is used to annotate a path in a compiled OpenAPI spec
-	// with its resolved release version.
+	// with its resolved release version. It is also used to identify the
+	// overall version of the compiled spec at the document level.
 	ExtSnykApiVersion = "x-snyk-api-version"
 
 	// ExtSnykApiReleases is used to annotate a path in a compiled OpenAPI spec

@@ -168,7 +168,7 @@ const (
 	SunsetWIP = 0
 
 	// SunsetExperimental is the duration past deprecation after which an experimental version may be sunset.
-	SunsetExperimental = 31 * 24 * time.Hour
+	SunsetExperimental = 24 * time.Hour
 
 	// SunsetBeta is the duration past deprecation after which a beta version may be sunset.
 	SunsetBeta = 91 * 24 * time.Hour
@@ -316,4 +316,86 @@ func (vs VersionSlice) Strings() []string {
 		s[i] = vs[i].String()
 	}
 	return s
+}
+
+// Lifecycle defines the release lifecycle.
+type Lifecycle int
+
+const (
+	lifecycleUndefined Lifecycle = iota
+
+	// LifecycleUnreleased means the version has not been released yet.
+	LifecycleUnreleased Lifecycle = iota
+
+	// LifecycleReleased means the version is released.
+	LifecycleReleased Lifecycle = iota
+
+	// LifecycleDeprecated means the version is deprecated.
+	LifecycleDeprecated Lifecycle = iota
+
+	// LifecycleSunset means the version is eligible to be sunset.
+	LifecycleSunset Lifecycle = iota
+
+	// ExperimentalTTL is the duration after which experimental releases expire
+	// and should be considered sunset.
+	ExperimentalTTL = 90 * 24 * time.Hour
+)
+
+// ParseLifecycle parses a lifecycle string into a Lifecycle type, returning an
+// error if the string is invalid.
+func ParseLifecycle(s string) (Lifecycle, error) {
+	switch s {
+	case "released":
+		return LifecycleReleased, nil
+	case "deprecated":
+		return LifecycleDeprecated, nil
+	case "sunset":
+		return LifecycleSunset, nil
+	default:
+		return lifecycleUndefined, fmt.Errorf("invalid lifecycle %q", s)
+	}
+}
+
+// String returns a string representation of the lifecycle stage. This method
+// will panic if the value is empty.
+func (l Lifecycle) String() string {
+	switch l {
+	case LifecycleReleased:
+		return "released"
+	case LifecycleDeprecated:
+		return "deprecated"
+	case LifecycleSunset:
+		return "sunset"
+	}
+	panic(fmt.Sprintf("invalid lifecycle (%d)", int(l)))
+}
+
+func (l Lifecycle) Valid() bool {
+	switch l {
+	case LifecycleReleased, LifecycleDeprecated, LifecycleSunset:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *Version) LifecycleAt(t time.Time) Lifecycle {
+	if t.IsZero() {
+		t = time.Now().UTC()
+	}
+	tdelta := t.Sub(v.Date)
+	if tdelta < 0 {
+		return LifecycleUnreleased
+	}
+	if v.Stability.Compare(StabilityExperimental) <= 0 {
+		if v.Stability == StabilityWIP {
+			return LifecycleSunset
+		}
+		// experimental
+		if tdelta > ExperimentalTTL {
+			return LifecycleSunset
+		}
+		return LifecycleDeprecated
+	}
+	return LifecycleReleased
 }

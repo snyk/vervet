@@ -180,3 +180,25 @@ func (d *Document) LoadReference(relPath, refPath string, target interface{}) (_
 
 	return filepath.Abs(filepath.Dir(refUrl.Path))
 }
+
+// Version returns the version of the document.
+func (d *Document) Version() (Version, error) {
+	vs, err := ExtensionString(d.ExtensionProps, ExtSnykApiVersion)
+	if err != nil {
+		return Version{}, err
+	}
+	return ParseVersion(vs)
+}
+
+// Lifecycle returns the lifecycle of the document.
+func (d *Document) Lifecycle() (Lifecycle, error) {
+	ls, err := ExtensionString(d.ExtensionProps, ExtSnykApiLifecycle)
+	if err != nil {
+		if IsExtensionNotFound(err) {
+			// If it's not marked as deprecated or sunset, assume it's released.
+			return LifecycleReleased, err
+		}
+		return lifecycleUndefined, err
+	}
+	return ParseLifecycle(ls)
+}
