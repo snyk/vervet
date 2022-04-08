@@ -220,6 +220,25 @@ apis:
 		err: `optic linter does not yet support compiled specs \(apis\.testapi\.output\.linter\)`,
 	}, {
 		conf: `
+version: "1"
+linters:
+  ci:
+    optic-ci: {}
+apis:
+  testapi:
+    resources:
+      - path: resources
+        linter: ci
+    output:
+      path: /somewhere/else
+      paths:
+        - /another/place
+        - /and/another
+      linter: ci
+`[1:],
+		err: `output should specify one of 'path' or 'paths', not both \(apis\.testapi\.output\)`,
+	}, {
+		conf: `
 linters:
   ci:
 `[1:],

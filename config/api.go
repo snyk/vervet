@@ -70,8 +70,9 @@ type Overlay struct {
 // Output defines where the aggregate versioned OpenAPI specs should be created
 // during compilation.
 type Output struct {
-	Path   string `json:"path"`
-	Linter string `json:"linter"`
+	Path   string   `json:"path,omitempty"`
+	Paths  []string `json:"paths,omitempty"`
+	Linter string   `json:"linter"`
 }
 
 func (a APIs) init(p *Project) error {
@@ -108,7 +109,11 @@ func (a APIs) init(p *Project) error {
 				}
 			}
 		}
-		if api.Output != nil && api.Output.Linter != "" {
+		if api.Output != nil {
+			if len(api.Output.Paths) > 0 && api.Output.Path != "" {
+				return fmt.Errorf("output should specify one of 'path' or 'paths', not both (apis.%s.output)",
+					api.Name)
+			}
 			if api.Output.Linter != "" {
 				if linter, ok := p.Linters[api.Output.Linter]; !ok {
 					return fmt.Errorf("linter %q not found (apis.%s.output.linter)",
