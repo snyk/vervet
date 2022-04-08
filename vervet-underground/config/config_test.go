@@ -93,6 +93,40 @@ func TestLoad(t *testing.T) {
 		c.Assert(*conf, qt.DeepEquals, expected)
 	})
 
+	c.Run("gcs config", func(c *qt.C) {
+		f := createTestFile(c, []byte(`{
+			"host": "0.0.0.0",
+			"services": ["localhost"],
+			"storage": {
+				"type": "gcs",
+				"gcs": {
+				  "region": "US-EAST1",
+				  "endpoint": "http://fake-gcs:4443",
+				  "projectId": "test",
+				  "filename": "test"
+				}
+			}
+		}`))
+
+		conf, err := config.Load(f.Name())
+		c.Assert(err, qt.IsNil)
+
+		expected := config.ServerConfig{
+			Host:     "0.0.0.0",
+			Services: []string{"localhost"},
+			Storage: config.StorageConfig{
+				Type: config.StorageTypeGCS,
+				GCS: config.GcsConfig{
+					Region:    "US-EAST1",
+					Endpoint:  "http://fake-gcs:4443",
+					Filename:  "test",
+					ProjectId: "test",
+				},
+			},
+		}
+		c.Assert(*conf, qt.DeepEquals, expected)
+	})
+
 	c.Run("multiple configs", func(c *qt.C) {
 		defaultConfig := createTestFile(c, []byte(`{
 			"host": "0.0.0.0",

@@ -1,0 +1,18 @@
+{
+  "services":
+  [
+    "http://registry-web",
+    "http://audit-log"
+  ],
+  "host": "0.0.0.0",
+  "storage": {
+    "type": "gcs",
+    "gcs": {
+      "_comment": "empty filename results in using default credentials in GCS",
+      "region": "US-EAST1",
+      "endpoint": "http://fake-gcs:4443/storage/v1/",
+      "projectId": "test",
+      "filename": ""
+    }
+  }
+}
