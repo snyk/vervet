@@ -41,8 +41,6 @@ linters-settings:
       - condition
       - operation
       - return
-  govet:
-    check-shadowing: true
   lll:
     line-length: 160
   misspell:
@@ -63,9 +61,6 @@ linters-settings:
   staticcheck:
     checks: ["all"]
     go: "1.17"
-  varcheck:
-    exported-fields: true
-
 
 linters:
   enable:

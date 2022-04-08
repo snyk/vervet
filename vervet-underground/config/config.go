@@ -8,8 +8,9 @@ import (
 
 // ServerConfig defines the configuration options for the Vervet Underground service.
 type ServerConfig struct {
-	Host     string   `json:"host"`
-	Services []string `json:"services"`
+	Host     string            `json:"host"`
+	Services []string          `json:"services"`
+	Storage  map[string]string `json:"storage"`
 }
 
 // Load returns a ServerConfig instance loaded from the given path to a JSON

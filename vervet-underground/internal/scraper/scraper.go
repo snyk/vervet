@@ -16,43 +16,12 @@ import (
 
 	"vervet-underground/config"
 	"vervet-underground/internal/storage"
-	"vervet-underground/internal/storage/mem"
 )
-
-// Storage defines the storage functionality needed in order to store service
-// API version spec snapshots.
-type Storage interface {
-	// NotifyVersions tells the storage which versions are currently available.
-	// This is the primary mechanism by which the storage layer discovers and
-	// processes versions which are removed post-sunset.
-	NotifyVersions(name string, versions []string, scrapeTime time.Time) error
-
-	// CollateVersions tells the storage to execute the compilation and
-	// update all VU-formatted specs from all services and their
-	// respective versions gathered.
-	CollateVersions() error
-
-	// HasVersion returns whether the storage has already stored the service
-	// API spec version at the given content digest.
-	HasVersion(name string, version string, digest string) (bool, error)
-
-	// NotifyVersion tells the storage to store the given version contents at
-	// the scrapeTime. The storage implementation must detect and ignore
-	// duplicate version contents, as some services may not provide content
-	// digest headers in their responses.
-	NotifyVersion(name string, version string, contents []byte, scrapeTime time.Time) error
-
-	// Versions fetches the Storage Versions compiled by VU
-	Versions() []string
-
-	// Version fetches the Storage Version spec compiled by VU
-	Version(version string) ([]byte, error)
-}
 
 // Scraper gets OpenAPI specs from a collection of services and updates storage
 // accordingly.
 type Scraper struct {
-	storage  *mem.Storage
+	storage  storage.Storage
 	services []service
 	http     *http.Client
 	timeNow  func() time.Time
@@ -67,7 +36,7 @@ type service struct {
 type Option func(*Scraper) error
 
 // New returns a new Scraper instance.
-func New(cfg *config.ServerConfig, store *mem.Storage, options ...Option) (*Scraper, error) {
+func New(cfg *config.ServerConfig, store storage.Storage, options ...Option) (*Scraper, error) {
 	s := &Scraper{
 		storage: store,
 		http:    &http.Client{Timeout: time.Second * 15},
@@ -87,7 +56,11 @@ func setupScraper(s *Scraper, cfg *config.ServerConfig, options []Option) error 
 		if err != nil {
 			return errors.Wrapf(err, "invalid service %q", cfg.Services[i])
 		}
+		// Handle for local/smaller deployments and tests
 		s.services[i] = service{base: cfg.Services[i], url: u}
+		if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
+			s.services[i] = service{base: u.Host, url: u}
+		}
 	}
 	for i := range options {
 		err := options[i](s)

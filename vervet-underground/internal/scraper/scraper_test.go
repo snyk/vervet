@@ -12,6 +12,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
@@ -26,6 +27,21 @@ var (
 		"2021-10-01": 3,
 		"2021-10-16": 4,
 	}
+
+	petfood = &testService{
+		versions: []string{"2021-09-01", "2021-09-16"},
+		contents: map[string]string{
+			"2021-09-01": `{"paths":{"/crickets": {}}}`,
+			"2021-09-16": `{"paths":{"/crickets": {}, "/kibble": {}}}`,
+		},
+	}
+	animals = &testService{
+		versions: []string{"2021-10-01", "2021-10-16"},
+		contents: map[string]string{
+			"2021-10-01": `{"paths":{"/geckos": {}}}`,
+			"2021-10-16": `{"paths":{"/geckos": {}, "/puppies": {}}}`,
+		},
+	}
 )
 
 type testService struct {
@@ -33,20 +49,28 @@ type testService struct {
 	contents map[string]string
 }
 
+func setupHttpServers(c *qt.C) (*httptest.Server, *httptest.Server) {
+	petfoodService := httptest.NewServer(petfood.Handler())
+	c.Cleanup(petfoodService.Close)
+
+	animalsService := httptest.NewServer(animals.Handler())
+	c.Cleanup(animalsService.Close)
+	return petfoodService, animalsService
+}
 func (t *testService) Handler() http.Handler {
 	r := mux.NewRouter()
 	r.HandleFunc("/openapi", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).Encode(&t.versions)
 		if err != nil {
-			panic(err)
+			log.Fatal().Err(err).Msg("test openapi handler failed to reply")
 		}
 	})
 	r.HandleFunc("/openapi/{version}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, err := w.Write([]byte(t.contents[mux.Vars(r)["version"]]))
 		if err != nil {
-			panic(err)
+			log.Fatal().Err(err).Msg("test openapi/version handler failed to reply")
 		}
 	})
 	return r
@@ -54,26 +78,8 @@ func (t *testService) Handler() http.Handler {
 
 func TestScraper(t *testing.T) {
 	c := qt.New(t)
-	petfood := &testService{
-		versions: []string{"2021-09-01", "2021-09-16"},
-		contents: map[string]string{
-			"2021-09-01": `{"paths":{"/crickets": {}}}`,
-			"2021-09-16": `{"paths":{"/crickets": {}, "/kibble": {}}}`,
-		},
-	}
-	petfoodService := httptest.NewServer(petfood.Handler())
-	c.Cleanup(petfoodService.Close)
 
-	animals := &testService{
-		versions: []string{"2021-10-01", "2021-10-16"},
-		contents: map[string]string{
-			"2021-10-01": `{"paths":{"/geckos": {}}}`,
-			"2021-10-16": `{"paths":{"/geckos": {}, "/puppies": {}}}`,
-		},
-	}
-	animalsService := httptest.NewServer(animals.Handler())
-	c.Cleanup(animalsService.Close)
-
+	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
 		service, version, digest string
 	}{
@@ -96,9 +102,8 @@ func TestScraper(t *testing.T) {
 	c.Cleanup(cancel)
 
 	// No version digests should be known
-	var ok bool
 	for _, test := range tests {
-		ok, err = st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsFalse)
 	}
@@ -175,26 +180,8 @@ func (*errorTransport) RoundTrip(*http.Request) (*http.Response, error) {
 
 func TestScraperCollation(t *testing.T) {
 	c := qt.New(t)
-	petfood := &testService{
-		versions: []string{"2021-09-01", "2021-09-16"},
-		contents: map[string]string{
-			"2021-09-01": `{"paths":{"/crickets": {}}}`,
-			"2021-09-16": `{"paths":{"/crickets": {}, "/kibble": {}}}`,
-		},
-	}
-	petfoodService := httptest.NewServer(petfood.Handler())
-	c.Cleanup(petfoodService.Close)
 
-	animals := &testService{
-		versions: []string{"2021-10-01", "2021-10-16"},
-		contents: map[string]string{
-			"2021-10-01": `{"paths":{"/geckos": {}}}`,
-			"2021-10-16": `{"paths":{"/geckos": {}, "/puppies": {}}}`,
-		},
-	}
-	animalsService := httptest.NewServer(animals.Handler())
-	c.Cleanup(animalsService.Close)
-
+	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
 		service, version, digest string
 	}{
@@ -220,10 +207,9 @@ func TestScraperCollation(t *testing.T) {
 	err = sc.Run(ctx)
 	c.Assert(err, qt.IsNil)
 
-	var ok bool
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err = st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}

@@ -17,7 +17,9 @@ import (
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
+	"vervet-underground/internal/storage"
 	"vervet-underground/internal/storage/mem"
+	"vervet-underground/internal/storage/s3"
 )
 
 func main() {
@@ -40,17 +42,22 @@ func main() {
 	var err error
 	if cfg, err = config.Load(configJson); err != nil {
 		logError(err)
-		panic("unable to load config")
+		log.Fatal().Msg("unable to load config")
 	}
 	log.Info().Msgf("services: %s", cfg.Services)
 
 	// initialize Scraper
 	ticker := time.NewTicker(scrapeInterval)
-	st := mem.New()
+	st, err := initializeStorage(cfg)
+	if err != nil {
+		logError(err)
+		log.Fatal().Msg("unable to initialize storage client")
+	}
+
 	sc, err := scraper.New(cfg, st, scraper.HTTPClient(&http.Client{Timeout: wait}))
 	if err != nil {
 		logError(err)
-		panic("unable to load storage")
+		log.Fatal().Msg("unable to load storage")
 	}
 	// initialize
 	err = runScrape(sc)
@@ -75,8 +82,8 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				if scrapeErr := runScrape(sc); scrapeErr != nil {
-					logError(scrapeErr)
+				if err := runScrape(sc); err != nil {
+					logError(err)
 				}
 			case <-quit:
 				ticker.Stop()
@@ -88,7 +95,7 @@ func main() {
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
 		log.Info().Msg(fmt.Sprintf("I'm starting my server on %s:8080", cfg.Host))
-		if srvErr := srv.ListenAndServe(); srvErr != nil && errors.Is(srvErr, http.ErrServerClosed) {
+		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
 			logError(err)
 			os.Exit(1)
 		}
@@ -129,8 +136,8 @@ func main() {
 func runScrape(sc *scraper.Scraper) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if scraperErr := sc.Run(ctx); scraperErr != nil {
-		return scraperErr
+	if err := sc.Run(ctx); err != nil {
+		return err
 	}
 	log.Info().Msgf("scraper successfully completed run at %s", time.Now().UTC().String())
 	return nil
@@ -151,8 +158,7 @@ func healthHandler(router *mux.Router, services []string) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		encoder := json.NewEncoder(w)
-		encodeErr := encoder.Encode(map[string]interface{}{"msg": "success", "services": services})
-		if encodeErr != nil {
+		if err := encoder.Encode(map[string]interface{}{"msg": "success", "services": services}); err != nil {
 			http.Error(w, "Failure to write response", http.StatusInternalServerError)
 			return
 		}
@@ -202,4 +208,24 @@ func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
 				return
 			}
 		})
+}
+
+func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
+	if cfg.Storage != nil {
+		switch cfg.Storage["type"] {
+		case "s3":
+			return s3.New(&s3.Config{
+				AwsRegion:   cfg.Storage["region"],
+				AwsEndpoint: cfg.Storage["endpoint"],
+				Credentials: s3.StaticKeyCredentials{
+					AccessKey:  cfg.Storage["accesskey"],
+					SecretKey:  cfg.Storage["secretkey"],
+					SessionKey: cfg.Storage["sessionkey"],
+				},
+			})
+		default:
+			return mem.New(), nil
+		}
+	}
+	return mem.New(), nil
 }

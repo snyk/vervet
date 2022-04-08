@@ -2,12 +2,14 @@ version: "3.8"
 
 services:
   localstack:
-    image: localstack/localstack:0.13.0
+    image: localstack/localstack:0.13.3
     ports:
       - "4566:4566"
       - "4571:4571"
     environment:
-      - SERVICES=${SERVICES:-"s3"}
+      - MAIN_CONTAINER_NAME=localstack
+      - EDGE_PORT=4566
+      - SERVICES=${SERVICES:- }
       - DEBUG=${DEBUG- }
       - DATA_DIR=${DATA_DIR- }
       - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }

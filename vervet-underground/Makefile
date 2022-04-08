@@ -2,10 +2,13 @@ GOMOD=go mod
 GOBUILD=go build
 GOTEST=go test
 
-.PHONY: run fmt lint tidy test test-coverage
-
+.PHONY: fmt
 fmt:
 	go fmt ./...
+
+.PHONY: clean
+clean:
+	rm -f server && go clean
 
 .PHONY: lint
 lint:
@@ -13,13 +16,17 @@ lint:
 
 .PHONY: lint-docker
 lint-docker:
-	docker run --rm -v $(shell pwd):/vervet-underground -w /vervet-underground golangci/golangci-lint:v1.42.1 golangci-lint run -v ./...
+	docker run --rm -v $(shell pwd):/vervet-underground -w /vervet-underground golangci/golangci-lint:v1.43.0 golangci-lint run --fix -v ./...
 
+.PHONY: tidy
 tidy:
 	$(GOMOD) tidy -v
+
+.PHONY: test
 test:
 	go test ./... -count=1 -race
 
+.PHONY: build
 build:
 	go build server.go
 #----------------------------------------------------------------------------------
@@ -43,3 +50,9 @@ test-coverage:
 start:
 	go run server.go
 
+.PHONY: test-localstack
+test-localstack:
+	docker-compose up --no-start localstack
+	docker-compose start localstack
+	go test ./... -count=1 -race || true
+	docker-compose down
