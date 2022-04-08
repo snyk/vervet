@@ -66,9 +66,9 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: ~/vervet/vervet-underground
+          at: ~/vervet
       - run:
-          command: golangci-lint run -v ./...
+          command: cd vervet-underground && golangci-lint run -v ./...
 
   build-vu:
     <<: *vu_metadata

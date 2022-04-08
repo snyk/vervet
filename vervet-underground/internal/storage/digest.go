@@ -10,7 +10,7 @@ import (
 
 // Digest is a sha256 calculation generated
 // into a specific string format prefixed by "sha256:" followed by
-// the sha256 value generated
+// the sha256 value generated.
 type Digest string
 
 // DigestHeader returns a content digest parsed from a Digest HTTP response

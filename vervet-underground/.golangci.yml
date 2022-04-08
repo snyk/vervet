@@ -4,32 +4,122 @@ run:
   issues-exit-code: 1
   tests: true
 
-linters-settings:
-  gci:
-    local-prefixes: vervet-underground
 
+linters-settings:
+  errcheck:
+    check-blank: true
+    check-type-assertions: true
+  exhaustive:
+    default-signifies-exhaustive: true
   forbidigo:
     # Forbid the following identifiers (identifiers are written using regexp):
     forbid:
       - ^print.*$
       - 'fmt\.Print.*'
       - 'ginkgo\.It\("should'
+  gci:
+    local-prefixes: vervet-underground
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: vervet-underground
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
-    min-complexity: 20
-
+    min-complexity: 10
+  gomnd:
+    checks:
+      - argument
+      - assign
+      - case
+      - condition
+      - operation
+      - return
+  govet:
+    check-shadowing: true
+  lll:
+    line-length: 160
+  misspell:
+    locale: US
+  nolintlint:
+    allow-leading-space: true
+    allow-unused: false
+    require-explanation: true
+    require-specific: true
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: true
   # ST1001: Dot imports that aren’t in external test packages are discouraged.
   stylecheck:
-    checks: [ "all", "-ST1003"]
-
+    checks: [ "all", "-ST1003" ]
+    go: "1.17"
   staticcheck:
     checks: ["all"]
+    go: "1.17"
+  varcheck:
+    exported-fields: true
+
 
 linters:
   enable:
-    - gci
-    - gofmt
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - dogsled
+    - dupl
+    - durationcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - exportloopref
     - forbidigo
+    - forcetypeassert
+    - gci
+    - goconst
+    - gocritic
     - gocyclo
-    - stylecheck
+    - godot
+    - gofmt
+    - goimports
+    - gosec
+    - ifshort
+    - lll
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - prealloc
+    - promlinter
+    - sqlclosecheck
     - staticcheck
+    - stylecheck
+    - tagliatelle
+    - tenv
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - bodyclose
+        - goconst
+    - path: test/
+      linters:
+        - testpackage
