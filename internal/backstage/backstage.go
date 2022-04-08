@@ -28,25 +28,25 @@ const (
 
 // Component represents a Backstage Component entity document.
 type Component struct {
-	APIVersion string        `json:"apiVersion"`
-	Kind       string        `json:"kind"`
-	Metadata   Metadata      `json:"metadata"`
-	Spec       ComponentSpec `json:"spec"`
+	APIVersion string        `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string        `json:"kind" yaml:"kind"`
+	Metadata   Metadata      `json:"metadata" yaml:"metadata"`
+	Spec       ComponentSpec `json:"spec" yaml:"spec"`
 }
 
 // ComponentSpec represents a Backstage Component entity spec.
 type ComponentSpec struct {
-	Type         string   `json:"type"`
-	Owner        string   `json:"owner"`
+	Type         string   `json:"type" yaml:"type"`
+	Owner        string   `json:"owner" yaml:"owner"`
 	ProvidesAPIs []string `json:"providesApis" yaml:"providesApis"`
 }
 
 // API represents a Backstage API entity document.
 type API struct {
-	APIVersion string   `json:"apiVersion"`
-	Kind       string   `json:"kind"`
-	Metadata   Metadata `json:"metadata"`
-	Spec       APISpec  `json:"spec"`
+	APIVersion string   `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string   `json:"kind" yaml:"kind"`
+	Metadata   Metadata `json:"metadata" yaml:"metadata"`
+	Spec       APISpec  `json:"spec" yaml:"spec"`
 }
 
 // Metadata represents Backstage entity metadata.
@@ -78,7 +78,7 @@ type CatalogInfo struct {
 	service          *yaml.Node
 	serviceComponent Component
 	components       []*yaml.Node
-	vervetAPIs       []*API
+	VervetAPIs       []*API
 }
 
 // Save writes the catalog info to a writer.
@@ -90,7 +90,7 @@ func (c *CatalogInfo) Save(w io.Writer) error {
 		docs = append(docs, c.service)
 	}
 	docs = append(docs, c.components...)
-	for _, vervetAPI := range c.vervetAPIs {
+	for _, vervetAPI := range c.VervetAPIs {
 		var doc yaml.Node
 		if err := doc.Encode(vervetAPI); err != nil {
 			return err
@@ -121,6 +121,7 @@ func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
 		nodes = append(nodes, &node)
 	}
 	catalog := &CatalogInfo{}
+	vervetAPINames := map[string]struct{}{}
 	for _, node := range nodes {
 		if ok, err := isServiceComponent(node); err != nil {
 			return nil, err
@@ -133,9 +134,29 @@ func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
 		}
 		if ok, err := isVervetGenerated(node); err != nil {
 			return nil, err
-		} else if !ok {
-			catalog.components = append(catalog.components, node)
+		} else {
+			if !ok {
+				catalog.components = append(catalog.components, node)
+			} else {
+				// Remove prior vervet API names from the service component so we can rebuild them
+				var api API
+				if err := node.Decode(&api); err != nil {
+					return nil, err
+				}
+				if api.Kind == "API" {
+					vervetAPINames[api.Metadata.Name] = struct{}{}
+				}
+			}
 		}
+	}
+	if catalog.service != nil {
+		var apiNames []string
+		for _, apiName := range catalog.serviceComponent.Spec.ProvidesAPIs {
+			if _, ok := vervetAPINames[apiName]; !ok {
+				apiNames = append(apiNames, apiName)
+			}
+		}
+		catalog.serviceComponent.Spec.ProvidesAPIs = apiNames
 	}
 	return catalog, nil
 }
@@ -165,7 +186,7 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string) error {
 		if err != nil {
 			return err
 		}
-		c.vervetAPIs = append(c.vervetAPIs, api)
+		c.VervetAPIs = append(c.VervetAPIs, api)
 		apiNames = append(apiNames, api.Metadata.Name)
 	}
 	specPath, err := yamlpath.NewPath("$..spec")
@@ -198,6 +219,7 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string) error {
 	if err != nil {
 		return err
 	}
+	c.serviceComponent.Spec.ProvidesAPIs = apiNames
 	return nil
 }
 

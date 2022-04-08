@@ -75,6 +75,15 @@ type Output struct {
 	Linter string   `json:"linter"`
 }
 
+// EffectivePaths returns a slice of effective configured output paths, whether
+// a single or multiple output paths have been configured.
+func (o *Output) ResolvePaths() []string {
+	if o.Path != "" {
+		return []string{o.Path}
+	}
+	return o.Paths
+}
+
 func (a APIs) init(p *Project) error {
 	if len(a) == 0 {
 		return fmt.Errorf("no apis defined")
