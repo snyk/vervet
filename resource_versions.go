@@ -3,6 +3,7 @@ package vervet
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -63,8 +64,9 @@ func (s resourceVersionsSlice) at(v Version) (*openapi3.T, error) {
 	if result == nil {
 		return nil, ErrNoMatchingVersion
 	}
-	// Remove the API stability extension from the merged OpenAPI spec, this
-	// extension is only applicable to individual resource version specs.
-	delete(result.ExtensionProps.Extensions, ExtSnykApiStability)
+	if result.ExtensionProps.Extensions == nil {
+		result.ExtensionProps.Extensions = map[string]interface{}{}
+	}
+	result.ExtensionProps.Extensions[ExtSnykApiLifecycle] = v.LifecycleAt(time.Time{}).String()
 	return result, nil
 }

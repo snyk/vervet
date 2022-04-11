@@ -462,7 +462,7 @@ paths:
       - 2021-06-13~beta
       x-snyk-api-version: 2021-06-07~experimental
       x-snyk-deprecated-by: 2021-06-13~beta
-      x-snyk-sunset-eligible: "2021-07-14"
+      x-snyk-sunset-eligible: "2021-06-14"
     x-snyk-api-resource: hello-world
   /openapi:
     get:
@@ -625,4 +625,5 @@ servers:
 tags:
 - description: Projects
   name: Projects
+x-snyk-api-lifecycle: sunset
 x-snyk-api-version: 2021-06-07~experimental

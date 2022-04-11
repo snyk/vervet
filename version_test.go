@@ -294,7 +294,7 @@ func TestDeprecates(t *testing.T) {
 		target:       MustParseVersion("2021-06-01~experimental"),
 		deprecatedBy: MustParseVersion("2021-06-07~beta"),
 		isDeprecated: true,
-		sunset:       time.Date(2021, time.July, 8, 0, 0, 0, 0, time.UTC),
+		sunset:       time.Date(2021, time.June, 8, 0, 0, 0, 0, time.UTC),
 	}, {
 		name:         "ga deprecates beta",
 		target:       MustParseVersion("2021-06-07~beta"),

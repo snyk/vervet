@@ -768,5 +768,6 @@
       "name": "Something"
     }
   ],
+  "x-snyk-api-lifecycle": "released",
   "x-snyk-api-version": "2021-06-13~beta"
 }

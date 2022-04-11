@@ -99,4 +99,5 @@ paths:
 servers:
 - description: Test API v3
   url: https://example.com/api/v3
+x-snyk-api-lifecycle: sunset
 x-snyk-api-version: 2021-11-08~experimental
