@@ -1,14 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v4/config"
-	"github.com/snyk/vervet/v4/internal/generator"
+	"github.com/snyk/vervet/v4/generate"
 )
 
 // GenerateCommand is the `vervet generate` subcommand.
@@ -42,94 +37,20 @@ func Generate(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.Open(configFile)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	proj, err := config.Load(f)
-	if err != nil {
-		return err
-	}
 
-	selectedGenerators := map[string]struct{}{}
+	var generators []string
 	for i := 0; i < ctx.Args().Len(); i++ {
-		selectedGenerators[ctx.Args().Get(i)] = struct{}{}
+		generators = append(generators, ctx.Args().Get(i))
 	}
 
-	// Option to load generators and overlay onto project config
-	generatorsHere := map[string]string{}
-	if genFile := ctx.String("generators"); genFile != "" {
-		f, err := os.Open(genFile)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		generators, err := config.LoadGenerators(f)
-		if err != nil {
-			return err
-		}
-		for k, v := range generators {
-			proj.Generators[k] = v
-			generatorsHere[k] = filepath.Dir(genFile)
-		}
-	}
-	// If a list of specific generators were specified, only instantiate those.
-	if len(selectedGenerators) > 0 {
-		for k := range proj.Generators {
-			if _, ok := selectedGenerators[k]; !ok {
-				delete(proj.Generators, k)
-			}
-		}
+	params := generate.GeneratorParams{
+		ProjectDir:     projectDir,
+		ConfigFile:     configFile,
+		Generators:     generators,
+		GeneratorsFile: ctx.String("generators"),
+		Debug:          ctx.Bool("debug"),
+		DryRun:         ctx.Bool("dry-run"),
 	}
 
-	options := []generator.Option{generator.Force(true)}
-	if ctx.Bool("debug") {
-		options = append(options, generator.Debug(true))
-	}
-	if ctx.Bool("dry-run") {
-		options = append(options, generator.DryRun(true))
-	}
-	projectHere := filepath.Dir(configFile)
-	generators := map[string]*generator.Generator{}
-	for k, genConf := range proj.Generators {
-		genHere, ok := generatorsHere[k]
-		if !ok {
-			genHere = projectHere
-		}
-		genHere, err = filepath.Abs(genHere)
-		if err != nil {
-			return err
-		}
-		gen, err := generator.New(genConf, append(options, generator.Here(genHere))...)
-		if err != nil {
-			return err
-		}
-		generators[k] = gen
-	}
-
-	err = os.Chdir(projectDir)
-	if err != nil {
-		return err
-	}
-
-	resources, err := generator.MapResources(proj)
-	if err != nil {
-		return err
-	}
-
-	var allGeneratedFiles []string
-	for _, gen := range generators {
-		generatedFiles, err := gen.Execute(resources)
-		if err != nil {
-			return err
-		}
-		allGeneratedFiles = append(allGeneratedFiles, generatedFiles...)
-	}
-
-	for _, generatedFile := range allGeneratedFiles {
-		fmt.Println(generatedFile)
-	}
-
-	return nil
+	return generate.Generate(params)
 }
