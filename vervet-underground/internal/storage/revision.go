@@ -5,21 +5,21 @@ import (
 	"sort"
 	"time"
 
-	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/v4"
 )
 
 // ContentRevision is the exact contents and metadata of a service's version at scraping timestamp.
 type ContentRevision struct {
 	// Service is the name of the service.
-	Service   string
+	Service string
 	// Version is the API version number of this content.
-	Version   vervet.Version
+	Version vervet.Version
 	// Timestamp represents when this revision was scraped.
 	Timestamp time.Time
 	// Digest is the sha of the revision derived from its content.
-	Digest    Digest
+	Digest Digest
 	// Blob is the actual content of this revision, the unmarshalled API spec.
-	Blob      []byte
+	Blob []byte
 	// TODO: store the sunset time when a version is removed
 	//sunset    *time.Time
 }
@@ -29,7 +29,7 @@ type ServiceRevisions struct {
 	// Revisions is a map of version to a collection of revisions.  During collation, content revision with the latest scraping timestamp is used.
 	Revisions map[vervet.Version][]ContentRevision
 	// Versions is a collection of API uniqueVersions that this service serves.
-	Versions  vervet.VersionSlice
+	Versions vervet.VersionSlice
 }
 
 // NewServiceRevisions returns a new instance of ServiceRevisions
@@ -62,7 +62,7 @@ func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (Content
 			return revision, err
 		}
 
-		revisions, ok = s.Revisions[*resolvedVersion]
+		revisions, ok = s.Revisions[resolvedVersion]
 		if !ok {
 			return revision, fmt.Errorf("no revision found for resolved version: %s", resolvedVersion)
 		}

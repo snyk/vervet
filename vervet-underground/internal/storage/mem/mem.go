@@ -11,7 +11,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/v4"
 
 	"vervet-underground/internal/storage"
 )
@@ -112,9 +112,9 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 	// else, append it to the existing service's VersionSlice
 	if len(revisions) == 0 {
 		if _, ok = s.serviceVersions[name]; !ok {
-			s.serviceVersions[name] = vervet.VersionSlice{*parsedVersion}
+			s.serviceVersions[name] = vervet.VersionSlice{parsedVersion}
 		} else {
-			s.serviceVersions[name] = append(s.serviceVersions[name], *parsedVersion)
+			s.serviceVersions[name] = append(s.serviceVersions[name], parsedVersion)
 			// sort versions when new ones are introduced to maintain BST functionality
 			sort.Sort(s.serviceVersions[name])
 		}
@@ -128,7 +128,7 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 		Timestamp: scrapeTime,
 		Digest:    digest,
 		Blob:      contents,
-		Version:   *parsedVersion,
+		Version:   parsedVersion,
 	}
 
 	return nil
@@ -156,7 +156,7 @@ func (s *Storage) Version(version string) ([]byte, error) {
 		return nil, err
 	}
 
-	spec := s.collatedVersionedSpecs[*parsedVersion]
+	spec := s.collatedVersionedSpecs[parsedVersion]
 	return spec.MarshalJSON()
 }
 
@@ -173,8 +173,8 @@ func (s *Storage) CollateVersions() error {
 	}
 	versions, specs, err := aggregate.Collate()
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.collatedVersions = versions
 	s.collatedVersionedSpecs = specs
 

@@ -1,10 +1,14 @@
 package storage_test
 
 import (
-	qt "github.com/frankban/quicktest"
-	"github.com/snyk/vervet"
+	"os"
 	"testing"
 	"time"
+
+	qt "github.com/frankban/quicktest"
+	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v4/testdata"
+
 	"vervet-underground/internal/storage"
 )
 
@@ -38,7 +42,7 @@ paths:
           description: An empty response
 `
 
-func TestAggregator_Collate(t *testing.T) {
+func TestCollator_Collate(t *testing.T) {
 	c := qt.New(t)
 
 	v20220201_beta := vervet.Version{
@@ -82,4 +86,32 @@ func TestAggregator_Collate(t *testing.T) {
 
 	c.Assert(specs[v20220401_ga].Paths.Find("/test"), qt.IsNotNil)
 	c.Assert(specs[v20220401_ga].Paths.Find("/example"), qt.IsNotNil)
+}
+
+func TestCollator_Collate_Conflict(t *testing.T) {
+	c := qt.New(t)
+
+	v20210615_ga := vervet.Version{
+		Date:      time.Date(2021, 6, 15, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityGA,
+	}
+
+	collator := storage.NewCollator()
+
+	spec1, err := os.ReadFile(testdata.Path("conflict/_examples/2021-06-15/spec.yaml"))
+	c.Assert(err, qt.IsNil)
+	collator.Add("service-a", storage.ContentRevision{
+		Version: v20210615_ga,
+		Blob:    spec1,
+	})
+
+	spec2, err := os.ReadFile(testdata.Path("conflict/_examples2/2021-06-15/spec.yaml"))
+	c.Assert(err, qt.IsNil)
+	collator.Add("service-b", storage.ContentRevision{
+		Version: v20210615_ga,
+		Blob:    []byte(spec2),
+	})
+
+	_, _, err = collator.Collate()
+	c.Assert(err.Error(), qt.Contains, "conflict in #/paths /examples/hello-world")
 }

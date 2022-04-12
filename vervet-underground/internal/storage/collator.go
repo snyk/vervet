@@ -6,8 +6,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
-
-	"github.com/snyk/vervet"
+	"github.com/snyk/vervet/v4"
 )
 
 // Collator is an aggregate of service specs and uniqueVersions scraped by VU. It is responsible for collating uniqueVersions and
@@ -24,7 +23,7 @@ type Collator struct {
 func NewCollator() *Collator {
 	return &Collator{
 		revisions:      make(map[string]*ServiceRevisions),
-		uniqueVersions: make(vervet.VersionSlice, 0),
+		uniqueVersions: nil,
 	}
 }
 
@@ -39,7 +38,7 @@ func (c *Collator) Add(service string, revision ContentRevision) {
 	// Track versions
 	version := revision.Version
 	var found bool
-	for _, v := range c.uniqueVersions{
+	for _, v := range c.uniqueVersions {
 		if version == v {
 			found = true
 			break
@@ -60,8 +59,8 @@ func (c Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T,
 		for service, serviceRevisions := range c.revisions {
 			rev, err := serviceRevisions.ResolveLatestRevision(version)
 			if err != nil {
-				log.Warn().Err(err).Msgf("could not resolve version %s for service %s", version, service)
-				// don't halt execution if we can't resolve version for this service.
+				// don't halt execution if we can't resolve version for this service - it is possible for a service to not have this version available.
+				log.Debug().Err(err).Msgf("could not resolve version %s for service %s", version, service)
 				continue
 			}
 			revisions = append(revisions, rev)
@@ -81,21 +80,23 @@ func (c Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T,
 }
 
 func mergeRevisions(revisions []ContentRevision) (*openapi3.T, error) {
+	collator := vervet.NewCollator()
 	loader := openapi3.NewLoader()
-	var dst *openapi3.T
 	for _, revision := range revisions {
 		// JSON will deserialize here correctly
 		src, err := loader.LoadFromData(revision.Blob)
 		if err != nil {
-			return nil, fmt.Errorf("could not merge revision %s-%s-%s: %w", revision.Service, revision.Version, revision.Digest, err)
+			return nil, fmt.Errorf("could not load revision %s-%s-%s: %w", revision.Service, revision.Version, revision.Digest, err)
 		}
 
-		if dst == nil {
-			dst = src
-		} else {
-			// TODO: evaluate whether to use replace bool or not during merging
-			vervet.Merge(dst, src, true)
+		rv := &vervet.ResourceVersion{
+			Document: &vervet.Document{T: src},
+			Name:     revision.Service,
+			Version:  revision.Version,
+		}
+		if err := collator.Collate(rv); err != nil {
+			return nil, fmt.Errorf("could not collate revision %s-%s-%s: %w", revision.Service, revision.Version, revision.Digest, err)
 		}
 	}
-	return dst, nil
+	return collator.Result(), nil
 }

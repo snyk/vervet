@@ -1,10 +1,12 @@
 package storage_test
 
 import (
-	qt "github.com/frankban/quicktest"
-	"github.com/snyk/vervet"
 	"testing"
 	"time"
+
+	qt "github.com/frankban/quicktest"
+	"github.com/snyk/vervet/v4"
+
 	"vervet-underground/internal/storage"
 )
 
@@ -61,7 +63,7 @@ func TestServiceRevisions_ResolveLatestRevision(t *testing.T) {
 			version, err := vervet.ParseVersion(tc.version)
 			c.Assert(err, qt.IsNil)
 
-			revision, err := ut.ResolveLatestRevision(*version)
+			revision, err := ut.ResolveLatestRevision(version)
 			if tc.expectedErr != "" {
 				c.Assert(err, qt.ErrorMatches, tc.expectedErr)
 				return
