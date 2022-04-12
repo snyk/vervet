@@ -1,6 +1,7 @@
 package mem
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -49,5 +50,53 @@ func TestHasVersion(t *testing.T) {
 		ok, err := s.HasVersion(t.service, t.version, t.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.Equals, t.shouldHave)
+	}
+}
+
+const spec = `
+openapi: 3.0.0
+info:
+  title: ServiceA API
+  version: 0.0.0
+paths:
+  /test:
+    get:
+      operation: getTest
+      summary: Test endpoint
+      responses:
+        '204':
+          description: An empty response
+`
+const emptySpec = `{"components":{},"info":null,"openapi":"","paths":null}`
+
+func TestCollateVersions(t *testing.T) {
+	c := qt.New(t)
+	s := New()
+
+	const digest = "sha256:mWpHX0/hIZS9mVd8eobfHWm6OkUsKZLiqd6ShRnNzA4="
+	err := s.NotifyVersion("petfood", "2021-09-16", []byte(spec), t0)
+	c.Assert(err, qt.IsNil)
+
+	err = s.CollateVersions()
+	c.Assert(err, qt.IsNil)
+
+	tests := []struct {
+		version string
+		empty   bool
+	}{
+		{"2021-09-16", false},
+		{"2021-01-01", true},
+		{"2021-09-16", false},
+	}
+	for i, t := range tests {
+		c.Run(fmt.Sprintf("test#%d: %v", i, t), func(c *qt.C) {
+			content, err := s.Version(t.version)
+			c.Assert(err, qt.IsNil)
+			if t.empty {
+				c.Assert(string(content), qt.Equals, emptySpec)
+				return
+			}
+			c.Assert(string(content), qt.Not(qt.Equals), emptySpec)
+		})
 	}
 }

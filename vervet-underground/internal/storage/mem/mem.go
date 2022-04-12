@@ -10,10 +10,8 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet"
-	"go.uber.org/multierr"
+	"github.com/snyk/vervet/v4"
 
 	"vervet-underground/internal/storage"
 )
@@ -22,7 +20,7 @@ import (
 type versionedResourceMap map[string]vervet.VersionSlice
 
 // mappedRevisionSpecs map [Sha digest of contents string] --> spec contents and metadata
-type mappedRevisionSpecs map[storage.Digest]ContentRevision
+type mappedRevisionSpecs map[storage.Digest]storage.ContentRevision
 
 // collatedVersionMappedSpecs Compiled aggregated spec for all services at that given version
 type collatedVersionMappedSpecs map[vervet.Version]openapi3.T
@@ -32,16 +30,6 @@ type versionMappedRevisionSpecs map[string]mappedRevisionSpecs
 
 // serviceVersionMappedRevisionSpecs map[service-name][version-name][digest] --> spec contents and metadata
 type serviceVersionMappedRevisionSpecs map[string]versionMappedRevisionSpecs
-
-// ContentRevision is the exact contents and metadata of a service's version at scraping timestamp
-type ContentRevision struct {
-	serviceVersion string
-	timestamp      time.Time
-	digest         storage.Digest
-	blob           []byte
-	// TODO: store the sunset time when a version is removed
-	//sunset    *time.Time
-}
 
 // Storage provides an in-memory implementation of Vervet Underground storage.
 type Storage struct {
@@ -124,21 +112,23 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 	// else, append it to the existing service's VersionSlice
 	if len(revisions) == 0 {
 		if _, ok = s.serviceVersions[name]; !ok {
-			s.serviceVersions[name] = vervet.VersionSlice{*parsedVersion}
+			s.serviceVersions[name] = vervet.VersionSlice{parsedVersion}
 		} else {
-			s.serviceVersions[name] = append(s.serviceVersions[name], *parsedVersion)
+			s.serviceVersions[name] = append(s.serviceVersions[name], parsedVersion)
 			// sort versions when new ones are introduced to maintain BST functionality
 			sort.Sort(s.serviceVersions[name])
 		}
 	}
 	// End of initializations
 
+	// TODO: we may want to abstract out the storage objects instead of using chained maps.
 	// add the new ContentRevision
-	s.serviceVersionMappedRevisionSpecs[name][version][digest] = ContentRevision{
-		serviceVersion: name + "_" + version,
-		timestamp:      scrapeTime,
-		digest:         digest,
-		blob:           contents,
+	s.serviceVersionMappedRevisionSpecs[name][version][digest] = storage.ContentRevision{
+		Service:   name,
+		Timestamp: scrapeTime,
+		Digest:    digest,
+		Blob:      contents,
+		Version:   parsedVersion,
 	}
 
 	return nil
@@ -166,23 +156,29 @@ func (s *Storage) Version(version string) ([]byte, error) {
 		return nil, err
 	}
 
-	spec := s.collatedVersionedSpecs[*parsedVersion]
+	spec := s.collatedVersionedSpecs[parsedVersion]
 	return spec.MarshalJSON()
 }
 
-// CollateVersions does the following:
-//   - calls updateCollatedVersions for a slice of unique vervet.Version entries
-//   - for each unique vervet.Version, run collateVersion to create a compiled VU openapi doc
+// CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
 func (s *Storage) CollateVersions() error {
-	var errs error
-	s.updateCollatedVersions()
-	for _, version := range s.collatedVersions {
-		err := s.collateVersion(version)
-		if err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "failed to collate version %s", version.String()))
+	// create an aggregate to process collated data from storage data
+	aggregate := storage.NewCollator()
+	for serv, versions := range s.serviceVersionMappedRevisionSpecs {
+		for _, revisions := range versions {
+			for _, revision := range revisions {
+				aggregate.Add(serv, revision)
+			}
 		}
 	}
-	return errs
+	versions, specs, err := aggregate.Collate()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.collatedVersions = versions
+	s.collatedVersionedSpecs = specs
+
+	return err
 }
 
 func (s *Storage) GetCollatedVersionSpecs() (map[string][]byte, error) {
@@ -198,111 +194,4 @@ func (s *Storage) GetCollatedVersionSpecs() (map[string][]byte, error) {
 		versionSpecs[key.String()] = json
 	}
 	return versionSpecs, nil
-}
-
-// updateCollatedVersions collects all unique vervet.Versions detected for every service published using
-func (s *Storage) updateCollatedVersions() {
-	uniqueVersions := make(map[string]vervet.Version)
-
-	// map keys automatically make versions unique rather than iterate through array for each entry
-	// service, versionSlice
-	for _, versionSlice := range s.serviceVersions {
-		// index, version
-		for _, version := range versionSlice {
-			uniqueVersions[version.String()] = version
-		}
-	}
-
-	s.mu.Lock()
-	s.collatedVersions = make([]vervet.Version, 0)
-	for _, value := range uniqueVersions {
-		s.collatedVersions = append(s.collatedVersions, value)
-	}
-
-	// must sort at end
-	sort.Sort(s.collatedVersions)
-	s.mu.Unlock()
-}
-
-// collateVersion fuzzy matches each service's closest version to the target vervet.Version,
-// collects the latest ContentRevision, if one exists and matches the target.
-// Once all services have been searched, call mergeContentRevisions
-func (s *Storage) collateVersion(version vervet.Version) error {
-	// number of services maximum needed
-	contentRevisions := make([]ContentRevision, 0)
-
-	s.mu.RLock()
-	// preprocessing all relevant docs in byte format before combining
-	for service, versionSlice := range s.serviceVersions {
-		// If there is an exact match on versions 1-to-1
-		var currentRevision ContentRevision
-		revisions, ok := s.serviceVersionMappedRevisionSpecs[service][version.String()]
-		if ok {
-			// TODO: iterate through and take last contentRevision.
-			//       Could change to []ContentRevision in struct later
-			for _, contentRevision := range revisions {
-				currentRevision = contentRevision
-			}
-			contentRevisions = append(contentRevisions, currentRevision)
-		} else {
-			// If there is a fuzzy match on version supplied at collation for this service
-			// aka execute binarySearch on this service's available versions
-			resolvedVersion, err := versionSlice.Resolve(version)
-			if err != nil {
-				log.Error().Err(err).Msgf("Could not resolve for service %s version %s", service, version.String())
-				continue
-			}
-
-			revisions, ok = s.serviceVersionMappedRevisionSpecs[service][resolvedVersion.String()]
-			if ok {
-				// TODO: iterate through and take last contentRevision.
-				//       Could change to []ContentRevision in struct later
-				for _, contentRevision := range revisions {
-					currentRevision = contentRevision
-				}
-				contentRevisions = append(contentRevisions, currentRevision)
-			}
-		}
-	}
-	s.mu.RUnlock()
-
-	err := s.mergeContentRevisions(version, contentRevisions)
-	if err != nil {
-		log.Error().Err(err).Msg("Could not Merge specs for all services %s")
-		return err
-	}
-	return nil
-}
-
-// mergeContentRevisions takes all ContentRevision objects fuzzy matching
-// the vervet.Version and combines them into one collated openapi.T doc
-// then saves to the shared memory area at the end
-func (s *Storage) mergeContentRevisions(version vervet.Version, serviceRevisionCollection []ContentRevision) error {
-	loader := openapi3.NewLoader()
-	var dst *openapi3.T
-	for _, serviceRevision := range serviceRevisionCollection {
-		// JSON will deserialize here correctly
-		src, err := loader.LoadFromData(serviceRevision.blob)
-		if err != nil {
-			log.Error().
-				Err(err).
-				Msgf("Could not merge ServiceRevision %s:%s",
-					serviceRevision.serviceVersion,
-					serviceRevision.digest)
-			return err
-		}
-
-		if dst == nil {
-			dst = src
-		} else {
-			// TODO: evaluate whether to use replace bool or not during merging
-			vervet.Merge(dst, src, true)
-		}
-	}
-
-	// lock memory safely here
-	s.mu.Lock()
-	s.collatedVersionedSpecs[version] = *dst
-	s.mu.Unlock()
-	return nil
 }
