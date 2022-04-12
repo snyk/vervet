@@ -121,6 +121,7 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 	}
 	// End of initializations
 
+	// TODO: we may want to abstract out the storage objects instead of using chained maps.
 	// add the new ContentRevision
 	s.serviceVersionMappedRevisionSpecs[name][version][digest] = storage.ContentRevision{
 		Service:   name,

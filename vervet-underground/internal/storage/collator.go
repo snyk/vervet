@@ -10,39 +10,52 @@ import (
 	"github.com/snyk/vervet"
 )
 
-// Collator is an aggregate of service specs and versions scraped by VU. It is responsible for collating versions and
+// Collator is an aggregate of service specs and uniqueVersions scraped by VU. It is responsible for collating uniqueVersions and
 // specs from all services VU manages.
 // This is the top level resource all storage classes should use for producing collated data.
 type Collator struct {
+	// revisions is a map of service name to the service's revisions.
 	revisions map[string]*ServiceRevisions
-	versions  map[vervet.Version]struct{}
+	// uniqueVersions is API versions of all services.
+	uniqueVersions vervet.VersionSlice
 }
 
 // NewCollator returns a new Collator instance
 func NewCollator() *Collator {
 	return &Collator{
-		revisions: make(map[string]*ServiceRevisions),
-		versions:  make(map[vervet.Version]struct{}),
+		revisions:      make(map[string]*ServiceRevisions),
+		uniqueVersions: make(vervet.VersionSlice, 0),
 	}
 }
 
 // Add a new service and revision to the Collator.
 func (c *Collator) Add(service string, revision ContentRevision) {
-	version := revision.Version
+	// Track service and its revision
 	if _, ok := c.revisions[service]; !ok {
 		c.revisions[service] = NewServiceRevisions()
 	}
 	c.revisions[service].Add(revision)
-	c.versions[version] = struct{}{}
+
+	// Track versions
+	version := revision.Version
+	var found bool
+	for _, v := range c.uniqueVersions{
+		if version == v {
+			found = true
+			break
+		}
+	}
+	if !found {
+		c.uniqueVersions = append(c.uniqueVersions, version)
+	}
 }
 
 // Collate processes added service revisions to collate unified versions and OpenAPI specs for each version.
 func (c Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T, error) {
-	versions := make(vervet.VersionSlice, 0)
 	specs := make(map[vervet.Version]openapi3.T)
+	sort.Sort(c.uniqueVersions)
 
-	for version := range c.versions {
-		versions = append(versions, version)
+	for _, version := range c.uniqueVersions {
 		revisions := make([]ContentRevision, 0)
 		for service, serviceRevisions := range c.revisions {
 			rev, err := serviceRevisions.ResolveLatestRevision(version)
@@ -64,8 +77,7 @@ func (c Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T,
 		}
 	}
 
-	sort.Sort(versions)
-	return versions, specs, nil
+	return c.uniqueVersions, specs, nil
 }
 
 func mergeRevisions(revisions []ContentRevision) (*openapi3.T, error) {
