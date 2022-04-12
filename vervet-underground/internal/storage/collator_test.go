@@ -72,7 +72,8 @@ func TestCollator_Collate(t *testing.T) {
 		Blob:    []byte(seriveBSpec),
 	})
 
-	versions, specs, _ := collator.Collate()
+	versions, specs, err := collator.Collate()
+	c.Assert(err, qt.IsNil)
 	c.Assert(len(versions), qt.Equals, 3)
 	c.Assert(versions[0], qt.Equals, v20220201_beta)
 	c.Assert(versions[1], qt.Equals, v20220301_ga)
@@ -109,7 +110,7 @@ func TestCollator_Collate_Conflict(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	collator.Add("service-b", storage.ContentRevision{
 		Version: v20210615_ga,
-		Blob:    []byte(spec2),
+		Blob:    spec2,
 	})
 
 	_, _, err = collator.Collate()

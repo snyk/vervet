@@ -19,7 +19,7 @@ type Collator struct {
 	uniqueVersions vervet.VersionSlice
 }
 
-// NewCollator returns a new Collator instance
+// NewCollator returns a new Collator instance.
 func NewCollator() *Collator {
 	return &Collator{
 		revisions:      make(map[string]*ServiceRevisions),

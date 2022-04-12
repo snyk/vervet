@@ -19,7 +19,7 @@ import (
 // versionedResourceMap map [service-name] Vervet Version slice array.
 type versionedResourceMap map[string]vervet.VersionSlice
 
-// mappedRevisionSpecs map [Sha digest of contents string] --> spec contents and metadata
+// mappedRevisionSpecs map [Sha digest of contents string] --> spec contents and metadata.
 type mappedRevisionSpecs map[storage.Digest]storage.ContentRevision
 
 // collatedVersionMappedSpecs Compiled aggregated spec for all services at that given version.
