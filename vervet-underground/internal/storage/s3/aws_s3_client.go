@@ -16,7 +16,7 @@ func getS3Client() *s3.Client {
 	awsEndpoint := "http://localstack:4566"
 	awsRegion := "us-east-1"
 
-	customResolver := aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
+	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 		if awsEndpoint != "" {
 			return aws.Endpoint{
 				PartitionID:   "aws",
@@ -31,7 +31,7 @@ func getS3Client() *s3.Client {
 
 	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(awsRegion),
-		config.WithEndpointResolver(customResolver),
+		config.WithEndpointResolverWithOptions(customResolver),
 	)
 	if err != nil {
 		log.Fatalf("Cannot load the AWS configs: %s", err)

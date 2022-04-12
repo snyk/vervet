@@ -16,19 +16,19 @@ import (
 	"vervet-underground/internal/storage"
 )
 
-// versionedResourceMap map [service-name] Vervet Version slice array
+// versionedResourceMap map [service-name] Vervet Version slice array.
 type versionedResourceMap map[string]vervet.VersionSlice
 
-// mappedRevisionSpecs map [Sha digest of contents string] --> spec contents and metadata
+// mappedRevisionSpecs map [Sha digest of contents string] --> spec contents and metadata.
 type mappedRevisionSpecs map[storage.Digest]storage.ContentRevision
 
-// collatedVersionMappedSpecs Compiled aggregated spec for all services at that given version
+// collatedVersionMappedSpecs Compiled aggregated spec for all services at that given version.
 type collatedVersionMappedSpecs map[vervet.Version]openapi3.T
 
-// versionMappedRevisionSpecs map[version-name][digest] --> spec contents and metadata
+// versionMappedRevisionSpecs map[version-name][digest] --> spec contents and metadata.
 type versionMappedRevisionSpecs map[string]mappedRevisionSpecs
 
-// serviceVersionMappedRevisionSpecs map[service-name][version-name][digest] --> spec contents and metadata
+// serviceVersionMappedRevisionSpecs map[service-name][version-name][digest] --> spec contents and metadata.
 type serviceVersionMappedRevisionSpecs map[string]versionMappedRevisionSpecs
 
 // Storage provides an in-memory implementation of Vervet Underground storage.
@@ -99,7 +99,7 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 
 	revisions, ok := s.serviceVersionMappedRevisionSpecs[name][version]
 	if ok {
-		if _, ok := revisions[digest]; ok {
+		if _, exist := revisions[digest]; exist {
 			return nil
 		}
 	} else {
@@ -134,7 +134,7 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 	return nil
 }
 
-// Versions implements scraper.Storage
+// Versions implements scraper.Storage.
 func (s *Storage) Versions() []string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -146,7 +146,7 @@ func (s *Storage) Versions() []string {
 	return stringVersions
 }
 
-// Version implements scraper.Storage
+// Version implements scraper.Storage.
 func (s *Storage) Version(version string) ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

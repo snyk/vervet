@@ -24,9 +24,12 @@ func main() {
 	var wait time.Duration
 	var scrapeInterval time.Duration
 	var configJson string
-	flag.DurationVar(&wait, "graceful-timeout", time.Second*15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
-	flag.DurationVar(&scrapeInterval, "scrape-interval", time.Minute, "the frequency at which scraping occurs  - e.g. 15s, 1m, 1h")
-	flag.StringVar(&configJson, "config-file", "config.default.json", "the configuration file holding target services and the host address to run server on")
+	flag.DurationVar(&wait, "graceful-timeout", time.Second*15,
+		"the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	flag.DurationVar(&scrapeInterval, "scrape-interval", time.Minute,
+		"the frequency at which scraping occurs  - e.g. 15s, 1m, 1h")
+	flag.StringVar(&configJson, "config-file", "config.default.json",
+		"the configuration file holding target services and the host address to run server on")
 
 	flag.Parse()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -56,16 +59,7 @@ func main() {
 	}
 
 	versionHandlers(router, sc)
-	router.Path("/").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		_, err := w.Write([]byte(fmt.Sprintf(`{"msg": "success", "services": %s}`, cfg.Services)))
-		if err != nil {
-			http.Error(w, "Failure to write response", http.StatusInternalServerError)
-			return
-		}
-	})
+	healthHandler(router, cfg.Services)
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf("%s:8080", cfg.Host),
@@ -81,9 +75,8 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				err := runScrape(wait, sc)
-				if err != nil {
-					logError(err)
+				if scrapeErr := runScrape(wait, sc); scrapeErr != nil {
+					logError(scrapeErr)
 				}
 			case <-quit:
 				ticker.Stop()
@@ -91,10 +84,11 @@ func main() {
 			}
 		}
 	}()
+
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
 		log.Info().Msg(fmt.Sprintf("I'm starting my server on %s:8080", cfg.Host))
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if srvErr := srv.ListenAndServe(); srvErr != nil && errors.Is(srvErr, http.ErrServerClosed) {
 			logError(err)
 			os.Exit(1)
 		}
@@ -132,8 +126,7 @@ func main() {
 func runScrape(wait time.Duration, sc *scraper.Scraper) error {
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
-	scraperErr := sc.Run(ctx)
-	if scraperErr != nil {
+	if scraperErr := sc.Run(ctx); scraperErr != nil {
 		return scraperErr
 	}
 	log.Info().Msgf("scraper successfully completed run at %s", time.Now().UTC().String())
@@ -147,6 +140,20 @@ func logError(err error) {
 		Err(err).
 		Str("cause", fmt.Sprintf("%+v", errors.Cause(err))).
 		Msg("UnhandledException")
+}
+
+func healthHandler(router *mux.Router, services []string) {
+	router.Path("/").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1 * time.Second)
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		encoder := json.NewEncoder(w)
+		encodeErr := encoder.Encode(map[string]interface{}{"msg": "success", "services": services})
+		if encodeErr != nil {
+			http.Error(w, "Failure to write response", http.StatusInternalServerError)
+			return
+		}
+	})
 }
 
 func versionHandlers(router *mux.Router, sc *scraper.Scraper) {

@@ -32,7 +32,7 @@ type ServiceRevisions struct {
 	Versions vervet.VersionSlice
 }
 
-// NewServiceRevisions returns a new instance of ServiceRevisions
+// NewServiceRevisions returns a new instance of ServiceRevisions.
 func NewServiceRevisions() *ServiceRevisions {
 	return &ServiceRevisions{
 		Revisions: make(map[vervet.Version][]ContentRevision),

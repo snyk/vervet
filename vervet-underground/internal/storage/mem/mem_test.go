@@ -73,7 +73,6 @@ func TestCollateVersions(t *testing.T) {
 	c := qt.New(t)
 	s := New()
 
-	const digest = "sha256:mWpHX0/hIZS9mVd8eobfHWm6OkUsKZLiqd6ShRnNzA4="
 	err := s.NotifyVersion("petfood", "2021-09-16", []byte(spec), t0)
 	c.Assert(err, qt.IsNil)
 

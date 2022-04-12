@@ -62,13 +62,13 @@ jobs:
 
   lint-vu:
     docker:
-      - image: golangci/golangci-lint:v1.42.1
+      - image: golangci/golangci-lint:v1.43.0
     steps:
       - checkout
       - attach_workspace:
-          at: ~/vervet/vervet-underground
+          at: ~/vervet
       - run:
-          command: golangci-lint run -v ./...
+          command: cd vervet-underground && golangci-lint run -v ./...
 
   build-vu:
     <<: *vu_metadata
@@ -77,7 +77,7 @@ jobs:
           path: ~/vervet
       - run:
           name: build go vervet-undergound
-          command: make build
+          command: cd vervet-underground && make build
 
   publish-vu:
     <<: *vu_metadata

@@ -73,5 +73,4 @@ func TestServiceRevisions_ResolveLatestRevision(t *testing.T) {
 			c.Assert(revision.Digest, qt.Equals, tc.expectedDigest)
 		})
 	}
-
 }
