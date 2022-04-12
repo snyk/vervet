@@ -3,7 +3,6 @@
 package s3
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -127,36 +126,4 @@ func (s3Client *AwsS3Client) CreateBucket() error {
 		}
 	}
 	return nil
-}
-
-func main() {
-	localstackAccessKey := "test"
-	localstackSecretKey := "test"
-	localstackSessionKey := ""
-	awsEndpoint := "http://localhost:4566"
-	awsRegion := "us-east-1"
-	cfg := &AwsConfig{
-		awsRegion,
-		awsEndpoint,
-		bucketName,
-		StaticKeyCredentials{
-			localstackAccessKey,
-			localstackSecretKey,
-			localstackSessionKey,
-		},
-	}
-
-	client := NewClient(cfg)
-	err := client.CreateBucket()
-	if err != nil {
-		fmt.Printf("Error creating bucket %v", err)
-		return
-	}
-
-	data := []byte("this is some data stored as a byte slice in Go Lang!")
-	reader := bytes.NewReader(data)
-	obj := client.PutObject("dummy", reader)
-	fmt.Printf("Resulting putObject response: %v", obj)
-
-	return
 }

@@ -14,11 +14,30 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const (
+	localstackAccessKey  = "test"
+	localstackSecretKey  = "test"
+	localstackSessionKey = "test"
+	awsEndpoint          = "http://localhost:4566"
+	awsRegion            = "us-east-1"
+)
+
+var cfg = &AwsConfig{
+	awsRegion,
+	awsEndpoint,
+	bucketName,
+	StaticKeyCredentials{
+		localstackAccessKey,
+		localstackSecretKey,
+		localstackSessionKey,
+	},
+}
+
 func TestPutObject(t *testing.T) {
 	// Arrange
 	c := qt.New(t)
 	if isCIEnabled(t) {
-		c.Assert(true, qt.IsTrue)
+		c.Assert(true, qt.IsTrue, "skipping in CI")
 		return
 	}
 
@@ -51,16 +70,7 @@ func TestPutObject(t *testing.T) {
 	//	},
 	//}
 
-	client := NewClient(&AwsConfig{
-		AwsRegion:   "us-east-1",
-		AwsEndpoint: "http://localstack:4566",
-		BucketName:  bucketName,
-		Credentials: StaticKeyCredentials{
-			AccessKey:  "test",
-			SecretKey:  "test",
-			SessionKey: "test",
-		},
-	})
+	client := NewClient(cfg)
 	err = client.CreateBucket()
 	c.Assert(err, qt.IsNil)
 
