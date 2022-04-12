@@ -37,7 +37,7 @@ func TestPutObject(t *testing.T) {
 	// Arrange
 	c := qt.New(t)
 	if isCIEnabled(t) {
-		c.Assert(true, qt.IsTrue, "skipping in CI")
+		c.Assert(true, qt.IsTrue)
 		return
 	}
 
