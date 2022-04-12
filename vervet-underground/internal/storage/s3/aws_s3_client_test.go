@@ -51,7 +51,17 @@ func TestPutObject(t *testing.T) {
 	//	},
 	//}
 
-	err = CreateBucket()
+	client := NewClient(&AwsConfig{
+		AwsRegion:   "us-east-1",
+		AwsEndpoint: "http://localstack:4566",
+		BucketName:  bucketName,
+		Credentials: StaticKeyCredentials{
+			AccessKey:  "test",
+			SecretKey:  "test",
+			SessionKey: "test",
+		},
+	})
+	err = client.CreateBucket()
 	c.Assert(err, qt.IsNil)
 
 	data := []byte("this is some data stored as a byte slice in Go Lang!")
@@ -62,7 +72,7 @@ func TestPutObject(t *testing.T) {
 	//for _, tc := range testCases {
 	//	t.Run(tc.name, func(t *testing.T) {
 	//		// Act
-	obj := PutObject("dummy", reader)
+	obj := client.PutObject("dummy", reader)
 
 	// Assert
 	c.Assert(obj, qt.IsNotNil)
