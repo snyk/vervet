@@ -5,13 +5,14 @@ package scraper
 import (
 	"context"
 	"encoding/json"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/storage"
