@@ -2,13 +2,19 @@
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry 2021-06-01~experimental
+  name: Registry_2021-06-01_experimental
+  title: Registry 2021-06-01~experimental
   annotations:
-    snyk.io/vervet/generated-by: vervet
-    snyk.io/vervet/version: 2021-06-01~experimental
-    snyk.io/vervet/version/date: "2021-06-01"
-    snyk.io/vervet/version/lifecycle: sunset
-    snyk.io/vervet/version/stability: experimental
+    api.snyk.io/generated-by: vervet
+  labels:
+    api.snyk.io/version: 2021-06-01~experimental
+    api.snyk.io/version-date: "2021-06-01"
+    api.snyk.io/version-lifecycle: sunset
+    api.snyk.io/version-stability: experimental
+  tags:
+    - 2021-06
+    - experimental
+    - sunset
 spec:
   type: openapi
   lifecycle: sunset
@@ -20,13 +26,19 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry 2021-06-04~experimental
+  name: Registry_2021-06-04_experimental
+  title: Registry 2021-06-04~experimental
   annotations:
-    snyk.io/vervet/generated-by: vervet
-    snyk.io/vervet/version: 2021-06-04~experimental
-    snyk.io/vervet/version/date: "2021-06-04"
-    snyk.io/vervet/version/lifecycle: sunset
-    snyk.io/vervet/version/stability: experimental
+    api.snyk.io/generated-by: vervet
+  labels:
+    api.snyk.io/version: 2021-06-04~experimental
+    api.snyk.io/version-date: "2021-06-04"
+    api.snyk.io/version-lifecycle: sunset
+    api.snyk.io/version-stability: experimental
+  tags:
+    - 2021-06
+    - experimental
+    - sunset
 spec:
   type: openapi
   lifecycle: sunset
@@ -38,13 +50,19 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry 2021-06-07~experimental
+  name: Registry_2021-06-07_experimental
+  title: Registry 2021-06-07~experimental
   annotations:
-    snyk.io/vervet/generated-by: vervet
-    snyk.io/vervet/version: 2021-06-07~experimental
-    snyk.io/vervet/version/date: "2021-06-07"
-    snyk.io/vervet/version/lifecycle: sunset
-    snyk.io/vervet/version/stability: experimental
+    api.snyk.io/generated-by: vervet
+  labels:
+    api.snyk.io/version: 2021-06-07~experimental
+    api.snyk.io/version-date: "2021-06-07"
+    api.snyk.io/version-lifecycle: sunset
+    api.snyk.io/version-stability: experimental
+  tags:
+    - 2021-06
+    - experimental
+    - sunset
 spec:
   type: openapi
   lifecycle: sunset
@@ -56,13 +74,19 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry 2021-06-13~beta
+  name: Registry_2021-06-13_beta
+  title: Registry 2021-06-13~beta
   annotations:
-    snyk.io/vervet/generated-by: vervet
-    snyk.io/vervet/version: 2021-06-13~beta
-    snyk.io/vervet/version/date: "2021-06-13"
-    snyk.io/vervet/version/lifecycle: released
-    snyk.io/vervet/version/stability: beta
+    api.snyk.io/generated-by: vervet
+  labels:
+    api.snyk.io/version: 2021-06-13~beta
+    api.snyk.io/version-date: "2021-06-13"
+    api.snyk.io/version-lifecycle: released
+    api.snyk.io/version-stability: beta
+  tags:
+    - 2021-06
+    - beta
+    - released
 spec:
   type: openapi
   lifecycle: beta
@@ -74,13 +98,19 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry 2021-06-13~experimental
+  name: Registry_2021-06-13_experimental
+  title: Registry 2021-06-13~experimental
   annotations:
-    snyk.io/vervet/generated-by: vervet
-    snyk.io/vervet/version: 2021-06-13~experimental
-    snyk.io/vervet/version/date: "2021-06-13"
-    snyk.io/vervet/version/lifecycle: sunset
-    snyk.io/vervet/version/stability: experimental
+    api.snyk.io/generated-by: vervet
+  labels:
+    api.snyk.io/version: 2021-06-13~experimental
+    api.snyk.io/version-date: "2021-06-13"
+    api.snyk.io/version-lifecycle: sunset
+    api.snyk.io/version-stability: experimental
+  tags:
+    - 2021-06
+    - experimental
+    - sunset
 spec:
   type: openapi
   lifecycle: sunset
@@ -92,13 +122,19 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry 2021-08-20~beta
+  name: Registry_2021-08-20_beta
+  title: Registry 2021-08-20~beta
   annotations:
-    snyk.io/vervet/generated-by: vervet
-    snyk.io/vervet/version: 2021-08-20~beta
-    snyk.io/vervet/version/date: "2021-08-20"
-    snyk.io/vervet/version/lifecycle: released
-    snyk.io/vervet/version/stability: beta
+    api.snyk.io/generated-by: vervet
+  labels:
+    api.snyk.io/version: 2021-08-20~beta
+    api.snyk.io/version-date: "2021-08-20"
+    api.snyk.io/version-lifecycle: released
+    api.snyk.io/version-stability: beta
+  tags:
+    - 2021-08
+    - beta
+    - released
 spec:
   type: openapi
   lifecycle: beta
@@ -110,13 +146,19 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry 2021-08-20~experimental
+  name: Registry_2021-08-20_experimental
+  title: Registry 2021-08-20~experimental
   annotations:
-    snyk.io/vervet/generated-by: vervet
-    snyk.io/vervet/version: 2021-08-20~experimental
-    snyk.io/vervet/version/date: "2021-08-20"
-    snyk.io/vervet/version/lifecycle: sunset
-    snyk.io/vervet/version/stability: experimental
+    api.snyk.io/generated-by: vervet
+  labels:
+    api.snyk.io/version: 2021-08-20~experimental
+    api.snyk.io/version-date: "2021-08-20"
+    api.snyk.io/version-lifecycle: sunset
+    api.snyk.io/version-stability: experimental
+  tags:
+    - 2021-08
+    - experimental
+    - sunset
 spec:
   type: openapi
   lifecycle: sunset

@@ -10,6 +10,26 @@ import (
 	"github.com/snyk/vervet/v4/testdata"
 )
 
+func TestBackstageName(t *testing.T) {
+	c := qt.New(t)
+	tests := []struct {
+		in, out string
+	}{{
+		"foo bar", "foo-bar",
+	}, {
+		"foo_bar", "foo-bar",
+	}, {
+		"foo-bar", "foo-bar",
+	}, {
+		"foo~bar", "foobar",
+	}, {
+		"Foo1Bar_Baz@#$%^&*()", "Foo1Bar-Baz",
+	}}
+	for _, test := range tests {
+		c.Check(test.out, qt.Equals, toBackstageName(test.in))
+	}
+}
+
 func TestRoundTripCatalog(t *testing.T) {
 	catalogSrc := `
 # Important user-authored comment
@@ -32,11 +52,12 @@ kind: API
 metadata:
   name: vervet-api
   annotations:
-    snyk.io/vervet/generated-by: vervet
-    snyk.io/vervet/version: 2021-06-04~experimental
-    snyk.io/vervet/version/date: "2021-06-04"
-    snyk.io/vervet/version/lifecycle: sunset
-    snyk.io/vervet/version/stability: experimental
+    api.snyk.io/generated-by: vervet
+  labels:
+    api.snyk.io/version: 2021-06-04~experimental
+    api.snyk.io/version-date: "2021-06-04"
+    api.snyk.io/version-lifecycle: sunset
+    api.snyk.io/version-stability: experimental
 `[1:]
 	c := qt.New(t)
 	catalog, err := LoadCatalogInfo(bytes.NewBufferString(catalogSrc + vervetAPI))
@@ -102,13 +123,13 @@ func TestLoadVersionsNoApis(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(saveOutput.String(), qt.Equals, catalogSrc+`
   providesApis:
-    - Registry 2021-06-01~experimental
-    - Registry 2021-06-04~experimental
-    - Registry 2021-06-07~experimental
-    - Registry 2021-06-13~beta
-    - Registry 2021-06-13~experimental
-    - Registry 2021-08-20~beta
-    - Registry 2021-08-20~experimental
+    - Registry_2021-06-01_experimental
+    - Registry_2021-06-04_experimental
+    - Registry_2021-06-07_experimental
+    - Registry_2021-06-13_beta
+    - Registry_2021-06-13_experimental
+    - Registry_2021-08-20_beta
+    - Registry_2021-08-20_experimental
 ---
 `[1:]+string(vervetAPIs))
 }
@@ -119,6 +140,7 @@ func TestLoadVersionsSomeApis(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	catalog, err := LoadCatalogInfo(bytes.NewBufferString(catalogSrc + `
   providesApis:
+    - someOtherApi
     - someOtherApi
 `[1:]))
 	c.Assert(err, qt.IsNil)
@@ -131,14 +153,14 @@ func TestLoadVersionsSomeApis(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(saveOutput.String(), qt.Equals, catalogSrc+`
   providesApis:
+    - Registry_2021-06-01_experimental
+    - Registry_2021-06-04_experimental
+    - Registry_2021-06-07_experimental
+    - Registry_2021-06-13_beta
+    - Registry_2021-06-13_experimental
+    - Registry_2021-08-20_beta
+    - Registry_2021-08-20_experimental
     - someOtherApi
-    - Registry 2021-06-01~experimental
-    - Registry 2021-06-04~experimental
-    - Registry 2021-06-07~experimental
-    - Registry 2021-06-13~beta
-    - Registry 2021-06-13~experimental
-    - Registry 2021-08-20~beta
-    - Registry 2021-08-20~experimental
 ---
 `[1:]+string(vervetAPIs))
 }

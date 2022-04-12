@@ -9,6 +9,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/vmware-labs/yaml-jsonpath/pkg/yamlpath"
@@ -19,11 +21,11 @@ import (
 
 const (
 	backstageVersion   = "backstage.io/v1alpha1"
-	snykApiVersion     = "snyk.io/vervet/version"
-	snykApiVersionDate = "snyk.io/vervet/version/date"
-	snykApiStability   = "snyk.io/vervet/version/stability"
-	snykApiLifecycle   = "snyk.io/vervet/version/lifecycle"
-	snykApiGeneratedBy = "snyk.io/vervet/generated-by"
+	snykApiVersion     = "api.snyk.io/version"
+	snykApiVersionDate = "api.snyk.io/version-date"
+	snykApiStability   = "api.snyk.io/version-stability"
+	snykApiLifecycle   = "api.snyk.io/version-lifecycle"
+	snykApiGeneratedBy = "api.snyk.io/generated-by"
 )
 
 // Component represents a Backstage Component entity document.
@@ -53,9 +55,11 @@ type API struct {
 type Metadata struct {
 	Name        string            `json:"name,omitempty" yaml:"name,omitempty"`
 	Namespace   string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Title       string            `json:"title,omitempty" yaml:"title,omitempty"`
 	Description string            `json:"description,omitempty" yaml:"description,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 	Labels      map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Tags        []string          `json:"tags,omitempty" yaml:"tags,omitempty"`
 }
 
 // APISpec represents a Backstage API entity spec.
@@ -90,6 +94,7 @@ func (c *CatalogInfo) Save(w io.Writer) error {
 		docs = append(docs, c.service)
 	}
 	docs = append(docs, c.components...)
+	sort.Sort(vervetAPIs(c.VervetAPIs))
 	for _, vervetAPI := range c.VervetAPIs {
 		var doc yaml.Node
 		if err := doc.Encode(vervetAPI); err != nil {
@@ -105,6 +110,17 @@ func (c *CatalogInfo) Save(w io.Writer) error {
 	}
 	return nil
 }
+
+type vervetAPIs []*API
+
+// Len implements sort.Interface.
+func (v vervetAPIs) Len() int { return len(v) }
+
+// Less implements sort.Interface.
+func (v vervetAPIs) Less(i, j int) bool { return v[i].Metadata.Name < v[j].Metadata.Name }
+
+// Swap implements sort.Interface.
+func (v vervetAPIs) Swap(i, j int) { v[i], v[j] = v[j], v[i] }
 
 // LoadCatalogInfo loads a catalog info from a reader.
 func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
@@ -176,7 +192,12 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string) error {
 	if err != nil {
 		return err
 	}
-	apiNames := c.serviceComponent.Spec.ProvidesAPIs
+
+	// Determine API names, combining existing + generated API entities.
+	apiUniqueNames := map[string]struct{}{}
+	for _, name := range c.serviceComponent.Spec.ProvidesAPIs {
+		apiUniqueNames[name] = struct{}{}
+	}
 	for _, specFile := range specFiles {
 		doc, err := vervet.NewDocumentFile(filepath.Join(versions, specFile))
 		if err != nil {
@@ -187,8 +208,16 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string) error {
 			return err
 		}
 		c.VervetAPIs = append(c.VervetAPIs, api)
-		apiNames = append(apiNames, api.Metadata.Name)
+		apiUniqueNames[api.Metadata.Name] = struct{}{}
 	}
+	var apiNames []string
+	for name := range apiUniqueNames {
+		apiNames = append(apiNames, name)
+	}
+	sort.Strings(apiNames)
+
+	// Update the existing component providesApis with combined list of API
+	// names.
 	specPath, err := yamlpath.NewPath("$..spec")
 	if err != nil {
 		return err
@@ -244,14 +273,22 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string) (*API, error)
 		APIVersion: backstageVersion,
 		Kind:       "API",
 		Metadata: Metadata{
-			Name:        doc.Info.Title + " " + version.String(),
+			Name:        toBackstageName(doc.Info.Title) + "_" + version.DateString() + "_" + version.Stability.String(),
+			Title:       doc.Info.Title + " " + version.String(),
 			Description: doc.Info.Description,
-			Annotations: map[string]string{
-				snykApiGeneratedBy: "vervet",
+			Labels: map[string]string{
 				snykApiVersion:     version.String(),
 				snykApiVersionDate: version.DateString(),
 				snykApiStability:   version.Stability.String(),
 				snykApiLifecycle:   lifecycle.String(),
+			},
+			Tags: []string{
+				version.Date.Format("2006-01"),
+				version.Stability.String(),
+				lifecycle.String(),
+			},
+			Annotations: map[string]string{
+				snykApiGeneratedBy: "vervet",
 			},
 		},
 		Spec: APISpec{
@@ -263,6 +300,24 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string) (*API, error)
 			},
 		},
 	}, nil
+}
+
+func toBackstageName(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r >= '0' && r <= '9' {
+			return r
+		}
+		if r >= 'A' && r <= 'Z' {
+			return r
+		}
+		if r >= 'a' && r <= 'z' {
+			return r
+		}
+		if r == ' ' || r == '_' || r == '-' {
+			return '-'
+		}
+		return -1
+	}, strings.TrimSpace(s))
 }
 
 // isServiceComponent returns whether the YAML node is a Backstage component
