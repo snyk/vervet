@@ -5,6 +5,7 @@ package scraper
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -13,6 +14,9 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/storage"
@@ -80,7 +84,11 @@ func New(cfg *config.ServerConfig, storage Storage, options ...Option) (*Scraper
 }
 
 func setupScraper(s *Scraper, cfg *config.ServerConfig, options []Option) error {
-	s.services = make([]service, len(cfg.Services))
+	services, err := getServices(cfg)
+	if err != nil {
+		return errors.Wrapf(err, "failed getting services")
+	}
+	s.services = make([]service, len(services))
 	for i := range cfg.Services {
 		u, err := url.Parse(cfg.Services[i] + "/openapi")
 		if err != nil {
@@ -279,4 +287,37 @@ func (s *Scraper) Versions() []string {
 
 func (s *Scraper) Version(version string) ([]byte, error) {
 	return s.storage.Version(version)
+}
+
+func getServices(cfg *config.ServerConfig) ([]string, error) {
+	config, err := rest.InClusterConfig()
+	// TODO: fix this up. Fails locally - but runs fine in a cluster.
+	if err != nil {
+		return cfg.Services, nil
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Kubernetes.ClientSet from configuration")
+	}
+	// TODO: change to something more generic
+	matchLabel := map[string]string{"app.kubernetes.io/instance": "registry"}
+	labelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
+		MatchLabels: matchLabel,
+	})
+	/*
+		TODO:
+		 1. context sharing
+		 2. loop over namespaces?
+	*/
+	services, err := clientset.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get services")
+	}
+	var serviceNames []string
+	for _, service := range services.Items {
+		serviceNames = append(serviceNames, fmt.Sprintf("http://%s", service.Name))
+	}
+	return serviceNames, nil
 }
