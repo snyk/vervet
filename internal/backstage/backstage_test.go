@@ -54,7 +54,6 @@ metadata:
   annotations:
     api.snyk.io/generated-by: vervet
   labels:
-    api.snyk.io/version: 2021-06-04~experimental
     api.snyk.io/version-date: "2021-06-04"
     api.snyk.io/version-lifecycle: sunset
     api.snyk.io/version-stability: experimental
