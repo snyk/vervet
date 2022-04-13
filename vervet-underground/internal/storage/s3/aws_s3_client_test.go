@@ -47,29 +47,6 @@ func TestPutObject(t *testing.T) {
 	defer teardownTestContainer(ctx, t, ctr)
 	c.Assert(err, qt.IsNil)
 
-	//testCases := []struct {
-	//	name        string
-	//	t           string
-	//	ID          string
-	//	expectedObj []byte
-	//	expectedOK  bool
-	//}{
-	//	{
-	//		name:        "non-existent entry",
-	//		t:           "undefined",
-	//		ID:          "0000",
-	//		expectedObj: nil,
-	//		expectedOK:  false,
-	//	},
-	//	{
-	//		name:        "existent entry",
-	//		t:           "repo",
-	//		ID:          "1111",
-	//		expectedObj: []byte(`{"key1":"val1"}`),
-	//		expectedOK:  true,
-	//	},
-	//}
-
 	client := NewClient(cfg)
 	err = client.CreateBucket()
 	c.Assert(err, qt.IsNil)
@@ -78,17 +55,11 @@ func TestPutObject(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader(data)
-	//
-	//for _, tc := range testCases {
-	//	t.Run(tc.name, func(t *testing.T) {
-	//		// Act
 	obj := client.PutObject("dummy", reader)
 
 	// Assert
 	c.Assert(obj, qt.IsNotNil)
 	c.Assert(obj.ETag, qt.IsNotNil)
-	//	})
-	//}
 }
 
 func isCIEnabled(t *testing.T) bool {
@@ -115,12 +86,6 @@ func setupTestContainer(ctx context.Context, t *testing.T) (ctr testcontainers.C
 		"MAIN_CONTAINER_NAME": "localstack",
 		"EDGE_PORT":           "4566",
 	}
-
-	//workingDir, err := os.Getwd()
-	//if err != nil {
-	//	return ctr, fmt.Errorf("failed to get current working directory: %w", err)
-	//}
-	//mountPath := workingDir + "/tmp"
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

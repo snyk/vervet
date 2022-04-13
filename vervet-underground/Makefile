@@ -2,10 +2,15 @@ GOMOD=go mod
 GOBUILD=go build
 GOTEST=go test
 
-.PHONY: run fmt lint tidy test test-coverage
+.PHONY: run fmt lint tidy test test-coverage clean
 
+.PHONY: fmt
 fmt:
 	go fmt ./...
+
+.PHONY: clean
+clean:
+	rm -f server && go clean
 
 .PHONY: lint
 lint:
