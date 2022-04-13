@@ -19,11 +19,11 @@ const (
 	awsRegion            = "us-east-1"
 )
 
-var cfg = &s3.Config{
-	AwsRegion:   awsRegion,
-	AwsEndpoint: awsEndpoint,
-	BucketName:  storage.BucketName,
-	Credentials: s3.StaticKeyCredentials{
+var cfg = &storage.Config{
+	Region:     awsRegion,
+	Endpoint:   awsEndpoint,
+	BucketName: storage.BucketName,
+	Credentials: storage.StaticKeyCredentials{
 		AccessKey:  localstackAccessKey,
 		SecretKey:  localstackSecretKey,
 		SessionKey: localstackSessionKey,
@@ -51,7 +51,8 @@ func TestPutObject(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader(data)
-	obj := client.PutObject("dummy", reader)
+	obj, err := client.PutObject("dummy", reader)
+	c.Assert(err, qt.IsNil)
 
 	// Assert
 	c.Assert(obj, qt.IsNotNil)

@@ -16,24 +16,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-type StaticKeyCredentials struct {
-	AccessKey  string
-	SecretKey  string
-	SessionKey string
-}
-
-type Config struct {
-	AwsRegion   string
-	AwsEndpoint string
-	BucketName  string
-	Credentials StaticKeyCredentials
-}
-
 type Client struct {
 	c *s3.Client
 }
 
-func NewClient(awsCfg *Config) *Client {
+func NewClient(awsCfg *storage.Config) *Client {
 	/*
 		TODO: Really should come from secrets volume
 			  awsRegion = os.Getenv("AWS_REGION")
@@ -47,11 +34,11 @@ func NewClient(awsCfg *Config) *Client {
 	}
 
 	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		if awsCfg.AwsEndpoint != "" {
+		if awsCfg.Endpoint != "" {
 			return aws.Endpoint{
 				PartitionID:   "aws",
-				URL:           awsCfg.AwsEndpoint,
-				SigningRegion: awsCfg.AwsRegion,
+				URL:           awsCfg.Endpoint,
+				SigningRegion: awsCfg.Region,
 			}, nil
 		}
 
@@ -60,7 +47,7 @@ func NewClient(awsCfg *Config) *Client {
 	})
 
 	awsCfgLoader, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(awsCfg.AwsRegion),
+		config.WithRegion(awsCfg.Region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 			awsCfg.Credentials.AccessKey,
 			awsCfg.Credentials.SecretKey,
@@ -79,7 +66,7 @@ func NewClient(awsCfg *Config) *Client {
 }
 
 // PutObject nice wrapper around the S3 PutObject request.
-func (s3Client *Client) PutObject(key string, reader io.Reader) *s3.PutObjectOutput {
+func (s3Client *Client) PutObject(key string, reader io.Reader) (*s3.PutObjectOutput, error) {
 	p := s3.PutObjectInput{
 		Bucket: aws.String(storage.BucketName),
 		Key:    aws.String(key),
@@ -90,10 +77,31 @@ func (s3Client *Client) PutObject(key string, reader io.Reader) *s3.PutObjectOut
 	r, err := s3Client.c.PutObject(context.Background(), &p)
 	log.Printf("S3 PutObject response: %+v", r)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return r
+	return r, nil
+}
+
+// GetObject nice wrapper around the S3 GetObject request.
+func (s3Client *Client) GetObject(key string) ([]byte, error) {
+
+	p := s3.GetObjectInput{
+		Bucket: aws.String(storage.BucketName),
+		Key:    aws.String(key),
+	}
+
+	r, err := s3Client.c.GetObject(context.Background(), &p)
+	log.Printf("S3 GetObject response: %+v", r)
+	if err != nil {
+		return nil, err
+	}
+
+	bytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
 }
 
 // CreateBucket idempotently creates an S3 bucket for VU.

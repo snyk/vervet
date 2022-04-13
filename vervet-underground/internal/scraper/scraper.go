@@ -52,7 +52,7 @@ type Storage interface {
 // Scraper gets OpenAPI specs from a collection of services and updates storage
 // accordingly.
 type Scraper struct {
-	storage  *mem.Storage
+	storage  *mem.Aggregate
 	services []service
 	http     *http.Client
 	timeNow  func() time.Time
@@ -67,7 +67,7 @@ type service struct {
 type Option func(*Scraper) error
 
 // New returns a new Scraper instance.
-func New(cfg *config.ServerConfig, store *mem.Storage, options ...Option) (*Scraper, error) {
+func New(cfg *config.ServerConfig, store *mem.Aggregate, options ...Option) (*Scraper, error) {
 	s := &Scraper{
 		storage: store,
 		http:    &http.Client{Timeout: time.Second * 15},
