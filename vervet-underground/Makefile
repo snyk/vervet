@@ -2,7 +2,7 @@ GOMOD=go mod
 GOBUILD=go build
 GOTEST=go test
 
-.PHONY: run fmt lint tidy test test-coverage clean
+.PHONY: run fmt lint tidy test test-coverage clean test-localstack
 
 .PHONY: fmt
 fmt:
@@ -48,3 +48,9 @@ test-coverage:
 start:
 	go run server.go
 
+.PHONY: test-localstack
+test-localstack:
+	docker-compose up --no-start localstack
+	docker-compose start localstack
+	go test ./... -count=1 -race
+	docker-compose down

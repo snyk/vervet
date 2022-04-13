@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"vervet-underground/internal/storage"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -21,20 +22,18 @@ type StaticKeyCredentials struct {
 	SessionKey string
 }
 
-type AwsConfig struct {
+type Config struct {
 	AwsRegion   string
 	AwsEndpoint string
 	BucketName  string
 	Credentials StaticKeyCredentials
 }
 
-type AwsS3Client struct {
+type Client struct {
 	c *s3.Client
 }
 
-const bucketName = "vervet-underground-specs"
-
-func NewClient(awsCfg *AwsConfig) *AwsS3Client {
+func NewClient(awsCfg *Config) *Client {
 	/*
 		TODO: Really should come from secrets volume
 			  awsRegion = os.Getenv("AWS_REGION")
@@ -76,13 +75,13 @@ func NewClient(awsCfg *AwsConfig) *AwsS3Client {
 	s3Client := s3.NewFromConfig(awsCfgLoader, func(o *s3.Options) {
 		o.UsePathStyle = true
 	})
-	return &AwsS3Client{s3Client}
+	return &Client{s3Client}
 }
 
 // PutObject nice wrapper around the S3 PutObject request.
-func (s3Client *AwsS3Client) PutObject(key string, reader io.Reader) *s3.PutObjectOutput {
+func (s3Client *Client) PutObject(key string, reader io.Reader) *s3.PutObjectOutput {
 	p := s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
+		Bucket: aws.String(storage.BucketName),
 		Key:    aws.String(key),
 		ACL:    types.ObjectCannedACLPublicRead,
 		Body:   reader,
@@ -98,9 +97,9 @@ func (s3Client *AwsS3Client) PutObject(key string, reader io.Reader) *s3.PutObje
 }
 
 // CreateBucket idempotently creates an S3 bucket for VU.
-func (s3Client *AwsS3Client) CreateBucket() error {
+func (s3Client *Client) CreateBucket() error {
 	create := &s3.CreateBucketInput{
-		Bucket: aws.String(bucketName),
+		Bucket: aws.String(storage.BucketName),
 	}
 
 	bucketOutput, err := s3Client.c.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
@@ -110,7 +109,7 @@ func (s3Client *AwsS3Client) CreateBucket() error {
 
 	exists := false
 	for _, bucket := range bucketOutput.Buckets {
-		if *bucket.Name == bucketName {
+		if *bucket.Name == storage.BucketName {
 			exists = true
 			break
 		}
