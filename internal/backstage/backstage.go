@@ -21,7 +21,6 @@ import (
 
 const (
 	backstageVersion   = "backstage.io/v1alpha1"
-	snykApiVersion     = "api.snyk.io/version"
 	snykApiVersionDate = "api.snyk.io/version-date"
 	snykApiStability   = "api.snyk.io/version-stability"
 	snykApiLifecycle   = "api.snyk.io/version-lifecycle"
@@ -274,10 +273,9 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string) (*API, error)
 		Kind:       "API",
 		Metadata: Metadata{
 			Name:        toBackstageName(doc.Info.Title) + "_" + version.DateString() + "_" + version.Stability.String(),
-			Title:       doc.Info.Title + " " + version.String(),
+			Title:       doc.Info.Title + " " + version.DateString() + " " + version.Stability.String(),
 			Description: doc.Info.Description,
 			Labels: map[string]string{
-				snykApiVersion:     version.String(),
 				snykApiVersionDate: version.DateString(),
 				snykApiStability:   version.Stability.String(),
 				snykApiLifecycle:   lifecycle.String(),
