@@ -77,7 +77,7 @@ jobs:
           path: ~/vervet
       - run:
           name: build go vervet-undergound
-          command: cd vervet-underground && make build
+          command: make build
 
   publish-vu:
     <<: *vu_metadata
