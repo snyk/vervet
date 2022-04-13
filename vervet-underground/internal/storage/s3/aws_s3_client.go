@@ -79,7 +79,7 @@ func NewClient(awsCfg *AwsConfig) *AwsS3Client {
 	return &AwsS3Client{s3Client}
 }
 
-// PutObject nice wrapper around the S3 PutObject request
+// PutObject nice wrapper around the S3 PutObject request.
 func (s3Client *AwsS3Client) PutObject(key string, reader io.Reader) *s3.PutObjectOutput {
 	p := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
