@@ -69,7 +69,8 @@ func (c Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T,
 		if len(revisions) > 0 {
 			spec, err := mergeRevisions(revisions)
 			if err != nil {
-				log.Error().Err(err).Msgf("could not merge revision")
+				log.Error().Err(err).Msgf("could not merge revision for version %s", version)
+				collatorMergeError.WithLabelValues(version.String()).Inc()
 				return nil, nil, err
 			}
 			specs[version] = *spec

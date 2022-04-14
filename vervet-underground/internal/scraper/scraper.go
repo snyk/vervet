@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/multierr"
 
 	"vervet-underground/config"
@@ -37,9 +38,14 @@ type Option func(*Scraper) error
 
 // New returns a new Scraper instance.
 func New(cfg *config.ServerConfig, store storage.Storage, options ...Option) (*Scraper, error) {
+	client := &http.Client{
+		Timeout:   time.Second * 15,
+		Transport: DurationTransport(http.DefaultTransport),
+	}
+
 	s := &Scraper{
 		storage: store,
-		http:    &http.Client{Timeout: time.Second * 15},
+		http:    client,
 		timeNow: time.Now,
 	}
 	err := setupScraper(s, cfg, options)
@@ -93,15 +99,30 @@ func Clock(c func() time.Time) Option {
 
 // Run executes the OpenAPI version scraping on all configured services.
 func (s *Scraper) Run(ctx context.Context) error {
+	var errs error
 	scrapeTime := s.timeNow().UTC()
+	defer func() {
+		metrics.runDuration.Observe(time.Since(scrapeTime).Seconds())
+		if errs != nil {
+			metrics.runError.Inc()
+		}
+	}()
+
 	errCh := make(chan error, len(s.services))
 	for i := range s.services {
 		svc := s.services[i]
 		go func() {
-			errCh <- s.scrape(ctx, scrapeTime, svc)
+			timer := prometheus.NewTimer(metrics.scrapeDuration.WithLabelValues(svc.base))
+			defer timer.ObserveDuration()
+
+			err := s.scrape(ctx, scrapeTime, svc)
+			if err != nil {
+				metrics.scrapeError.WithLabelValues(svc.base).Inc()
+			}
+			errCh <- err
 		}()
 	}
-	var errs error
+
 	for range s.services {
 		err := <-errCh
 		errs = multierr.Append(errs, err)
