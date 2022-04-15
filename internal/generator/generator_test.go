@@ -40,7 +40,7 @@ func TestVersionScope(t *testing.T) {
 version-readme:
   scope: version
   filename: "{{.Here}}/{{.API}}/{{.Resource}}/{{.Version.DateString}}/README"
-  template: ".vervet/resource/version/README.tmpl"
+  template: "{{.Cwd}}/.vervet/resource/version/README.tmpl"
 `
 	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
 	c.Assert(err, qt.IsNil)
@@ -90,7 +90,7 @@ func TestResourceScope(t *testing.T) {
 resource-routes:
   scope: resource
   filename: "{{.Here}}/{{ .API }}/{{ .Resource }}/routes.ts"
-  template: ".vervet/resource/routes.ts.tmpl"
+  template: "{{.Cwd}}/.vervet/resource/routes.ts.tmpl"
 `
 	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
 	c.Assert(err, qt.IsNil)
@@ -409,7 +409,7 @@ func TestDryRun(t *testing.T) {
 version-readme:
   scope: version
   filename: "{{.Here}}/{{.API}}/{{.Resource}}/{{.Version.DateString}}/README"
-  template: ".vervet/resource/version/README.tmpl"
+  template: "{{.Cwd}}/.vervet/resource/version/README.tmpl"
 `
 	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
 	c.Assert(err, qt.IsNil)
