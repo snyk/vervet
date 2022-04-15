@@ -63,3 +63,12 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
+
+replace (
+	// Fixes: SNYK-GOLANG-GITHUBCOMGOGOPROTOBUFPLUGINUNMARSHAL-1058921
+	// From: github.com/spf13/viper@v1.11.0
+	github.com/gogo/protobuf v1.1.1 => github.com/gogo/protobuf v1.3.2
+	// Fixes: SNYK-GOLANG-GITHUBCOMPROMETHEUSCLIENTGOLANGPROMETHEUSPROMHTTP-2401819
+	// From: github.com/spf13/viper@v1.11.0
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
+)
