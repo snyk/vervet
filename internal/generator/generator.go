@@ -90,7 +90,7 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 		}
 	}
 
-	// Resolve the template filename... with a template.  Only .Here is and .Cwd
+	// Resolve the template filename... with a template.  Only .Here and .Cwd
 	// are supported, not full scope. Just enough to locate files relative to
 	// the config.
 	templateFilename, err := g.resolveFilename(conf.Template)
