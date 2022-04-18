@@ -114,7 +114,18 @@ func TestScraper(t *testing.T) {
 		spec, err := l.LoadFromData(specData)
 		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
-		c.Assert(len(spec.Paths), qt.Equals, 4)
+		switch version {
+		case "2021-10-01":
+			c.Assert(len(spec.Paths), qt.Equals, 3)
+		case "2021-10-16":
+			c.Assert(len(spec.Paths), qt.Equals, 4)
+		case "2021-09-01":
+			c.Assert(len(spec.Paths), qt.Equals, 1)
+		case "2021-09-16":
+			c.Assert(len(spec.Paths), qt.Equals, 2)
+		default:
+			c.FailNow()
+		}
 	}
 }
 
@@ -232,6 +243,17 @@ func TestScraperCollation(t *testing.T) {
 		spec, err := l.LoadFromData(specData)
 		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
-		c.Assert(len(spec.Paths), qt.Equals, 4)
+		switch version {
+		case "2021-10-01":
+			c.Assert(len(spec.Paths), qt.Equals, 3)
+		case "2021-10-16":
+			c.Assert(len(spec.Paths), qt.Equals, 4)
+		case "2021-09-01":
+			c.Assert(len(spec.Paths), qt.Equals, 1)
+		case "2021-09-16":
+			c.Assert(len(spec.Paths), qt.Equals, 2)
+		default:
+			c.FailNow()
+		}
 	}
 }
