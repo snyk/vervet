@@ -1,6 +1,8 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Generators defines a named map of Generator instances.
 type Generators map[string]*Generator

@@ -153,7 +153,7 @@ func (g *Generator) resolveFilename(filenameTemplate string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return buf.String(), nil
+	return filepath.Abs(buf.String())
 }
 
 // Option configures a Generator.

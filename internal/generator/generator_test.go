@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -27,89 +28,95 @@ func setup(c *qt.C) {
 
 func TestVersionScope(t *testing.T) {
 	c := qt.New(t)
-	setup(c)
+	for _, prefix := range []string{"", "{{.Cwd}}/"} {
+		c.Run(fmt.Sprintf("template prefix %q", prefix), func(c *qt.C) {
+			setup(c)
 
-	configBuf, err := ioutil.ReadFile(".vervet.yaml")
-	c.Assert(err, qt.IsNil)
-	proj, err := config.Load(bytes.NewBuffer(configBuf))
-	c.Assert(err, qt.IsNil)
+			configBuf, err := ioutil.ReadFile(".vervet.yaml")
+			c.Assert(err, qt.IsNil)
+			proj, err := config.Load(bytes.NewBuffer(configBuf))
+			c.Assert(err, qt.IsNil)
 
-	out := c.TempDir()
+			out := c.TempDir()
 
-	versionReadme := `
+			versionReadme := `
 version-readme:
   scope: version
   filename: "{{.Here}}/{{.API}}/{{.Resource}}/{{.Version.DateString}}/README"
-  template: "{{.Cwd}}/.vervet/resource/version/README.tmpl"
+  template: "` + prefix + `.vervet/resource/version/README.tmpl"
 `
-	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
-	c.Assert(err, qt.IsNil)
+			generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
+			c.Assert(err, qt.IsNil)
 
-	genReadme, err := New(generatorsConf["version-readme"], Debug(true), Here(out))
-	c.Assert(err, qt.IsNil)
+			genReadme, err := New(generatorsConf["version-readme"], Debug(true), Here(out))
+			c.Assert(err, qt.IsNil)
 
-	resources, err := MapResources(proj)
-	c.Assert(err, qt.IsNil)
-	files, err := genReadme.Execute(resources)
-	c.Assert(err, qt.IsNil)
-	c.Assert(files, qt.ContentEquals, []string{
-		out + "/testdata/hello-world/2021-06-01/README",
-		out + "/testdata/hello-world/2021-06-07/README",
-		out + "/testdata/hello-world/2021-06-13/README",
-		out + "/testdata/projects/2021-06-04/README",
-		out + "/testdata/projects/2021-08-20/README",
-	})
+			resources, err := MapResources(proj)
+			c.Assert(err, qt.IsNil)
+			files, err := genReadme.Execute(resources)
+			c.Assert(err, qt.IsNil)
+			c.Assert(files, qt.ContentEquals, []string{
+				out + "/testdata/hello-world/2021-06-01/README",
+				out + "/testdata/hello-world/2021-06-07/README",
+				out + "/testdata/hello-world/2021-06-13/README",
+				out + "/testdata/projects/2021-06-04/README",
+				out + "/testdata/projects/2021-08-20/README",
+			})
 
-	for _, test := range []struct {
-		resource, version string
-	}{{
-		"projects", "2021-06-04",
-	}, {
-		"projects", "2021-08-20",
-	}} {
-		readme, err := ioutil.ReadFile(out + "/testdata/" + test.resource + "/" + test.version + "/README")
-		c.Assert(err, qt.IsNil)
-		c.Assert(string(readme), qt.Equals, ``+
-			`This is a generated scaffold for version `+test.version+"~experimental of the\n"+
-			test.resource+" resource in API testdata.\n\n")
+			for _, test := range []struct {
+				resource, version string
+			}{{
+				"projects", "2021-06-04",
+			}, {
+				"projects", "2021-08-20",
+			}} {
+				readme, err := ioutil.ReadFile(out + "/testdata/" + test.resource + "/" + test.version + "/README")
+				c.Assert(err, qt.IsNil)
+				c.Assert(string(readme), qt.Equals, ``+
+					`This is a generated scaffold for version `+test.version+"~experimental of the\n"+
+					test.resource+" resource in API testdata.\n\n")
+			}
+		})
 	}
 }
 
 func TestResourceScope(t *testing.T) {
 	c := qt.New(t)
-	setup(c)
+	for _, prefix := range []string{"", "{{.Cwd}}/"} {
+		c.Run(fmt.Sprintf("template prefix %q", prefix), func(c *qt.C) {
+			setup(c)
 
-	configBuf, err := ioutil.ReadFile(".vervet.yaml")
-	c.Assert(err, qt.IsNil)
-	proj, err := config.Load(bytes.NewBuffer(configBuf))
-	c.Assert(err, qt.IsNil)
+			configBuf, err := ioutil.ReadFile(".vervet.yaml")
+			c.Assert(err, qt.IsNil)
+			proj, err := config.Load(bytes.NewBuffer(configBuf))
+			c.Assert(err, qt.IsNil)
 
-	out := c.TempDir()
+			out := c.TempDir()
 
-	versionReadme := `
+			versionReadme := `
 resource-routes:
   scope: resource
   filename: "{{.Here}}/{{ .API }}/{{ .Resource }}/routes.ts"
-  template: "{{.Cwd}}/.vervet/resource/routes.ts.tmpl"
+  template: "` + prefix + `.vervet/resource/routes.ts.tmpl"
 `
-	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
-	c.Assert(err, qt.IsNil)
+			generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
+			c.Assert(err, qt.IsNil)
 
-	genReadme, err := New(generatorsConf["resource-routes"], Debug(true), Here(out))
-	c.Assert(err, qt.IsNil)
+			genReadme, err := New(generatorsConf["resource-routes"], Debug(true), Here(out))
+			c.Assert(err, qt.IsNil)
 
-	resources, err := MapResources(proj)
-	c.Assert(err, qt.IsNil)
-	files, err := genReadme.Execute(resources)
-	c.Assert(err, qt.IsNil)
-	c.Assert(files, qt.ContentEquals, []string{
-		out + "/testdata/hello-world/routes.ts",
-		out + "/testdata/projects/routes.ts",
-	})
+			resources, err := MapResources(proj)
+			c.Assert(err, qt.IsNil)
+			files, err := genReadme.Execute(resources)
+			c.Assert(err, qt.IsNil)
+			c.Assert(files, qt.ContentEquals, []string{
+				out + "/testdata/hello-world/routes.ts",
+				out + "/testdata/projects/routes.ts",
+			})
 
-	routes, err := ioutil.ReadFile(out + "/testdata/hello-world/routes.ts")
-	c.Assert(err, qt.IsNil)
-	c.Assert(string(routes), qt.Equals, `
+			routes, err := ioutil.ReadFile(out + "/testdata/hello-world/routes.ts")
+			c.Assert(err, qt.IsNil)
+			c.Assert(string(routes), qt.Equals, `
 import { versions } from '@snyk/rest-node-libs';
 import * as v2021_06_13 './2021-06-13';
 import * as v2021_06_01 './2021-06-01';
@@ -140,9 +147,9 @@ export const helloWorldGetOne = versions([
 ]);
 `[1:])
 
-	routes, err = ioutil.ReadFile(out + "/testdata/projects/routes.ts")
-	c.Assert(err, qt.IsNil)
-	c.Assert(string(routes), qt.Equals, `
+			routes, err = ioutil.ReadFile(out + "/testdata/projects/routes.ts")
+			c.Assert(err, qt.IsNil)
+			c.Assert(string(routes), qt.Equals, `
 import { versions } from '@snyk/rest-node-libs';
 import * as v2021_08_20 './2021-08-20';
 import * as v2021_06_04 './2021-06-04';
@@ -160,6 +167,8 @@ export const getOrgsProjects = versions([
   },
 ]);
 `[1:])
+		})
+	}
 }
 
 func TestFunctions(t *testing.T) {
@@ -396,40 +405,44 @@ export type QueryVersion = string;
 
 func TestDryRun(t *testing.T) {
 	c := qt.New(t)
-	setup(c)
+	for _, prefix := range []string{"", "{{.Cwd}}/"} {
+		c.Run(fmt.Sprintf("template prefix %q", prefix), func(c *qt.C) {
+			setup(c)
 
-	configBuf, err := ioutil.ReadFile(".vervet.yaml")
-	c.Assert(err, qt.IsNil)
-	proj, err := config.Load(bytes.NewBuffer(configBuf))
-	c.Assert(err, qt.IsNil)
+			configBuf, err := ioutil.ReadFile(".vervet.yaml")
+			c.Assert(err, qt.IsNil)
+			proj, err := config.Load(bytes.NewBuffer(configBuf))
+			c.Assert(err, qt.IsNil)
 
-	out := c.TempDir()
+			out := c.TempDir()
 
-	versionReadme := `
+			versionReadme := `
 version-readme:
   scope: version
   filename: "{{.Here}}/{{.API}}/{{.Resource}}/{{.Version.DateString}}/README"
-  template: "{{.Cwd}}/.vervet/resource/version/README.tmpl"
+  template: "` + prefix + `.vervet/resource/version/README.tmpl"
 `
-	generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
-	c.Assert(err, qt.IsNil)
+			generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
+			c.Assert(err, qt.IsNil)
 
-	genReadme, err := New(generatorsConf["version-readme"], Debug(true), Here(out), DryRun(true))
-	c.Assert(err, qt.IsNil)
+			genReadme, err := New(generatorsConf["version-readme"], Debug(true), Here(out), DryRun(true))
+			c.Assert(err, qt.IsNil)
 
-	resources, err := MapResources(proj)
-	c.Assert(err, qt.IsNil)
-	files, err := genReadme.Execute(resources)
-	c.Assert(err, qt.IsNil)
-	c.Assert(files, qt.ContentEquals, []string{
-		out + "/testdata/hello-world/2021-06-01/README",
-		out + "/testdata/hello-world/2021-06-07/README",
-		out + "/testdata/hello-world/2021-06-13/README",
-		out + "/testdata/projects/2021-06-04/README",
-		out + "/testdata/projects/2021-08-20/README",
-	})
+			resources, err := MapResources(proj)
+			c.Assert(err, qt.IsNil)
+			files, err := genReadme.Execute(resources)
+			c.Assert(err, qt.IsNil)
+			c.Assert(files, qt.ContentEquals, []string{
+				out + "/testdata/hello-world/2021-06-01/README",
+				out + "/testdata/hello-world/2021-06-07/README",
+				out + "/testdata/hello-world/2021-06-13/README",
+				out + "/testdata/projects/2021-06-04/README",
+				out + "/testdata/projects/2021-08-20/README",
+			})
 
-	actualFiles, err := filepath.Glob(out + "/*/*/*/README")
-	c.Assert(err, qt.IsNil)
-	c.Assert(actualFiles, qt.HasLen, 0)
+			actualFiles, err := filepath.Glob(out + "/*/*/*/README")
+			c.Assert(err, qt.IsNil)
+			c.Assert(actualFiles, qt.HasLen, 0)
+		})
+	}
 }
