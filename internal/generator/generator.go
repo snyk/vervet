@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/ghodss/yaml"
@@ -29,6 +31,7 @@ type Generator struct {
 	dryRun bool
 	force  bool
 	here   string
+	fs     fs.FS
 }
 
 // NewMap instanstiates a map of Generators from configuration.
@@ -67,6 +70,12 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 		}
 	}
 
+	// If no FS has been provided, use the DirFS for root.
+	if g.fs == nil {
+		fs := os.DirFS("/")
+		g.fs = fs
+	}
+
 	// Resolve the template 'functions'... with a template. Only .Here is
 	// supported, not full scope. Just enough to locate files relative to the
 	// config.
@@ -81,17 +90,24 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 		}
 	}
 
-	// Resolve the template filename... with a template. Only .Here is
-	// supported, not full scope. Just enough to locate files relative to the
-	// config.
+	// Resolve the template filename... with a template.  Only .Here and .Cwd
+	// are supported, not full scope. Just enough to locate files relative to
+	// the config.
 	templateFilename, err := g.resolveFilename(conf.Template)
 	if err != nil {
 		return nil, fmt.Errorf("%w: (generators.%s.template)", err, conf.Name)
 	}
 
+	// Remove the leading slash in the filepath -- fs.FS.Open does not accept
+	// rooted paths.
+	templateFilename = strings.TrimPrefix(templateFilename, "/")
 	// Parse & wire up other templates: contents, filename or files. These do
 	// support full scope.
-	contentsTemplate, err := ioutil.ReadFile(templateFilename)
+	templateFile, err := g.fs.Open(templateFilename)
+	if err != nil {
+		return nil, err
+	}
+	contentsTemplate, err := ioutil.ReadAll(templateFile)
 	if err != nil {
 		return nil, fmt.Errorf("%w: (generators.%s.contents)", err, conf.Name)
 	}
@@ -126,13 +142,18 @@ func (g *Generator) resolveFilename(filenameTemplate string) (string, error) {
 		return "", err
 	}
 	var buf bytes.Buffer
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
 	err = t.ExecuteTemplate(&buf, "", map[string]string{
 		"Here": g.here,
+		"Cwd":  cwd,
 	})
 	if err != nil {
 		return "", err
 	}
-	return buf.String(), nil
+	return filepath.Abs(buf.String())
 }
 
 // Option configures a Generator.
@@ -165,6 +186,13 @@ func DryRun(dryRun bool) Option {
 func Here(here string) Option {
 	return func(g *Generator) {
 		g.here = here
+	}
+}
+
+// Filesystem sets the filesytem that the generator checks for templates.
+func Filesystem(FS fs.FS) Option {
+	return func(g *Generator) {
+		g.fs = FS
 	}
 }
 

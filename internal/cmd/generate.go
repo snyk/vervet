@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"path/filepath"
+
 	"github.com/urfave/cli/v2"
 
 	"github.com/snyk/vervet/v4/generate"
@@ -43,11 +45,17 @@ func Generate(ctx *cli.Context) error {
 		generators = append(generators, ctx.Args().Get(i))
 	}
 
+	genFile := ctx.String("generators")
+	genFile, err = filepath.Abs(genFile)
+	if err != nil {
+		return err
+	}
+
 	params := generate.GeneratorParams{
 		ProjectDir:     projectDir,
 		ConfigFile:     configFile,
 		Generators:     generators,
-		GeneratorsFile: ctx.String("generators"),
+		GeneratorsFile: genFile,
 		Debug:          ctx.Bool("debug"),
 		DryRun:         ctx.Bool("dry-run"),
 	}

@@ -2,8 +2,10 @@ package generate
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/snyk/vervet/v4/config"
 	"github.com/snyk/vervet/v4/internal/generator"
@@ -18,6 +20,7 @@ type GeneratorParams struct {
 	Force          bool
 	Debug          bool
 	DryRun         bool
+	FS             fs.FS
 }
 
 // Generate executes code generators against OpenAPI specs.
@@ -37,10 +40,18 @@ func Generate(params GeneratorParams) error {
 		selectedGenerators[generator] = struct{}{}
 	}
 
+	// Ensure a default FS if one isn't provided.
+	basePath := ""
+	if params.FS == nil {
+		basePath = "/"
+		params.FS = os.DirFS(basePath)
+	}
+
 	// Option to load generators and overlay onto project config
 	generatorsHere := map[string]string{}
-	if genFile := params.GeneratorsFile; genFile != "" {
-		f, err := os.Open(genFile)
+	if params.GeneratorsFile != "" {
+		genFile := strings.TrimPrefix(params.GeneratorsFile, "/")
+		f, err := params.FS.Open(genFile)
 		if err != nil {
 			return err
 		}
@@ -51,7 +62,7 @@ func Generate(params GeneratorParams) error {
 		}
 		for k, v := range generators {
 			proj.Generators[k] = v
-			generatorsHere[k] = filepath.Dir(genFile)
+			generatorsHere[k] = filepath.Dir(filepath.Join(basePath, genFile))
 		}
 	}
 	// If a list of specific generators were specified, only instantiate those.
@@ -70,12 +81,14 @@ func Generate(params GeneratorParams) error {
 	if params.DryRun {
 		options = append(options, generator.DryRun(true))
 	}
-	projectHere := filepath.Dir(params.ConfigFile)
+	if params.FS != nil {
+		options = append(options, generator.Filesystem(params.FS))
+	}
 	generators := map[string]*generator.Generator{}
 	for k, genConf := range proj.Generators {
 		genHere, ok := generatorsHere[k]
 		if !ok {
-			genHere = projectHere
+			genHere = params.ProjectDir
 		}
 		genHere, err = filepath.Abs(genHere)
 		if err != nil {
