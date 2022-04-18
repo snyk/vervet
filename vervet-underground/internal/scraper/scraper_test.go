@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/getkin/kin-openapi/openapi3"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -103,6 +104,16 @@ func TestScraper(t *testing.T) {
 		ok, err := st.HasVersion(test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
+	}
+
+	c.Assert(len(st.Versions()), qt.Equals, 4)
+	for _, version := range st.Versions() {
+		specData, err := st.Version(version)
+		c.Assert(err, qt.IsNil)
+		l := openapi3.NewLoader()
+		spec, err := l.LoadFromData(specData)
+		c.Assert(spec, qt.IsNotNil)
+		c.Assert(len(spec.Paths), qt.Equals, 4)
 	}
 }
 
@@ -211,4 +222,14 @@ func TestScraperCollation(t *testing.T) {
 	collated, err := st.GetCollatedVersionSpecs()
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(collated), qt.Equals, 4)
+
+	c.Assert(len(st.Versions()), qt.Equals, 4)
+	for _, version := range st.Versions() {
+		specData, err := st.Version(version)
+		c.Assert(err, qt.IsNil)
+		l := openapi3.NewLoader()
+		spec, err := l.LoadFromData(specData)
+		c.Assert(spec, qt.IsNotNil)
+		c.Assert(len(spec.Paths), qt.Equals, 4)
+	}
 }
