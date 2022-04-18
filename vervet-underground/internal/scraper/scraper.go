@@ -148,10 +148,7 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	//err = s.storage.NotifyVersions(svc.base, versions, scrapeTime)
-	//if err != nil {
-	//	return errors.WithStack(err)
-	//}
+
 	for i := range versions {
 		// TODO: we might run this concurrently per live service pod if/when
 		// we're more k8s aware, but we won't do that yet.
