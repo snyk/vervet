@@ -125,7 +125,7 @@ func main() {
 
 // runScrape runs scraping all services and can take
 // a longer period of time than standard wait timeout.
-// moves to cancel context once scraping and colation are complete.
+// moves to cancel context once scraping and collation are complete.
 func runScrape(sc *scraper.Scraper) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
