@@ -53,7 +53,7 @@ func main() {
 		panic("unable to load storage")
 	}
 	// initialize
-	err = runScrape(wait, sc)
+	err = runScrape(sc)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed initialization scraping of service")
 	}
@@ -75,7 +75,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				if scrapeErr := runScrape(wait, sc); scrapeErr != nil {
+				if scrapeErr := runScrape(sc); scrapeErr != nil {
 					logError(scrapeErr)
 				}
 			case <-quit:
@@ -123,8 +123,11 @@ func main() {
 	os.Exit(0)
 }
 
-func runScrape(wait time.Duration, sc *scraper.Scraper) error {
-	ctx, cancel := context.WithTimeout(context.Background(), wait)
+// runScrape runs scraping all services and can take
+// a longer period of time than standard wait timeout.
+// moves to cancel context once scraping and collation are complete.
+func runScrape(sc *scraper.Scraper) error {
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if scraperErr := sc.Run(ctx); scraperErr != nil {
 		return scraperErr

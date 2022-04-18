@@ -10,6 +10,7 @@ import (
 	"time"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gorilla/mux"
 
 	"vervet-underground/config"
@@ -17,7 +18,15 @@ import (
 	"vervet-underground/internal/storage/mem"
 )
 
-var t0 = time.Date(2021, time.December, 3, 20, 49, 51, 0, time.UTC)
+var (
+	t0            = time.Date(2021, time.December, 3, 20, 49, 51, 0, time.UTC)
+	collatedPaths = map[string]int{
+		"2021-09-01": 1,
+		"2021-09-16": 2,
+		"2021-10-01": 3,
+		"2021-10-16": 4,
+	}
+)
 
 type testService struct {
 	versions []string
@@ -83,7 +92,7 @@ func TestScraper(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Cancel the scrape context after a timeout so we don't hang the test
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	c.Cleanup(cancel)
 
 	// No version digests should be known
@@ -104,6 +113,17 @@ func TestScraper(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
+
+	c.Assert(len(st.Versions()), qt.Equals, 4)
+	for _, version := range st.Versions() {
+		specData, err := st.Version(version)
+		c.Assert(err, qt.IsNil)
+		l := openapi3.NewLoader()
+		spec, err := l.LoadFromData(specData)
+		c.Assert(err, qt.IsNil)
+		c.Assert(spec, qt.IsNotNil)
+		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version])
+	}
 }
 
 func TestEmptyScrape(t *testing.T) {
@@ -115,8 +135,8 @@ func TestEmptyScrape(t *testing.T) {
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
 
-	// Cancel after a short timeout so we don't hang the test
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+	// Cancel the scrape context after a timeout so we don't hang the test
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	c.Cleanup(cancel)
 
 	// Run the scrape
@@ -193,7 +213,7 @@ func TestScraperCollation(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Cancel the scrape context after a timeout so we don't hang the test
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	c.Cleanup(cancel)
 
 	// Run the scrape
@@ -211,4 +231,15 @@ func TestScraperCollation(t *testing.T) {
 	collated, err := st.GetCollatedVersionSpecs()
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(collated), qt.Equals, 4)
+
+	c.Assert(len(st.Versions()), qt.Equals, 4)
+	for _, version := range st.Versions() {
+		specData, err := st.Version(version)
+		c.Assert(err, qt.IsNil)
+		l := openapi3.NewLoader()
+		spec, err := l.LoadFromData(specData)
+		c.Assert(err, qt.IsNil)
+		c.Assert(spec, qt.IsNotNil)
+		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version])
+	}
 }
