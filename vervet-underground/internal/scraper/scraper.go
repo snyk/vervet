@@ -87,7 +87,7 @@ func setupScraper(s *Scraper, cfg *config.ServerConfig, options []Option) error 
 		if err != nil {
 			return errors.Wrapf(err, "invalid service %q", cfg.Services[i])
 		}
-		s.services[i] = service{base: u.Host, url: u}
+		s.services[i] = service{base: cfg.Services[i], url: u}
 	}
 	for i := range options {
 		err := options[i](s)
