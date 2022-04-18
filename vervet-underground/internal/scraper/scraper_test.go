@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/getkin/kin-openapi/openapi3"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gorilla/mux"
 
 	"vervet-underground/config"
@@ -112,6 +112,7 @@ func TestScraper(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)
+		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
 		c.Assert(len(spec.Paths), qt.Equals, 4)
 	}
@@ -229,6 +230,7 @@ func TestScraperCollation(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)
+		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
 		c.Assert(len(spec.Paths), qt.Equals, 4)
 	}
