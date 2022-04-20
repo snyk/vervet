@@ -187,7 +187,10 @@ func (s *Storage) CollateVersions() error {
 
 	// all specs are stored as key: "service-versions/{service_name}/{version}/{digest}.json"
 	for _, revContent := range serviceRevisionResults.Contents {
-		service, version, digest := parseServiceVersionRevisionKey(*revContent.Key)
+		service, version, digest, err := parseServiceVersionRevisionKey(*revContent.Key)
+		if err != nil {
+			return err
+		}
 		rev, err := s.GetObjectWithMetadata(storage.ServiceVersionsFolder + service + "/" + version + "/" + digest + ".json")
 		if err != nil {
 			return err
@@ -274,7 +277,7 @@ func (s *Storage) PutObject(key string, reader io.Reader) (*s3.PutObjectOutput, 
 	}
 
 	r, err := s.client.PutObject(context.Background(), &p)
-	log.Printf("S3 PutObject response: %+v", r)
+	log.Debug().Msgf("S3 PutObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
 	}
@@ -344,7 +347,7 @@ func (s *Storage) DeleteObject(key string) error {
 	}
 
 	r, err := s.client.DeleteObject(context.Background(), &p)
-	log.Printf("S3 DeleteObject response: %+v", r)
+	log.Debug().Msgf("S3 DeleteObject response: %+v", r)
 	if err != nil {
 		return err
 	}
@@ -398,7 +401,7 @@ func (s *Storage) ListObjects(key string, delimeter string) (*s3.ListObjectsV2Ou
 	}
 
 	r, err := s.client.ListObjectsV2(context.Background(), &p)
-	log.Printf("S3 ListObject response: %+v", r)
+	log.Debug().Msgf("S3 ListObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
 	}
@@ -452,16 +455,17 @@ func getServiceVersionRevisionKey(name string, version string, digest string) st
 	return fmt.Sprintf("%v%v/%v/%v.json", storage.ServiceVersionsFolder, host, version, digest)
 }
 
-func parseServiceVersionRevisionKey(key string) (string, string, string) {
+func parseServiceVersionRevisionKey(key string) (string, string, string, error) {
 	// digest can have "/" chars, so only split for service and version
 	arr := strings.SplitN(strings.TrimPrefix(key, storage.ServiceVersionsFolder), "/", 3)
 	if len(arr) != 3 {
-		log.Warn().Msgf("Service Content Revision not able to be parsed: %v", key)
-		return "", "", ""
+		err := fmt.Errorf("service Content Revision not able to be parsed: %v", key)
+		log.Error().Err(err).Msg("s3 service path malformed")
+		return "", "", "", err
 	}
 	service, version, digestJson := arr[0], arr[1], arr[2]
 	digest := strings.TrimSuffix(digestJson, ".json")
-	return service, version, digest
+	return service, version, digest, nil
 }
 
 /*
@@ -480,21 +484,21 @@ https://aws.github.io/aws-sdk-go-v2/docs/handling-errors/
 func handleAwsError(err error) error {
 	var opErr *smithy.OperationError
 	var apiErr smithy.APIError
-	if errors.As(err, &oe) {
+	if errors.As(err, &opErr) {
 		log.Error().Err(err).Msgf("failed to call service: %s, operation: %s, error: %v",
-			oe.Service(),
-			oe.Operation(),
-			oe.Unwrap())
+			opErr.Service(),
+			opErr.Operation(),
+			opErr.Unwrap())
 	}
 
-	if oe != nil {
-		err := oe.Unwrap()
-		if errors.As(err, &ae) {
-			switch ae.ErrorCode() {
+	if opErr != nil {
+		err := opErr.Unwrap()
+		if errors.As(err, &apiErr) {
+			switch apiErr.ErrorCode() {
 			case "NoSuchKey":
 				return nil
 			default:
-				return ae
+				return apiErr
 			}
 		}
 	}
