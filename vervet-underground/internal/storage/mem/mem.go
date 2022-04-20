@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
 	"github.com/snyk/vervet/v4"
 
@@ -21,9 +20,6 @@ type versionedResourceMap map[string]vervet.VersionSlice
 
 // mappedRevisionSpecs map [Sha digest of contents string] --> spec contents and metadata.
 type mappedRevisionSpecs map[storage.Digest]storage.ContentRevision
-
-// collatedVersionMappedSpecs Compiled aggregated spec for all services at that given version.
-type collatedVersionMappedSpecs map[vervet.Version]openapi3.T
 
 // versionMappedRevisionSpecs map[version-name][digest] --> spec contents and metadata.
 type versionMappedRevisionSpecs map[string]mappedRevisionSpecs
@@ -39,7 +35,7 @@ type Storage struct {
 	serviceVersionMappedRevisionSpecs serviceVersionMappedRevisionSpecs
 
 	collatedVersions       vervet.VersionSlice
-	collatedVersionedSpecs collatedVersionMappedSpecs
+	collatedVersionedSpecs storage.CollatedVersionMappedSpecs
 }
 
 // New returns a new Storage instance.
@@ -49,7 +45,7 @@ func New() *Storage {
 		serviceVersionMappedRevisionSpecs: serviceVersionMappedRevisionSpecs{},
 
 		collatedVersions:       vervet.VersionSlice{},
-		collatedVersionedSpecs: collatedVersionMappedSpecs{},
+		collatedVersionedSpecs: storage.CollatedVersionMappedSpecs{},
 	}
 }
 
@@ -70,6 +66,7 @@ func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time
 func (s *Storage) HasVersion(name string, version string, digest string) (bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	name = storage.GetSantizedHost(name)
 	revisions, ok := s.serviceVersionMappedRevisionSpecs[name][version]
 
 	if !ok {
@@ -83,7 +80,7 @@ func (s *Storage) HasVersion(name string, version string, digest string) (bool, 
 func (s *Storage) NotifyVersion(name string, version string, contents []byte, scrapeTime time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
+	name = storage.GetSantizedHost(name)
 	digest := storage.NewDigest(contents)
 
 	parsedVersion, err := vervet.ParseVersion(version)
