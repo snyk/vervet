@@ -135,7 +135,7 @@ func (s *Scraper) collateVersions() error {
 }
 
 func (s *Scraper) getVersions(ctx context.Context, svc service.Service) ([]string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", svc.URL.String(), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "GET", svc.URL, http.NoBody)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create request")
 	}
@@ -174,7 +174,7 @@ func (s *Scraper) getNewVersion(ctx context.Context, svc service.Service, versio
 		return nil, isNew, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", svc.URL.String()+"/"+version, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "GET", svc.URL+"/"+version, http.NoBody)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to create request")
 	}
@@ -205,7 +205,7 @@ func (s *Scraper) getNewVersion(ctx context.Context, svc service.Service, versio
 
 func (s *Scraper) hasNewVersion(ctx context.Context, svc service.Service, version string) (bool, error) {
 	// Check Digest to see if there's a new version
-	req, err := http.NewRequestWithContext(ctx, "HEAD", svc.URL.String()+"/"+version, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "HEAD", svc.URL+"/"+version, http.NoBody)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to create request")
 	}

@@ -2,15 +2,15 @@ package scraper_test
 
 import (
 	"context"
-	qt "github.com/frankban/quicktest"
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/rs/zerolog/log"
 	"net/http/httptest"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	qt "github.com/frankban/quicktest"
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/rs/zerolog/log"
 
 	"vervet-underground/internal/scraper"
 	"vervet-underground/internal/service"

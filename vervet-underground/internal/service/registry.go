@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"sync"
@@ -10,18 +9,9 @@ import (
 
 // Service represents a target for vervet-underground to scrape.
 type Service struct {
-	Base string
-	URL  *url.URL
+	Base string `json:"base"`
+	URL  string `json:"url"`
 	// TODO: track healthcheck?
-}
-
-// MarshalJSON implements the json.Marshaller interface.
-func (s Service) MarshalJSON() ([]byte, error) {
-	out := map[string]string{
-		"base": s.Base,
-		"url":  s.URL.String(),
-	}
-	return json.Marshal(out)
 }
 
 // Registry is a registry of services scraped by vervet-underground.
@@ -72,7 +62,7 @@ func (r *Registry) add(bases ...string) error {
 		if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
 			base = u.Host
 		}
-		r.Services = append(r.Services, Service{base, u})
+		r.Services = append(r.Services, Service{base, u.String()})
 	}
 	return nil
 }

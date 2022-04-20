@@ -1,0 +1,16 @@
+# Load extensions
+load('ext://deployment', 'deployment_create')
+
+# Restrict tilt usage to local
+allow_k8s_contexts('k3d-vervet-underground')
+
+# Build and run target service to scrape
+docker_build('k3d-registry.localhost:12345/vu-test-service', './local/service')
+k8s_yaml('./local/service/app.yaml')
+
+# Build and run vervet-underground
+docker_build('k3d-registry.localhost:12345/vervet-underground', '.')
+k8s_yaml('./local/vu.yaml')
+k8s_resource('vervet-underground', port_forwards=[
+    port_forward(8080, 8080, name='vervet-underground'),
+])

@@ -2,6 +2,8 @@ GOMOD=go mod
 GOBUILD=go build
 GOTEST=go test
 
+CLUSTER_NAME := vervet-underground
+
 .PHONY: fmt
 fmt:
 	go fmt ./...
@@ -56,3 +58,15 @@ test-localstack:
 	docker-compose start localstack
 	go test ./... -count=1 -race || true
 	docker-compose down
+
+.PHONY: cluster/start
+cluster/start:
+	k3d cluster list ${CLUSTER_NAME} || k3d cluster create ${CLUSTER_NAME} --registry-create vu-registry
+
+.PHONY: cluster/delete
+cluster/delete:
+	k3d cluster delete ${CLUSTER_NAME}
+
+.PHONY: cluster/context
+cluster/context:
+	kubectl config use-context k3d-${CLUSTER_NAME}

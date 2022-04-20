@@ -6,7 +6,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	. "vervet-underground/internal/service"
+	"vervet-underground/internal/service"
 )
 
 func TestRegistry_Load(t *testing.T) {
@@ -22,7 +22,7 @@ func TestRegistry_Load(t *testing.T) {
 		return ret, nil
 	}
 
-	reg := NewRegistry(ldr)
+	reg := service.NewRegistry(ldr)
 	c.Assert(len(reg.Services), qt.Equals, 0)
 
 	// 3 services loaded
