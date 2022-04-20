@@ -5,18 +5,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
+	"vervet-underground/internal/service"
 	"vervet-underground/internal/storage"
 	"vervet-underground/internal/storage/mem"
 	"vervet-underground/internal/storage/s3"
@@ -44,7 +44,20 @@ func main() {
 		logError(err)
 		log.Fatal().Msg("unable to load config")
 	}
-	log.Info().Msgf("services: %s", cfg.Services)
+
+	// initialize service registry
+	serviceLoaders := []service.Loader{
+		service.StaticServiceLoader(cfg.Services),
+	}
+	if cfg.ServiceDiscoveryEnabled {
+		serviceLoaders = append(serviceLoaders, service.KubeServiceLoader())
+	}
+	registry := service.NewRegistry(serviceLoaders...)
+	if err := registry.Load(); err != nil {
+		logError(err)
+		panic("unable to load services")
+	}
+	log.Info().Msgf("services: %+v", registry.Services)
 
 	// initialize Scraper
 	ticker := time.NewTicker(scrapeInterval)
@@ -54,19 +67,20 @@ func main() {
 		log.Fatal().Msg("unable to initialize storage client")
 	}
 
-	sc, err := scraper.New(cfg, st, scraper.HTTPClient(&http.Client{Timeout: wait}))
+	sc, err := scraper.New(registry, st, scraper.HTTPClient(&http.Client{Timeout: wait}))
 	if err != nil {
 		logError(err)
 		log.Fatal().Msg("unable to load storage")
 	}
 	// initialize
+	// TODO: track service health instead of shutting down the scraper
 	err = runScrape(sc)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed initialization scraping of service")
 	}
 
 	versionHandlers(router, sc)
-	healthHandler(router, cfg.Services)
+	healthHandler(router, registry.Services)
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf("%s:8080", cfg.Host),
@@ -152,7 +166,7 @@ func logError(err error) {
 		Msg("UnhandledException")
 }
 
-func healthHandler(router *mux.Router, services []string) {
+func healthHandler(router *mux.Router, services []service.Service) {
 	router.Path("/").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(1 * time.Second)
 		w.WriteHeader(http.StatusOK)

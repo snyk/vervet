@@ -15,9 +15,10 @@ const (
 
 // ServerConfig defines the configuration options for the Vervet Underground service.
 type ServerConfig struct {
-	Host     string
-	Services []string
-	Storage  StorageConfig
+	Host                    string
+	Services                []string
+	ServiceDiscoveryEnabled bool
+	Storage                 StorageConfig
 }
 
 type StorageConfig struct {

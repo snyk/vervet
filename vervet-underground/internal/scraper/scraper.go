@@ -5,16 +5,16 @@ package scraper
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"vervet-underground/config"
+	"vervet-underground/internal/service"
 	"vervet-underground/internal/storage"
 )
 
@@ -22,46 +22,30 @@ import (
 // accordingly.
 type Scraper struct {
 	storage  storage.Storage
-	services []service
+	registry *service.Registry
 	http     *http.Client
 	timeNow  func() time.Time
-}
-
-type service struct {
-	base string
-	url  *url.URL
 }
 
 // Option defines an option that may be specified when creating a new Scraper.
 type Option func(*Scraper) error
 
 // New returns a new Scraper instance.
-func New(cfg *config.ServerConfig, store storage.Storage, options ...Option) (*Scraper, error) {
+func New(services *service.Registry, store storage.Storage, options ...Option) (*Scraper, error) {
 	s := &Scraper{
 		storage: store,
 		http:    &http.Client{Timeout: time.Second * 15},
 		timeNow: time.Now,
 	}
-	err := setupScraper(s, cfg, options)
+	err := setupScraper(s, services, options)
 	if err != nil {
 		return nil, err
 	}
 	return s, nil
 }
 
-func setupScraper(s *Scraper, cfg *config.ServerConfig, options []Option) error {
-	s.services = make([]service, len(cfg.Services))
-	for i := range cfg.Services {
-		u, err := url.Parse(cfg.Services[i] + "/openapi")
-		if err != nil {
-			return errors.Wrapf(err, "invalid service %q", cfg.Services[i])
-		}
-		// Handle for local/smaller deployments and tests
-		s.services[i] = service{base: cfg.Services[i], url: u}
-		if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
-			s.services[i] = service{base: u.Host, url: u}
-		}
-	}
+func setupScraper(s *Scraper, services *service.Registry, options []Option) error {
+	s.registry = services
 	for i := range options {
 		err := options[i](s)
 		if err != nil {
@@ -91,18 +75,23 @@ func Clock(c func() time.Time) Option {
 	}
 }
 
-// Run executes the OpenAPI version scraping on all configured services.
+// Run executes the OpenAPI version scraping on all configured registry.
 func (s *Scraper) Run(ctx context.Context) error {
 	scrapeTime := s.timeNow().UTC()
-	errCh := make(chan error, len(s.services))
-	for i := range s.services {
-		svc := s.services[i]
+	// reload services
+	if err := s.registry.Load(); err != nil {
+		return fmt.Errorf("failed to load services: %w", err)
+	}
+
+	errCh := make(chan error, len(s.registry.Services))
+	for i := range s.registry.Services {
+		svc := s.registry.Services[i]
 		go func() {
 			errCh <- s.scrape(ctx, scrapeTime, svc)
 		}()
 	}
 	var errs error
-	for range s.services {
+	for range s.registry.Services {
 		err := <-errCh
 		errs = multierr.Append(errs, err)
 	}
@@ -116,7 +105,7 @@ func (s *Scraper) Run(ctx context.Context) error {
 	return errs
 }
 
-func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service) error {
+func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service.Service) error {
 	versions, err := s.getVersions(ctx, svc)
 	if err != nil {
 		return errors.WithStack(err)
@@ -133,7 +122,7 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 			continue
 		}
 
-		err = s.storage.NotifyVersion(svc.base, versions[i], contents, scrapeTime)
+		err = s.storage.NotifyVersion(svc.Base, versions[i], contents, scrapeTime)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -145,8 +134,8 @@ func (s *Scraper) collateVersions() error {
 	return s.storage.CollateVersions()
 }
 
-func (s *Scraper) getVersions(ctx context.Context, svc service) ([]string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", svc.url.String(), http.NoBody)
+func (s *Scraper) getVersions(ctx context.Context, svc service.Service) ([]string, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", svc.URL.String(), http.NoBody)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create request")
 	}
@@ -174,7 +163,7 @@ func httpError(r *http.Response) error {
 	return errors.Errorf("request failed: HTTP %d", r.StatusCode)
 }
 
-func (s *Scraper) getNewVersion(ctx context.Context, svc service, version string) (respContents []byte, isNew bool, err error) {
+func (s *Scraper) getNewVersion(ctx context.Context, svc service.Service, version string) (respContents []byte, isNew bool, err error) {
 	// TODO: Services don't emit HEAD currently with compiled vervet
 	//       will need to enforce down the line
 	isNew, err = s.hasNewVersion(ctx, svc, version)
@@ -185,7 +174,7 @@ func (s *Scraper) getNewVersion(ctx context.Context, svc service, version string
 		return nil, isNew, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", svc.url.String()+"/"+version, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "GET", svc.URL.String()+"/"+version, http.NoBody)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to create request")
 	}
@@ -214,9 +203,9 @@ func (s *Scraper) getNewVersion(ctx context.Context, svc service, version string
 	return respContents, true, nil
 }
 
-func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string) (bool, error) {
+func (s *Scraper) hasNewVersion(ctx context.Context, svc service.Service, version string) (bool, error) {
 	// Check Digest to see if there's a new version
-	req, err := http.NewRequestWithContext(ctx, "HEAD", svc.url.String()+"/"+version, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "HEAD", svc.URL.String()+"/"+version, http.NoBody)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to create request")
 	}
@@ -242,7 +231,7 @@ func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string
 		// Not providing a digest is fine, we'll just come back with a GET
 		return true, nil
 	}
-	return s.storage.HasVersion(svc.base, version, digest)
+	return s.storage.HasVersion(svc.Base, version, digest)
 }
 
 func (s *Scraper) Versions() []string {

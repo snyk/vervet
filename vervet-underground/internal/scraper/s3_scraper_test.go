@@ -2,18 +2,18 @@ package scraper_test
 
 import (
 	"context"
+	qt "github.com/frankban/quicktest"
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/rs/zerolog/log"
 	"net/http/httptest"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
-	qt "github.com/frankban/quicktest"
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/rs/zerolog/log"
 
-	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
+	"vervet-underground/internal/service"
 	"vervet-underground/internal/storage/s3"
 )
 
@@ -81,15 +81,14 @@ func TestS3Scraper(t *testing.T) {
 		{animalsService.URL, "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
 	}
 
-	cfg := &config.ServerConfig{
-		Services: []string{
+	reg := service.NewRegistry(
+		service.StaticServiceLoader([]string{
 			petfoodService.URL,
 			animalsService.URL,
-		},
-	}
+		}))
 	st, err := s3.New(s3Cfg)
 	c.Assert(err, qt.IsNil)
-	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
+	sc, err := scraper.New(reg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
 
 	// Cancel the scrape context after a timeout so we don't hang the test
@@ -146,16 +145,15 @@ func TestS3ScraperCollation(t *testing.T) {
 		{animalsService.URL, "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
 	}
 
-	cfg := &config.ServerConfig{
-		Services: []string{
+	reg := service.NewRegistry(
+		service.StaticServiceLoader([]string{
 			petfoodService.URL,
 			animalsService.URL,
-		},
-	}
+		}))
 
 	st, err := s3.New(s3Cfg)
 	c.Assert(err, qt.IsNil)
-	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
+	sc, err := scraper.New(reg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
 
 	// Cancel the scrape context after a timeout so we don't hang the test
