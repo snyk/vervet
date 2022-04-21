@@ -211,21 +211,19 @@ func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
 }
 
 func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
-	if cfg.Storage != nil {
-		switch cfg.Storage["type"] {
-		case "s3":
-			return s3.New(&s3.Config{
-				AwsRegion:   cfg.Storage["region"],
-				AwsEndpoint: cfg.Storage["endpoint"],
-				Credentials: s3.StaticKeyCredentials{
-					AccessKey:  cfg.Storage["accesskey"],
-					SecretKey:  cfg.Storage["secretkey"],
-					SessionKey: cfg.Storage["sessionkey"],
-				},
-			})
-		default:
-			return mem.New(), nil
-		}
+	switch cfg.Storage.Type {
+	case config.StorageTypeMemory:
+		return mem.New(), nil
+	case config.StorageTypeS3:
+		return s3.New(&s3.Config{
+			AwsRegion:   cfg.Storage.S3.Region,
+			AwsEndpoint: cfg.Storage.S3.Endpoint,
+			Credentials: s3.StaticKeyCredentials{
+				AccessKey:  cfg.Storage.S3.AccessKey,
+				SecretKey:  cfg.Storage.S3.SecretKey,
+				SessionKey: cfg.Storage.S3.SessionKey,
+			},
+		})
 	}
-	return mem.New(), nil
+	return nil, fmt.Errorf("unknown storage backend: %s", cfg.Storage.Type)
 }
