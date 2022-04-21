@@ -89,10 +89,16 @@ require (
 )
 
 replace (
+	// Fixes: SNYK-GOLANG-GITHUBCOMGINGONICGIN-1041736
+	// From: github.com/slok/go-http-metrics@v0.10.0
+	github.com/gin-gonic/gin v1.7.4 => github.com/gin-gonic/gin v1.7.7
 	// Fixes: SNYK-GOLANG-GITHUBCOMGOGOPROTOBUFPLUGINUNMARSHAL-1058921
 	// From: github.com/spf13/viper@v1.11.0
 	github.com/gogo/protobuf v1.1.1 => github.com/gogo/protobuf v1.3.2
 	// Fixes: SNYK-GOLANG-GITHUBCOMPROMETHEUSCLIENTGOLANGPROMETHEUSPROMHTTP-2401819
 	// From: github.com/spf13/viper@v1.11.0
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.11.1
+	// Fixes: SNYK-GOLANG-GITHUBCOMVALYALAFASTHTTP-2407866
+	// From: github.com/slok/go-http-metrics@v0.10.0
+	github.com/valyala/fasthttp v1.31.0 => github.com/valyala/fasthttp v1.34.0
 )
