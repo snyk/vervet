@@ -19,6 +19,29 @@ services:
       - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
 
+  prometheus:
+    image: prom/prometheus:v2.35.0
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    restart: always
+
+  grafana:
+    image: grafana/grafana:8.5.0
+    volumes:
+      - ./grafana/:/etc/grafana/provisioning/
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    restart: always
+
   vervet-underground:
     build:
       context: ./
