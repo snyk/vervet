@@ -12,8 +12,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/slok/go-http-metrics/middleware"
+	"github.com/slok/go-http-metrics/middleware/std"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
@@ -39,6 +43,13 @@ func main() {
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	router := mux.NewRouter()
+	promMiddleware := middleware.New(middleware.Config{
+		Recorder: metrics.NewRecorder(metrics.Config{
+			Prefix: "vu",
+		}),
+	})
+	router.Use(std.HandlerProvider("", promMiddleware))
+
 	var cfg *config.ServerConfig
 	var err error
 	if cfg, err = config.Load(configJson); err != nil {
@@ -55,7 +66,10 @@ func main() {
 		log.Fatal().Msg("unable to initialize storage client")
 	}
 
-	sc, err := scraper.New(cfg, st, scraper.HTTPClient(&http.Client{Timeout: wait}))
+	sc, err := scraper.New(cfg, st, scraper.HTTPClient(&http.Client{
+		Timeout:   wait,
+		Transport: scraper.DurationTransport(http.DefaultTransport),
+	}))
 	if err != nil {
 		logError(err)
 		log.Fatal().Msg("unable to load storage")
@@ -68,6 +82,7 @@ func main() {
 
 	versionHandlers(router, sc)
 	healthHandler(router, cfg.Services)
+	router.Handle("/metrics", promhttp.Handler())
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf("%s:8080", cfg.Host),

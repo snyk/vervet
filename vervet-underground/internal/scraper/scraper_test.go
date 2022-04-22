@@ -6,17 +6,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
 	"vervet-underground/internal/storage/mem"
+	"vervet-underground/internal/testutil"
 )
 
 var (
@@ -200,6 +203,9 @@ func TestScraperCollation(t *testing.T) {
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
 
+	before, err := prometheus.DefaultGatherer.Gather()
+	c.Assert(err, qt.IsNil)
+
 	// Cancel the scrape context after a timeout so we don't hang the test
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	c.Cleanup(cancel)
@@ -229,4 +235,25 @@ func TestScraperCollation(t *testing.T) {
 		c.Assert(spec, qt.IsNotNil)
 		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version])
 	}
+
+	// Assert metrics
+	after, err := prometheus.DefaultGatherer.Gather()
+	c.Assert(err, qt.IsNil)
+
+	c.Assert(testutil.SampleDelta("vu_scraper_run_duration_seconds", map[string]string{}, before, after),
+		qt.Equals, uint64(1))
+	c.Assert(testutil.SampleDelta("vu_scraper_run_error_total", map[string]string{}, before, after),
+		qt.Equals, uint64(0))
+	c.Assert(testutil.SampleDelta("vu_scraper_service_scrape_duration_seconds",
+		map[string]string{
+			"service": strings.Replace(petfoodService.URL, "http://", "", 1),
+		},
+		before, after,
+	), qt.Equals, uint64(1))
+	c.Assert(testutil.SampleDelta("vu_scraper_service_scrape_duration_seconds",
+		map[string]string{
+			"service": strings.Replace(animalsService.URL, "http://", "", 1),
+		},
+		before, after,
+	), qt.Equals, uint64(1))
 }
