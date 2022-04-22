@@ -1,4 +1,4 @@
-package s3_test
+package gcs_test
 
 import (
 	"bytes"
@@ -10,37 +10,33 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"vervet-underground/internal/storage"
-	"vervet-underground/internal/storage/s3"
+	"vervet-underground/internal/storage/gcs"
 )
 
 const (
-	localstackAccessKey  = "test"
-	localstackSecretKey  = "test"
-	localstackSessionKey = "test"
-	awsEndpoint          = "http://localhost:4566"
-	awsRegion            = "us-east-1"
+	gcsEndpoint = "http://localhost:4443/storage/v1/"
+	gcsRegion   = "US-CENTRAL1" // https://cloud.google.com/storage/docs/locations#location-r
+	projectId   = "test"
 )
 
-var cfg = &s3.Config{
-	AwsRegion:   awsRegion,
-	AwsEndpoint: awsEndpoint,
-	Credentials: s3.StaticKeyCredentials{
-		AccessKey:  localstackAccessKey,
-		SecretKey:  localstackSecretKey,
-		SessionKey: localstackSessionKey,
+var cfg = &gcs.Config{
+	GcsRegion:   gcsRegion,
+	GcsEndpoint: gcsEndpoint,
+	Credentials: gcs.StaticKeyCredentials{
+		ProjectId: projectId,
 	},
 }
 
 func cleanup() {
 	// cleanup
-	client, err := s3.New(cfg)
+	client, err := gcs.New(cfg)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to initialize S3 storage")
+		log.Error().Err(err).Msg("failed to initialize GCS storage")
 		return
 	}
-	st, ok := client.(*s3.Storage)
+	st, ok := client.(*gcs.Storage)
 	if !ok {
-		log.Error().Err(err).Msg("failed to cast to S3 storage")
+		log.Error().Msg("failed to cast to GCS storage")
 		return
 	}
 	revs, err := st.ListObjects("", "")
@@ -49,10 +45,12 @@ func cleanup() {
 		log.Error().Err(err).Msg("failed to List Objects")
 		return
 	}
-	for _, rev := range revs.Contents {
-		err = st.DeleteObject(*rev.Key)
-		if err != nil {
-			log.Error().Err(err).Msgf("failed to delete Object %s", *rev.Key)
+	for _, rev := range revs {
+		if rev.Name != "" {
+			err := st.DeleteObject(rev.Name)
+			if err != nil {
+				log.Error().Err(err).Msgf("failed to delete Object %s", rev.Prefix+"/"+rev.Name)
+			}
 		}
 	}
 }
@@ -78,38 +76,39 @@ func TestPutObject(t *testing.T) {
 	// Arrange
 	c := setup(t)
 
-	st, err := s3.New(cfg)
+	st, err := gcs.New(cfg)
 	c.Assert(err, qt.IsNil)
-	client, ok := st.(*s3.Storage)
+	client, ok := st.(*gcs.Storage)
 	c.Assert(ok, qt.IsTrue)
 
 	data := []byte("this is some data stored as a byte slice in Go Lang!")
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader(data)
-	obj, err := client.PutObject("dummy", reader)
+	obj, err := client.PutObject("dummy.txt", reader)
 	c.Assert(err, qt.IsNil)
 
 	// Assert
 	c.Assert(obj, qt.IsNotNil)
-	c.Assert(obj.ETag, qt.IsNotNil)
+	c.Assert(obj.ObjectName(), qt.Not(qt.Equals), "")
 }
 
 func TestGetObject(t *testing.T) {
 	// Arrange
 	c := setup(t)
 
-	st, err := s3.New(cfg)
+	st, err := gcs.New(cfg)
 	c.Assert(err, qt.IsNil)
-	client, ok := st.(*s3.Storage)
+	client, ok := st.(*gcs.Storage)
 	c.Assert(ok, qt.IsTrue)
 
 	data := "this is some data stored as a byte slice in Go Lang!"
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader([]byte(data))
-	_, err = client.PutObject(storage.CollatedVersionsFolder+"spec.txt", reader)
+	obj, err := client.PutObject(storage.CollatedVersionsFolder+"spec.txt", reader)
 	c.Assert(err, qt.IsNil)
+	c.Assert(obj.ObjectName(), qt.Equals, storage.CollatedVersionsFolder+"spec.txt")
 
 	// Assert
 	res, err := client.GetObject(storage.CollatedVersionsFolder + "spec.txt")
@@ -126,14 +125,14 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 	// Arrange
 	c := setup(t)
 
-	st, err := s3.New(cfg)
+	st, err := gcs.New(cfg)
 	c.Assert(err, qt.IsNil)
-	client, ok := st.(*s3.Storage)
+	client, ok := st.(*gcs.Storage)
 	c.Assert(ok, qt.IsTrue)
 
-	objects, err := client.ListObjects(storage.CollatedVersionsFolder, "/")
+	objects, err := client.ListObjects(storage.CollatedVersionsFolder, "")
 	c.Assert(err, qt.IsNil)
-	c.Assert(objects.Contents, qt.IsNil)
+	c.Assert(len(objects), qt.Equals, 0)
 
 	data := "this is some data stored as a byte slice in Go Lang!"
 
@@ -143,9 +142,9 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Assert
-	res, err := client.ListObjects(storage.CollatedVersionsFolder, "/")
+	res, err := client.ListObjects(storage.CollatedVersionsFolder, "")
 	c.Assert(err, qt.IsNil)
-	c.Assert(res.Contents, qt.IsNil)
+	c.Assert(len(res), qt.Equals, 1)
 
 	versions, err := client.ListCollatedVersions()
 	c.Assert(err, qt.IsNil)

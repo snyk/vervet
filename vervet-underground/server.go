@@ -18,6 +18,7 @@ import (
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
 	"vervet-underground/internal/storage"
+	"vervet-underground/internal/storage/gcs"
 	"vervet-underground/internal/storage/mem"
 	"vervet-underground/internal/storage/s3"
 )
@@ -222,6 +223,15 @@ func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
 				AccessKey:  cfg.Storage.S3.AccessKey,
 				SecretKey:  cfg.Storage.S3.SecretKey,
 				SessionKey: cfg.Storage.S3.SessionKey,
+			},
+		})
+	case config.StorageTypeGCS:
+		return gcs.New(&gcs.Config{
+			GcsRegion:   cfg.Storage.GCS.Region,
+			GcsEndpoint: cfg.Storage.GCS.Endpoint,
+			Credentials: gcs.StaticKeyCredentials{
+				ProjectId: cfg.Storage.GCS.ProjectId,
+				Filename:  cfg.Storage.GCS.Filename,
 			},
 		})
 	}
