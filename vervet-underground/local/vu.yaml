@@ -1,0 +1,103 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vervet-underground-sa
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: default
+  name: service-reader
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "watch", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vervet-underground-role-binding
+subjects:
+- kind: ServiceAccount
+  name: vervet-underground-sa
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: service-reader
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vervet-underground-cm
+  labels:
+    appp: vervet-underground
+data:
+  config.default.json: |
+    {
+      "services": [],
+      "host": "0.0.0.0",
+      "serviceDiscoveryEnabled": true
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vervet-underground
+  name: vervet-underground
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vervet-underground
+  template:
+    metadata:
+      labels:
+        app: vervet-underground
+    spec:
+      serviceAccount: vervet-underground-sa
+      containers:
+      - image: k3d-registry.localhost:12345/vervet-underground
+        imagePullPolicy: IfNotPresent
+        name: vervet-underground
+        command: ['./server', '-config-file', '/etc/config/config.default.json', '-scrape-interval', '10m']
+        volumeMounts:
+          - name: vervet-underground-config
+            mountPath: /etc/config
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100M
+          requests:
+            cpu: 50m
+            memory: 50M
+      restartPolicy: Always
+      volumes:
+        - name: vervet-underground-config
+          configMap:
+            name: vervet-underground-cm
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vervet-underground
+  name: vervet-underground
+spec:
+  ports:
+  - name: "8080"
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: vervet-underground

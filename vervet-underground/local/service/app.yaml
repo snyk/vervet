@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vu-test-service
+  name: vu-test-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vu-test-service
+  template:
+    metadata:
+      labels:
+        app: vu-test-service
+    spec:
+      containers:
+      - image: k3d-registry.localhost:12345/vu-test-service
+        imagePullPolicy: IfNotPresent
+        name: vu-test-service
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100M
+          requests:
+            cpu: 50m
+            memory: 50M
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vu-test-service
+  name: vu-test-service
+  annotations:
+    vervet-underground.snyk.io/scrape: "true"
+    vervet-underground.snyk.io/port: "8080"
+spec:
+  ports:
+  - name: "8080"
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: vu-test-service

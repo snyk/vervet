@@ -52,7 +52,7 @@ func New() *Storage {
 // NotifyVersions implements scraper.Storage.
 func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time.Time) error {
 	for _, version := range versions {
-		// TODO: Add method to fetch contents here
+		// TODO: add method to fetch contents here
 		// TODO: implement notify versions; update sunset when versions are removed
 		err := s.NotifyVersion(name, version, []byte{}, scrapeTime)
 		if err != nil {
