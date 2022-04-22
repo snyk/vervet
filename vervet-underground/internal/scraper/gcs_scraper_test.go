@@ -14,44 +14,33 @@ import (
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
-	"vervet-underground/internal/storage/s3"
+	"vervet-underground/internal/storage/gcs"
 )
 
 const (
-	localstackAccessKey  = "test"
-	localstackSecretKey  = "test"
-	localstackSessionKey = "test"
-	awsEndpoint          = "http://localhost:4566"
-	awsRegion            = "us-east-1"
+	gcsEndpoint = "http://localhost:4443/storage/v1/"
+	gcsRegion   = "US-CENTRAL1" // https://cloud.google.com/storage/docs/locations#location-r
+	projectId   = "test"
 )
 
-var s3Cfg = &s3.Config{
-	AwsRegion:   awsRegion,
-	AwsEndpoint: awsEndpoint,
-	Credentials: s3.StaticKeyCredentials{
-		AccessKey:  localstackAccessKey,
-		SecretKey:  localstackSecretKey,
-		SessionKey: localstackSessionKey,
+var gcsCfg = &gcs.Config{
+	GcsRegion:   gcsRegion,
+	GcsEndpoint: gcsEndpoint,
+	Credentials: gcs.StaticKeyCredentials{
+		ProjectId: projectId,
 	},
 }
 
-func isCIEnabled(t *testing.T) bool {
-	t.Helper()
-
-	ci, err := strconv.ParseBool(os.Getenv("CI"))
-	return err == nil || ci
-}
-
-func s3cleanup() {
+func gcsCleanup() {
 	// cleanup
-	client, err := s3.New(s3Cfg)
+	client, err := gcs.New(gcsCfg)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to initialize S3 storage")
+		log.Error().Err(err).Msg("failed to initialize GCS storage")
 		return
 	}
-	st, ok := client.(*s3.Storage)
+	st, ok := client.(*gcs.Storage)
 	if !ok {
-		log.Error().Err(err).Msg("failed to cast to S3 storage")
+		log.Error().Msg("failed to cast to GCS storage")
 		return
 	}
 	revs, err := st.ListObjects("", "")
@@ -60,26 +49,36 @@ func s3cleanup() {
 		log.Error().Err(err).Msg("failed to List Objects")
 		return
 	}
-	for _, rev := range revs.Contents {
-		err = st.DeleteObject(*rev.Key)
-		if err != nil {
-			log.Error().Err(err).Msgf("failed to delete Object %s", *rev.Key)
+	for _, rev := range revs {
+		if rev.Name != "" {
+			err := st.DeleteObject(rev.Name)
+			if err != nil {
+				log.Error().Err(err).Msgf("failed to delete Object %s", rev.Prefix+"/"+rev.Name)
+			}
 		}
 	}
 }
 
-func s3Setup(t *testing.T) *qt.C {
+func isGcsCIEnabled(t *testing.T) bool {
+	t.Helper()
+
+	ci, err := strconv.ParseBool(os.Getenv("CI"))
+	return err == nil || ci
+}
+
+func gcsSetup(t *testing.T) *qt.C {
 	t.Helper()
 	c := qt.New(t)
-	if isCIEnabled(t) {
+	if isGcsCIEnabled(t) {
 		c.Skip("CI not enabled")
 	}
-	c.Cleanup(s3cleanup)
+	c.Cleanup(gcsCleanup)
 	return c
 }
 
-func TestS3Scraper(t *testing.T) {
-	c := s3Setup(t)
+func TestGCSScraper(t *testing.T) {
+	// Arrange
+	c := gcsSetup(t)
 
 	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
@@ -95,8 +94,12 @@ func TestS3Scraper(t *testing.T) {
 			animalsService.URL,
 		},
 	}
-	st, err := s3.New(s3Cfg)
+
+	client, err := gcs.New(gcsCfg)
 	c.Assert(err, qt.IsNil)
+	st, ok := client.(*gcs.Storage)
+	c.Assert(ok, qt.IsTrue)
+
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
 
@@ -134,8 +137,9 @@ func TestS3Scraper(t *testing.T) {
 	}
 }
 
-func TestS3ScraperCollation(t *testing.T) {
-	c := s3Setup(t)
+func TestGCSScraperCollation(t *testing.T) {
+	// Arrange
+	c := gcsSetup(t)
 
 	petfoodService := httptest.NewServer(petfood.Handler())
 	c.Cleanup(petfoodService.Close)
@@ -157,8 +161,11 @@ func TestS3ScraperCollation(t *testing.T) {
 		},
 	}
 
-	st, err := s3.New(s3Cfg)
+	client, err := gcs.New(gcsCfg)
 	c.Assert(err, qt.IsNil)
+	st, ok := client.(*gcs.Storage)
+	c.Assert(ok, qt.IsTrue)
+
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
 

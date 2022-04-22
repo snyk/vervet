@@ -56,3 +56,10 @@ test-localstack:
 	docker-compose start localstack
 	go test ./... -count=1 -race || true
 	docker-compose down
+
+.PHONY: test-gcs
+test-gcs:
+	docker-compose up --no-start fake-gcs
+	docker-compose start fake-gcs
+	go test ./... -count=1 -race || true
+	docker-compose down

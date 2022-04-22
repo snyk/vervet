@@ -11,6 +11,7 @@ type StorageType string
 const (
 	StorageTypeMemory StorageType = "memory"
 	StorageTypeS3     StorageType = "s3"
+	StorageTypeGCS    StorageType = "gcs"
 )
 
 // ServerConfig defines the configuration options for the Vervet Underground service.
@@ -23,6 +24,7 @@ type ServerConfig struct {
 type StorageConfig struct {
 	Type StorageType
 	S3   S3Config
+	GCS  GcsConfig
 }
 
 type S3Config struct {
@@ -31,6 +33,13 @@ type S3Config struct {
 	AccessKey  string
 	SecretKey  string
 	SessionKey string
+}
+
+type GcsConfig struct {
+	Region    string
+	Endpoint  string
+	ProjectId string
+	Filename  string
 }
 
 // setDefaults sets default values for the ServerConfig.

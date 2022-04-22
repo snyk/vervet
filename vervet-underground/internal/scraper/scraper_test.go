@@ -57,6 +57,7 @@ func setupHttpServers(c *qt.C) (*httptest.Server, *httptest.Server) {
 	c.Cleanup(animalsService.Close)
 	return petfoodService, animalsService
 }
+
 func (t *testService) Handler() http.Handler {
 	r := mux.NewRouter()
 	r.HandleFunc("/openapi", func(w http.ResponseWriter, r *http.Request) {
