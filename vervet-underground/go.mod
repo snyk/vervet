@@ -102,8 +102,10 @@ replace (
 	// Fixes: https://security.snyk.io/vuln/SNYK-GOLANG-GITHUBCOMURFAVENEGRONIV2-1658298
 	// https://security.snyk.io/vuln/SNYK-GOLANG-GITHUBCOMURFAVENEGRONI-1658297
 	// From: github.com/slok/go-http-metrics@v0.10.0
-	github.com/urfave/negroni/v2 v2.0.2 => github.com/urfave/negroni v0.0.0-20220225020424-92731f807096
-	// github.com/urfave/negroni v1.0.0 => github.com/urfave/negroni v0.0.0-20220225020424-92731f807096
+	github.com/urfave/negroni/v2 v2.0.2 => github.com/urfave/negroni v0.0.0-20211225020424-92731f807096
+	// Doesn't work and still flagging failure
+ 	// github.com/urfave/negroni v1.0.0 => github.com/urfave/negroni v0.0.0-20211225173727-3c3f8059b4bb
+
 	// Fixes: SNYK-GOLANG-GITHUBCOMVALYALAFASTHTTP-2407866
 	// From: github.com/slok/go-http-metrics@v0.10.0
 	github.com/valyala/fasthttp v1.31.0 => github.com/valyala/fasthttp v1.34.0
