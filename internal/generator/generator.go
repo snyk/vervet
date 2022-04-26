@@ -98,9 +98,6 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 		return nil, fmt.Errorf("%w: (generators.%s.template)", err, conf.Name)
 	}
 
-	// Remove the leading slash in the filepath -- fs.FS.Open does not accept
-	// rooted paths.
-	templateFilename = strings.TrimPrefix(templateFilename, "/")
 	// Parse & wire up other templates: contents, filename or files. These do
 	// support full scope.
 	templateFile, err := g.fs.Open(templateFilename)
@@ -153,7 +150,13 @@ func (g *Generator) resolveFilename(filenameTemplate string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Abs(buf.String())
+	filename, err := filepath.Abs(buf.String())
+	if err != nil {
+		return "", err
+	}
+	// Remove the leading slash in the filepath -- fs.FS.Open does not accept rooted paths.
+	filename = strings.TrimPrefix(filename, "/")
+	return filename, nil
 }
 
 // Option configures a Generator.
