@@ -374,7 +374,7 @@ func (s *Storage) ListObjects(key string, delimeter string) ([]storage.ObjectAtt
 		r = append(r, *obj)
 	}
 
-	log.Debug().Msgf("GCS Objects response: %+v", r)
+	log.Trace().Msgf("GCS Objects response: %+v", r)
 
 	return r, nil
 }

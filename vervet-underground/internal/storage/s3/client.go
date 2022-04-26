@@ -283,7 +283,7 @@ func (s *Storage) PutObject(key string, reader io.Reader) (*s3.PutObjectOutput, 
 	}
 
 	r, err := s.client.PutObject(context.Background(), &p)
-	log.Debug().Msgf("S3 PutObject response: %+v", r)
+	log.Trace().Msgf("S3 PutObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
 	}
@@ -353,7 +353,7 @@ func (s *Storage) DeleteObject(key string) error {
 	}
 
 	r, err := s.client.DeleteObject(context.Background(), &p)
-	log.Debug().Msgf("S3 DeleteObject response: %+v", r)
+	log.Trace().Msgf("S3 DeleteObject response: %+v", r)
 	if err != nil {
 		return err
 	}
@@ -407,7 +407,7 @@ func (s *Storage) ListObjects(key string, delimeter string) (*s3.ListObjectsV2Ou
 	}
 
 	r, err := s.client.ListObjectsV2(context.Background(), &p)
-	log.Debug().Msgf("S3 ListObject response: %+v", r)
+	log.Trace().Msgf("S3 ListObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
 	}
