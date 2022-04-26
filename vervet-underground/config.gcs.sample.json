@@ -7,6 +7,8 @@
   "host": "0.0.0.0",
   "storage": {
     "type": "gcs",
+    "iamRoleEnabled": false,
+    "bucketName": "vervet-underground-specs",
     "gcs": {
       "_comment": "empty filename results in using default credentials in GCS",
       "region": "US-EAST1",

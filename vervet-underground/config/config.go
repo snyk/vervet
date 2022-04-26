@@ -22,9 +22,11 @@ type ServerConfig struct {
 }
 
 type StorageConfig struct {
-	Type StorageType
-	S3   S3Config
-	GCS  GcsConfig
+	Type           StorageType
+	BucketName     string
+	IamRoleEnabled bool
+	S3             S3Config
+	GCS            GcsConfig
 }
 
 type S3Config struct {

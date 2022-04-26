@@ -17,11 +17,13 @@ const (
 	gcsEndpoint = "http://localhost:4443/storage/v1/"
 	gcsRegion   = "US-CENTRAL1" // https://cloud.google.com/storage/docs/locations#location-r
 	projectId   = "test"
+	bucketName  = "vervet-underground-specs"
 )
 
 var cfg = &gcs.Config{
 	GcsRegion:   gcsRegion,
 	GcsEndpoint: gcsEndpoint,
+	BucketName:  bucketName,
 	Credentials: gcs.StaticKeyCredentials{
 		ProjectId: projectId,
 	},

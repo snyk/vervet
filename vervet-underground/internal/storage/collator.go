@@ -60,7 +60,7 @@ func (c Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T,
 			rev, err := serviceRevisions.ResolveLatestRevision(version)
 			if err != nil {
 				// don't halt execution if we can't resolve version for this service - it is possible for a service to not have this version available.
-				log.Debug().Err(err).Msgf("could not resolve version %s for service %s", version, service)
+				log.Trace().Err(err).Msgf("could not resolve version %s for service %s", version, service)
 				continue
 			}
 			revisions = append(revisions, rev)

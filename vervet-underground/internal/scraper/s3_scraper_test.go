@@ -23,11 +23,13 @@ const (
 	localstackSessionKey = "test"
 	awsEndpoint          = "http://localhost:4566"
 	awsRegion            = "us-east-1"
+	awsBucketName        = "vervet-underground-specs"
 )
 
 var s3Cfg = &s3.Config{
 	AwsRegion:   awsRegion,
 	AwsEndpoint: awsEndpoint,
+	BucketName:  awsBucketName,
 	Credentials: s3.StaticKeyCredentials{
 		AccessKey:  localstackAccessKey,
 		SecretKey:  localstackSecretKey,
