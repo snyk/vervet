@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	bucketName           = "vervet-underground-specs"
 	localstackAccessKey  = "test"
 	localstackSecretKey  = "test"
 	localstackSessionKey = "test"
@@ -24,6 +25,7 @@ const (
 var cfg = &s3.Config{
 	AwsRegion:   awsRegion,
 	AwsEndpoint: awsEndpoint,
+	BucketName:  bucketName,
 	Credentials: s3.StaticKeyCredentials{
 		AccessKey:  localstackAccessKey,
 		SecretKey:  localstackSecretKey,

@@ -34,49 +34,55 @@ type StaticKeyCredentials struct {
 
 // Config Defines S3 client target used in config.LoadDefaultConfig.
 type Config struct {
-	AwsRegion   string
-	AwsEndpoint string
-	Credentials StaticKeyCredentials
+	AwsRegion      string
+	AwsEndpoint    string
+	BucketName     string
+	Credentials    StaticKeyCredentials
+	IamRoleEnabled bool
 }
 
 type Storage struct {
 	client *s3.Client
+	config Config
 }
 
 func New(awsCfg *Config) (storage.Storage, error) {
-	/*
-		TODO: Really should come from secrets volume
-			  awsRegion = os.Getenv("AWS_REGION")
-			  awsEndpoint = os.Getenv("AWS_ENDPOINT")
-			  bucketName = os.Getenv("S3_BUCKET")
-
-		localstack default, will make configurable
-	*/
-	if awsCfg == nil {
+	if awsCfg == nil || awsCfg.BucketName == "" {
 		return nil, fmt.Errorf("missing S3 configuration")
 	}
 
-	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		if awsCfg.AwsEndpoint != "" {
-			return aws.Endpoint{
-				PartitionID:   "aws",
-				URL:           awsCfg.AwsEndpoint,
-				SigningRegion: awsCfg.AwsRegion,
-			}, nil
+	var options []func(*config.LoadOptions) error
+	/*
+		Secrets should come from volume or IamRole
+		localstack defaults to static credentials for local dev
+		awsRegion = os.Getenv("AWS_REGION")
+		awsEndpoint = os.Getenv("AWS_ENDPOINT")
+		bucketName = os.Getenv("S3_BUCKET")
+	*/
+	if !awsCfg.IamRoleEnabled {
+		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			if awsCfg.AwsEndpoint != "" {
+				return aws.Endpoint{
+					PartitionID:   "aws",
+					URL:           awsCfg.AwsEndpoint,
+					SigningRegion: awsCfg.AwsRegion,
+				}, nil
+			}
+
+			// returning EndpointNotFoundError will allow the service to fallback to its default resolution
+			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+		})
+
+		options = []func(*config.LoadOptions) error{config.WithRegion(awsCfg.AwsRegion),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+				awsCfg.Credentials.AccessKey,
+				awsCfg.Credentials.SecretKey,
+				awsCfg.Credentials.SessionKey)),
+			config.WithEndpointResolverWithOptions(customResolver),
 		}
+	}
+	awsCfgLoader, err := config.LoadDefaultConfig(context.Background(), options...)
 
-		// returning EndpointNotFoundError will allow the service to fallback to its default resolution
-		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
-	})
-
-	awsCfgLoader, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(awsCfg.AwsRegion),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-			awsCfg.Credentials.AccessKey,
-			awsCfg.Credentials.SecretKey,
-			awsCfg.Credentials.SessionKey)),
-		config.WithEndpointResolverWithOptions(customResolver),
-	)
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot load the AWS configs")
 		return nil, err
@@ -86,7 +92,7 @@ func New(awsCfg *Config) (storage.Storage, error) {
 	s3Client := s3.NewFromConfig(awsCfgLoader, func(o *s3.Options) {
 		o.UsePathStyle = true
 	})
-	st := &Storage{client: s3Client}
+	st := &Storage{client: s3Client, config: *awsCfg}
 	err = st.CreateBucket()
 	if err != nil {
 		return nil, err
@@ -270,7 +276,7 @@ func (s *Storage) GetCollatedVersionSpec(version string) ([]byte, error) {
 // PutObject nice wrapper around the S3 PutObject request.
 func (s *Storage) PutObject(key string, reader io.Reader) (*s3.PutObjectOutput, error) {
 	p := s3.PutObjectInput{
-		Bucket: aws.String(storage.BucketName),
+		Bucket: aws.String(s.config.BucketName),
 		Key:    aws.String(key),
 		ACL:    types.ObjectCannedACLPublicRead,
 		Body:   reader,
@@ -308,7 +314,7 @@ func (s *Storage) PutCollatedSpecs(objects map[vervet.Version]openapi3.T) (res [
 // GetObject nice wrapper around the S3 GetObject request.
 func (s *Storage) GetObject(key string) ([]byte, error) {
 	p := s3.GetObjectInput{
-		Bucket: aws.String(storage.BucketName),
+		Bucket: aws.String(s.config.BucketName),
 		Key:    aws.String(key),
 	}
 
@@ -327,7 +333,7 @@ func (s *Storage) GetObject(key string) ([]byte, error) {
 // Returns metadata as well.
 func (s *Storage) GetObjectWithMetadata(key string) (*s3.GetObjectOutput, error) {
 	p := s3.GetObjectInput{
-		Bucket: aws.String(storage.BucketName),
+		Bucket: aws.String(s.config.BucketName),
 		Key:    aws.String(key),
 	}
 
@@ -342,7 +348,7 @@ func (s *Storage) GetObjectWithMetadata(key string) (*s3.GetObjectOutput, error)
 // DeleteObject nice wrapper around the S3 DeleteObject request.
 func (s *Storage) DeleteObject(key string) error {
 	p := s3.DeleteObjectInput{
-		Bucket: aws.String(storage.BucketName),
+		Bucket: aws.String(s.config.BucketName),
 		Key:    aws.String(key),
 	}
 
@@ -392,7 +398,7 @@ func (s *Storage) ListCommonPrefixes(key string) ([]types.CommonPrefix, error) {
 // Defaults to 1000 results.
 func (s *Storage) ListObjects(key string, delimeter string) (*s3.ListObjectsV2Output, error) {
 	p := s3.ListObjectsV2Input{
-		Bucket: aws.String(storage.BucketName),
+		Bucket: aws.String(s.config.BucketName),
 		Prefix: aws.String(key),
 	}
 
@@ -412,7 +418,7 @@ func (s *Storage) ListObjects(key string, delimeter string) (*s3.ListObjectsV2Ou
 // CreateBucket idempotently creates an S3 bucket for VU.
 func (s *Storage) CreateBucket() error {
 	create := &s3.CreateBucketInput{
-		Bucket: aws.String(storage.BucketName),
+		Bucket: aws.String(s.config.BucketName),
 	}
 
 	bucketOutput, err := s.client.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
@@ -422,7 +428,7 @@ func (s *Storage) CreateBucket() error {
 
 	exists := false
 	for _, bucket := range bucketOutput.Buckets {
-		if *bucket.Name == storage.BucketName {
+		if *bucket.Name == s.config.BucketName {
 			exists = true
 			break
 		}

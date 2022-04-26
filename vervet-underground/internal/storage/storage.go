@@ -44,7 +44,6 @@ type Storage interface {
 type CollatedVersionMappedSpecs map[vervet.Version]openapi3.T
 
 const (
-	BucketName             = "vervet-underground-specs"
 	CollatedVersionsFolder = "collated-versions/"
 	ServiceVersionsFolder  = "service-versions/"
 )

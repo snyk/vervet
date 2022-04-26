@@ -232,8 +232,10 @@ func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
 		return mem.New(), nil
 	case config.StorageTypeS3:
 		return s3.New(&s3.Config{
-			AwsRegion:   cfg.Storage.S3.Region,
-			AwsEndpoint: cfg.Storage.S3.Endpoint,
+			AwsRegion:      cfg.Storage.S3.Region,
+			AwsEndpoint:    cfg.Storage.S3.Endpoint,
+			IamRoleEnabled: cfg.Storage.IamRoleEnabled,
+			BucketName:     cfg.Storage.BucketName,
 			Credentials: s3.StaticKeyCredentials{
 				AccessKey:  cfg.Storage.S3.AccessKey,
 				SecretKey:  cfg.Storage.S3.SecretKey,
@@ -242,8 +244,10 @@ func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
 		})
 	case config.StorageTypeGCS:
 		return gcs.New(&gcs.Config{
-			GcsRegion:   cfg.Storage.GCS.Region,
-			GcsEndpoint: cfg.Storage.GCS.Endpoint,
+			GcsRegion:      cfg.Storage.GCS.Region,
+			GcsEndpoint:    cfg.Storage.GCS.Endpoint,
+			IamRoleEnabled: cfg.Storage.IamRoleEnabled,
+			BucketName:     cfg.Storage.BucketName,
 			Credentials: gcs.StaticKeyCredentials{
 				ProjectId: cfg.Storage.GCS.ProjectId,
 				Filename:  cfg.Storage.GCS.Filename,

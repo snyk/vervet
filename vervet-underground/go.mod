@@ -4,10 +4,10 @@ go 1.17
 
 require (
 	cloud.google.com/go/storage v1.22.0
-	github.com/aws/aws-sdk-go-v2 v1.16.2
-	github.com/aws/aws-sdk-go-v2/config v1.15.3
-	github.com/aws/aws-sdk-go-v2/credentials v1.11.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.5
+	github.com/aws/aws-sdk-go-v2 v1.16.3
+	github.com/aws/aws-sdk-go-v2/config v1.15.4
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.6
 	github.com/aws/smithy-go v1.11.2
 	github.com/frankban/quicktest v1.14.3
 	github.com/getkin/kin-openapi v0.94.0
@@ -17,10 +17,10 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/rs/zerolog v1.26.1
 	github.com/slok/go-http-metrics v0.10.0
-	github.com/snyk/vervet/v4 v4.15.0
+	github.com/snyk/vervet/v4 v4.15.1
 	github.com/spf13/viper v1.11.0
 	go.uber.org/multierr v1.8.0
-	google.golang.org/api v0.75.0
+	google.golang.org/api v0.76.0
 )
 
 require (
@@ -28,17 +28,17 @@ require (
 	cloud.google.com/go/compute v1.6.1 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.1 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.3 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.9 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.3 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.0 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.4 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.10 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.4 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.11 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.11.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.16.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.11.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.16.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -73,13 +73,13 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220422154200-b37d22cd5731 // indirect
+	google.golang.org/genproto v0.0.0-20220426171045-31bebdecfb46 // indirect
 	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
@@ -104,7 +104,7 @@ replace (
 	// From: github.com/slok/go-http-metrics@v0.10.0
 	github.com/urfave/negroni/v2 v2.0.2 => github.com/urfave/negroni v0.0.0-20211225020424-92731f807096
 	// Doesn't work and still flagging failure
- 	// github.com/urfave/negroni v1.0.0 => github.com/urfave/negroni v0.0.0-20211225173727-3c3f8059b4bb
+	// github.com/urfave/negroni v1.0.0 => github.com/urfave/negroni v0.0.0-20211225173727-3c3f8059b4bb
 
 	// Fixes: SNYK-GOLANG-GITHUBCOMVALYALAFASTHTTP-2407866
 	// From: github.com/slok/go-http-metrics@v0.10.0
