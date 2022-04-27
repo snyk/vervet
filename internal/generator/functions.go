@@ -91,7 +91,11 @@ var jsConsole = map[string]func(goja.FunctionCall) goja.Value{
 }
 
 func (g *Generator) loadFunctions(filename string) error {
-	src, err := ioutil.ReadFile(filename)
+	functionFile, err := g.fs.Open(filename)
+	if err != nil {
+		return err
+	}
+	src, err := ioutil.ReadAll(functionFile)
 	if err != nil {
 		return err
 	}
