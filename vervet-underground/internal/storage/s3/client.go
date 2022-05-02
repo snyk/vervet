@@ -55,6 +55,7 @@ func New(awsCfg *Config) (storage.Storage, error) {
 	}
 
 	var options []func(*config.LoadOptions) error
+	var credCache *aws.CredentialsCache
 	/*
 		Secrets should come from volume or IamRole
 		localstack defaults to static credentials for local dev
@@ -86,8 +87,13 @@ func New(awsCfg *Config) (storage.Storage, error) {
 		stsSvc := sts.New(sts.Options{})
 		creds := stscreds.NewAssumeRoleProvider(stsSvc, awsCfg.Credentials.RoleArn)
 		options = append(options, config.WithCredentialsProvider(creds))
+		credCache = aws.NewCredentialsCache(creds)
 	}
+
 	awsCfgLoader, err := config.LoadDefaultConfig(context.Background(), options...)
+	if credCache != nil {
+		awsCfgLoader.Credentials = credCache
+	}
 
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot load the AWS configs")
