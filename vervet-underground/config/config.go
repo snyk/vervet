@@ -35,6 +35,7 @@ type S3Config struct {
 	AccessKey  string
 	SecretKey  string
 	SessionKey string
+	RoleArn    string
 }
 
 type GcsConfig struct {

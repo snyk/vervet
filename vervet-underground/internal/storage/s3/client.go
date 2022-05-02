@@ -14,8 +14,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
@@ -30,6 +32,7 @@ type StaticKeyCredentials struct {
 	AccessKey  string
 	SecretKey  string
 	SessionKey string
+	RoleArn    string // Role Arn used when IamRoleEnabled
 }
 
 // Config Defines S3 client target used in config.LoadDefaultConfig.
@@ -73,13 +76,16 @@ func New(awsCfg *Config) (storage.Storage, error) {
 			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
 		})
 
-		options = []func(*config.LoadOptions) error{config.WithRegion(awsCfg.AwsRegion),
+		options = append(options, config.WithRegion(awsCfg.AwsRegion),
 			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 				awsCfg.Credentials.AccessKey,
 				awsCfg.Credentials.SecretKey,
 				awsCfg.Credentials.SessionKey)),
-			config.WithEndpointResolverWithOptions(customResolver),
-		}
+			config.WithEndpointResolverWithOptions(customResolver))
+	} else {
+		stsSvc := sts.New(sts.Options{})
+		creds := stscreds.NewAssumeRoleProvider(stsSvc, awsCfg.Credentials.RoleArn)
+		options = append(options, config.WithCredentialsProvider(creds))
 	}
 	awsCfgLoader, err := config.LoadDefaultConfig(context.Background(), options...)
 
