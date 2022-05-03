@@ -80,19 +80,20 @@ func TestCollateVersions(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	tests := []struct {
-		version string
-		empty   bool
+		version        string
+		empty          bool
+		errorCondition qt.Checker
 	}{
-		{"2021-09-16", false},
-		{"2021-01-01", true},
-		{"2021-09-16", false},
+		{"2021-09-16", false, qt.Equals},
+		{"2021-01-01", true, qt.Not(qt.Equals)},
+		{"2021-09-16", false, qt.Equals},
 	}
 	for i, t := range tests {
 		c.Run(fmt.Sprintf("test#%d: %v", i, t), func(c *qt.C) {
 			content, err := s.Version(t.version)
-			c.Assert(err, qt.IsNil)
+			c.Assert(err, t.errorCondition, nil)
 			if t.empty {
-				c.Assert(string(content), qt.Equals, emptySpec)
+				c.Assert(string(content), t.errorCondition, emptySpec)
 				return
 			}
 			c.Assert(string(content), qt.Not(qt.Equals), emptySpec)
