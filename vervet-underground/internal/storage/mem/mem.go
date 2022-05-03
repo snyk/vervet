@@ -153,7 +153,15 @@ func (s *Storage) Version(version string) ([]byte, error) {
 		return nil, err
 	}
 
-	spec := s.collatedVersionedSpecs[parsedVersion]
+	spec, ok := s.collatedVersionedSpecs[parsedVersion]
+	if !ok {
+		resolved, err := s.collatedVersions.Resolve(parsedVersion)
+		if err != nil {
+			return nil, err
+		}
+		resolvedSpec := s.collatedVersionedSpecs[resolved]
+		return resolvedSpec.MarshalJSON()
+	}
 	return spec.MarshalJSON()
 }
 

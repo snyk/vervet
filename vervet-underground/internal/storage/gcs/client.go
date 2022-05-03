@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -215,11 +216,28 @@ func (s *Storage) Versions() []string {
 
 // Version retrieves a specific Collated Version.
 func (s *Storage) Version(version string) ([]byte, error) {
-	_, err := vervet.ParseVersion(version)
+	parsedVersion, err := vervet.ParseVersion(version)
 	if err != nil {
 		return nil, err
 	}
-	return s.GetCollatedVersionSpec(version)
+	blob, err := s.GetCollatedVersionSpec(version)
+	if err != nil {
+		collatedVersions := vervet.VersionSlice{}
+		for _, s := range s.Versions() {
+			temp, err := vervet.ParseVersion(s)
+			if err != nil {
+				continue
+			}
+			collatedVersions = append(collatedVersions, temp)
+		}
+		sort.Sort(collatedVersions)
+		resolved, err := collatedVersions.Resolve(parsedVersion)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetCollatedVersionSpec(resolved.String())
+	}
+	return blob, nil
 }
 
 // ListCollatedVersions nice wrapper around the GCS ListObjects request.
