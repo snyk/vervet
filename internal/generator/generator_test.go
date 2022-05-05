@@ -45,6 +45,10 @@ version-readme:
   filename: "{{.Here}}/{{.API}}/{{.Resource}}/{{.Version.DateString}}/README"
   template: "` + prefix + `.vervet/resource/version/README.tmpl"
 `
+			os.Setenv("VERVET_TEMPLATE_test-value", "bad wolf")
+			t.Cleanup(func() {
+				os.Unsetenv("VERVET_TEMPLATE_test-value")
+			})
 			generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
 			c.Assert(err, qt.IsNil)
 
@@ -74,7 +78,9 @@ version-readme:
 				c.Assert(err, qt.IsNil)
 				c.Assert(string(readme), qt.Equals, ``+
 					`This is a generated scaffold for version `+test.version+"~experimental of the\n"+
-					test.resource+" resource in API testdata.\n\n")
+					test.resource+" resource in API testdata.\n\n"+
+					"An environment test value of bad wolf has been provided\n"+
+					"for this scaffold.")
 			}
 		})
 	}
@@ -99,6 +105,10 @@ resource-routes:
   filename: "{{.Here}}/{{ .API }}/{{ .Resource }}/routes.ts"
   template: "` + prefix + `.vervet/resource/routes.ts.tmpl"
 `
+			os.Setenv("VERVET_TEMPLATE_test-value", "bad wolf")
+			t.Cleanup(func() {
+				os.Unsetenv("VERVET_TEMPLATE_test-value")
+			})
 			generatorsConf, err := config.LoadGenerators(bytes.NewBufferString(versionReadme))
 			c.Assert(err, qt.IsNil)
 
@@ -145,7 +155,8 @@ export const helloWorldGetOne = versions([
     version: '2021-06-13~beta',
   },
 ]);
-`[1:])
+// An environment test value of bad wolf has been provided
+// for this scaffold.`[1:])
 
 			routes, err = ioutil.ReadFile(out + "/testdata/projects/routes.ts")
 			c.Assert(err, qt.IsNil)
@@ -166,7 +177,8 @@ export const getOrgsProjects = versions([
     version: '2021-06-04~experimental',
   },
 ]);
-`[1:])
+// An environment test value of bad wolf has been provided
+// for this scaffold.`[1:])
 		})
 	}
 }
