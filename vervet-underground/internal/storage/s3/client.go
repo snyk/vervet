@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -45,8 +46,10 @@ type Config struct {
 }
 
 type Storage struct {
-	client *s3.Client
-	config Config
+	mu               sync.RWMutex
+	client           *s3.Client
+	config           Config
+	collatedVersions vervet.VersionSlice
 }
 
 func New(awsCfg *Config) (storage.Storage, error) {
@@ -104,7 +107,11 @@ func New(awsCfg *Config) (storage.Storage, error) {
 	s3Client := s3.NewFromConfig(awsCfgLoader, func(o *s3.Options) {
 		o.UsePathStyle = true
 	})
-	st := &Storage{client: s3Client, config: *awsCfg}
+	st := &Storage{
+		client:           s3Client,
+		config:           *awsCfg,
+		collatedVersions: vervet.VersionSlice{},
+	}
 	err = st.CreateBucket()
 	if err != nil {
 		return nil, err
@@ -177,21 +184,36 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 
 // Versions implements scraper.Storage.
 func (s *Storage) Versions() []string {
-	prefixes, err := s.ListCollatedVersions()
-	if err != nil {
-		return nil
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	stringVersions := make([]string, len(s.collatedVersions))
+	for i, version := range s.collatedVersions {
+		stringVersions[i] = version.String()
 	}
 
-	return prefixes
+	return stringVersions
 }
 
 // Version implements scraper.Storage.
 func (s *Storage) Version(version string) ([]byte, error) {
-	_, err := vervet.ParseVersion(version)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	parsedVersion, err := vervet.ParseVersion(version)
 	if err != nil {
 		return nil, err
 	}
-	return s.GetCollatedVersionSpec(version)
+
+	blob, err := s.GetCollatedVersionSpec(version)
+	if err != nil {
+		resolved, err := s.collatedVersions.Resolve(parsedVersion)
+		if err != nil {
+			return nil, err
+		}
+
+		return s.GetCollatedVersionSpec(resolved.String())
+	}
+	return blob, nil
 }
 
 // CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
@@ -237,10 +259,14 @@ func (s *Storage) CollateVersions() error {
 		}
 		aggregate.Add(service, revision)
 	}
-	_, specs, err := aggregate.Collate()
+	versions, specs, err := aggregate.Collate()
 	if err != nil {
 		return err
 	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.collatedVersions = versions
 
 	objects, err := s.PutCollatedSpecs(specs)
 	if err != nil {
@@ -433,7 +459,7 @@ func (s *Storage) CreateBucket() error {
 		Bucket: aws.String(s.config.BucketName),
 	}
 
-	bucketOutput, err := s.client.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
+	bucketOutput, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{})
 	if smith := handleAwsError(err); smith != nil {
 		return smith
 	}
@@ -447,7 +473,7 @@ func (s *Storage) CreateBucket() error {
 	}
 
 	if !exists {
-		bucket, err := s.client.CreateBucket(context.TODO(), create)
+		bucket, err := s.client.CreateBucket(context.Background(), create)
 		if smith := handleAwsError(err); smith != nil {
 			return smith
 		}
