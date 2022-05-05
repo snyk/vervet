@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -39,8 +39,10 @@ type Config struct {
 
 // Storage implements storage.Storage.
 type Storage struct {
-	c      *storage.Client
-	config Config
+	mu               sync.RWMutex
+	c                *storage.Client
+	config           Config
+	collatedVersions vervet.VersionSlice
 }
 
 /*
@@ -72,7 +74,11 @@ func New(gcsConfig *Config) (vustorage.Storage, error) {
 		return nil, err
 	}
 
-	st := &Storage{client, *gcsConfig}
+	st := &Storage{
+		c:                client,
+		config:           *gcsConfig,
+		collatedVersions: vervet.VersionSlice{},
+	}
 	err = st.CreateBucket()
 	if err != nil {
 		return nil, err
@@ -137,10 +143,14 @@ func (s *Storage) CollateVersions() error {
 		}
 		aggregate.Add(service, revision)
 	}
-	_, specs, err := aggregate.Collate()
+	versions, specs, err := aggregate.Collate()
 	if err != nil {
 		return err
 	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.collatedVersions = versions
 
 	objects, err := s.PutCollatedSpecs(specs)
 	if err != nil {
@@ -206,35 +216,33 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 
 // Versions lists all available Collated Versions.
 func (s *Storage) Versions() []string {
-	prefixes, err := s.ListCollatedVersions()
-	if err != nil {
-		return nil
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	stringVersions := make([]string, len(s.collatedVersions))
+	for i, version := range s.collatedVersions {
+		stringVersions[i] = version.String()
 	}
 
-	return prefixes
+	return stringVersions
 }
 
-// Version retrieves a specific Collated Version.
+// Version implements scraper.Storage.
 func (s *Storage) Version(version string) ([]byte, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	parsedVersion, err := vervet.ParseVersion(version)
 	if err != nil {
 		return nil, err
 	}
+
 	blob, err := s.GetCollatedVersionSpec(version)
 	if err != nil {
-		collatedVersions := vervet.VersionSlice{}
-		for _, s := range s.Versions() {
-			temp, err := vervet.ParseVersion(s)
-			if err != nil {
-				continue
-			}
-			collatedVersions = append(collatedVersions, temp)
-		}
-		sort.Sort(collatedVersions)
-		resolved, err := collatedVersions.Resolve(parsedVersion)
+		resolved, err := s.collatedVersions.Resolve(parsedVersion)
 		if err != nil {
 			return nil, err
 		}
+
 		return s.GetCollatedVersionSpec(resolved.String())
 	}
 	return blob, nil
@@ -376,7 +384,7 @@ func (s *Storage) ListObjects(key string, delimeter string) ([]storage.ObjectAtt
 	if query.Prefix == "" {
 		query = nil
 	}
-	it := s.c.Bucket(s.config.BucketName).Objects(context.TODO(), query)
+	it := s.c.Bucket(s.config.BucketName).Objects(context.Background(), query)
 	r := make([]storage.ObjectAttrs, 0)
 	for {
 		obj, err := it.Next()
@@ -399,16 +407,18 @@ func (s *Storage) ListObjects(key string, delimeter string) ([]storage.ObjectAtt
 
 // DeleteObject deletes a file if it exists.
 func (s *Storage) DeleteObject(key string) error {
-	return s.c.Bucket(s.config.BucketName).Object(key).Delete(context.TODO())
+	return s.c.Bucket(s.config.BucketName).Object(key).Delete(context.Background())
 }
 
 // CreateBucket idempotently creates an GCS bucket for VU.
 func (s *Storage) CreateBucket() error {
 	bucket, err := s.getBucketAttrs()
-	if err != nil || bucket.Name != s.config.BucketName {
-		if !errors.Is(err, storage.ErrBucketNotExist) {
-			return err
-		}
+	if err != nil && !errors.Is(err, storage.ErrBucketNotExist) {
+		return err
+	}
+	// if bucket exists, idempotent return
+	if bucket != nil {
+		return nil
 	}
 
 	err = s.c.Bucket(s.config.BucketName).Create(
@@ -441,7 +451,7 @@ func (s *Storage) ListBucketContents() ([]string, error) {
 
 // getBucketAttrs gets the metadata around a bucket if it exists.
 func (s *Storage) getBucketAttrs() (*storage.BucketAttrs, error) {
-	return s.c.Bucket(s.config.BucketName).Attrs(context.TODO())
+	return s.c.Bucket(s.config.BucketName).Attrs(context.Background())
 }
 
 // getCollatedVersionFromKey helper function to clean up GCS keys for
