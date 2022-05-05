@@ -43,10 +43,12 @@ type Config struct {
 	BucketName     string
 	Credentials    StaticKeyCredentials
 	IamRoleEnabled bool
+	Context        context.Context
 }
 
 type Storage struct {
 	mu               sync.RWMutex
+	ctx              context.Context
 	client           *s3.Client
 	config           Config
 	collatedVersions vervet.VersionSlice
@@ -93,7 +95,7 @@ func New(awsCfg *Config) (storage.Storage, error) {
 		credCache = aws.NewCredentialsCache(creds)
 	}
 
-	awsCfgLoader, err := config.LoadDefaultConfig(context.Background(), options...)
+	awsCfgLoader, err := config.LoadDefaultConfig(awsCfg.Context, options...)
 	if credCache != nil {
 		awsCfgLoader.Credentials = credCache
 	}
@@ -110,6 +112,7 @@ func New(awsCfg *Config) (storage.Storage, error) {
 	st := &Storage{
 		client:           s3Client,
 		config:           *awsCfg,
+		ctx:              awsCfg.Context,
 		collatedVersions: vervet.VersionSlice{},
 	}
 	err = st.CreateBucket()
@@ -320,7 +323,7 @@ func (s *Storage) PutObject(key string, reader io.Reader) (*s3.PutObjectOutput, 
 		Body:   reader,
 	}
 
-	r, err := s.client.PutObject(context.Background(), &p)
+	r, err := s.client.PutObject(s.ctx, &p)
 	log.Trace().Msgf("S3 PutObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
@@ -356,7 +359,7 @@ func (s *Storage) GetObject(key string) ([]byte, error) {
 		Key:    aws.String(key),
 	}
 
-	r, err := s.client.GetObject(context.Background(), &p)
+	r, err := s.client.GetObject(s.ctx, &p)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
 	}
@@ -375,7 +378,7 @@ func (s *Storage) GetObjectWithMetadata(key string) (*s3.GetObjectOutput, error)
 		Key:    aws.String(key),
 	}
 
-	r, err := s.client.GetObject(context.Background(), &p)
+	r, err := s.client.GetObject(s.ctx, &p)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
 	}
@@ -390,7 +393,7 @@ func (s *Storage) DeleteObject(key string) error {
 		Key:    aws.String(key),
 	}
 
-	r, err := s.client.DeleteObject(context.Background(), &p)
+	r, err := s.client.DeleteObject(s.ctx, &p)
 	log.Trace().Msgf("S3 DeleteObject response: %+v", r)
 	if err != nil {
 		return err
@@ -444,7 +447,7 @@ func (s *Storage) ListObjects(key string, delimeter string) (*s3.ListObjectsV2Ou
 		p.Delimiter = aws.String("/")
 	}
 
-	r, err := s.client.ListObjectsV2(context.Background(), &p)
+	r, err := s.client.ListObjectsV2(s.ctx, &p)
 	log.Trace().Msgf("S3 ListObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
@@ -459,7 +462,7 @@ func (s *Storage) CreateBucket() error {
 		Bucket: aws.String(s.config.BucketName),
 	}
 
-	bucketOutput, err := s.client.ListBuckets(context.Background(), &s3.ListBucketsInput{})
+	bucketOutput, err := s.client.ListBuckets(s.ctx, &s3.ListBucketsInput{})
 	if smith := handleAwsError(err); smith != nil {
 		return smith
 	}
@@ -473,7 +476,7 @@ func (s *Storage) CreateBucket() error {
 	}
 
 	if !exists {
-		bucket, err := s.client.CreateBucket(context.Background(), create)
+		bucket, err := s.client.CreateBucket(s.ctx, create)
 		if smith := handleAwsError(err); smith != nil {
 			return smith
 		}

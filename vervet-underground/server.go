@@ -227,6 +227,7 @@ func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
 }
 
 func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
+	ctx := context.Background()
 	switch cfg.Storage.Type {
 	case config.StorageTypeMemory:
 		return mem.New(), nil
@@ -236,6 +237,7 @@ func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
 			AwsEndpoint:    cfg.Storage.S3.Endpoint,
 			IamRoleEnabled: cfg.Storage.IamRoleEnabled,
 			BucketName:     cfg.Storage.BucketName,
+			Context:        ctx,
 			Credentials: s3.StaticKeyCredentials{
 				AccessKey:  cfg.Storage.S3.AccessKey,
 				SecretKey:  cfg.Storage.S3.SecretKey,
@@ -249,6 +251,7 @@ func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
 			GcsEndpoint:    cfg.Storage.GCS.Endpoint,
 			IamRoleEnabled: cfg.Storage.IamRoleEnabled,
 			BucketName:     cfg.Storage.BucketName,
+			Context:        ctx,
 			Credentials: gcs.StaticKeyCredentials{
 				ProjectId: cfg.Storage.GCS.ProjectId,
 				Filename:  cfg.Storage.GCS.Filename,

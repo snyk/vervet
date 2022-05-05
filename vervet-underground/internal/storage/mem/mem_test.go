@@ -53,50 +53,35 @@ func TestHasVersion(t *testing.T) {
 	}
 }
 
-const spec = `
-openapi: 3.0.0
-info:
-  title: ServiceA API
-  version: 0.0.0
-paths:
-  /test:
-    get:
-      operation: getTest
-      summary: Test endpoint
-      responses:
-        '204':
-          description: An empty response
-`
-const emptySpec = `{"components":{},"info":null,"openapi":"","paths":null}`
+const spec = `{"components":{},"info":{"title":"ServiceA API","version":"0.0.0"},` +
+	`"openapi":"3.0.0","paths":{"/test":{"get":{"operation":"getTest",` +
+	`"responses":{"204":{"description":"An empty response"}},"summary":"Test endpoint"}}}}`
+
+const emptySpec = `{"components":{},"info":{"title":"","version":""},"openapi":"","paths":null}`
 
 func TestCollateVersions(t *testing.T) {
 	c := qt.New(t)
 	s := New()
 
-	err := s.NotifyVersion("petfood", "2021-09-16", []byte(spec), t0)
+	err := s.NotifyVersion("petfood", "2021-09-16", []byte(emptySpec), t0)
 	c.Assert(err, qt.IsNil)
 
 	err = s.CollateVersions()
 	c.Assert(err, qt.IsNil)
+	before, err := s.Version("2021-09-16")
+	c.Assert(err, qt.IsNil)
+	c.Assert(string(before), qt.Equals, emptySpec)
 
-	tests := []struct {
-		version        string
-		empty          bool
-		errorCondition qt.Checker
-	}{
-		{"2021-09-16", false, qt.Equals},
-		{"2021-01-01", true, qt.Not(qt.Equals)},
-		{"2021-09-16", false, qt.Equals},
-	}
-	for i, t := range tests {
-		c.Run(fmt.Sprintf("test#%d: %v", i, t), func(c *qt.C) {
-			content, err := s.Version(t.version)
-			c.Assert(err, t.errorCondition, nil)
-			if t.empty {
-				c.Assert(string(content), t.errorCondition, emptySpec)
-				return
-			}
-			c.Assert(string(content), qt.Not(qt.Equals), emptySpec)
-		})
-	}
+	content, err := s.Version("2021-01-01")
+	c.Assert(err.Error(), qt.Equals, fmt.Errorf("no matching version").Error())
+	c.Assert(content, qt.IsNil)
+
+	err = s.NotifyVersion("petfood", "2021-09-16", []byte(spec), t0.Add(time.Second))
+	c.Assert(err, qt.IsNil)
+	err = s.CollateVersions()
+	c.Assert(err, qt.IsNil)
+
+	after, err := s.Version("2021-09-16")
+	c.Assert(err, qt.IsNil)
+	c.Assert(string(after), qt.Equals, spec)
 }

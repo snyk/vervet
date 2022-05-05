@@ -34,12 +34,14 @@ type Config struct {
 	GcsEndpoint    string
 	BucketName     string
 	IamRoleEnabled bool
+	Context        context.Context
 	Credentials    StaticKeyCredentials
 }
 
 // Storage implements storage.Storage.
 type Storage struct {
 	mu               sync.RWMutex
+	ctx              context.Context
 	c                *storage.Client
 	config           Config
 	collatedVersions vervet.VersionSlice
@@ -67,7 +69,7 @@ func New(gcsConfig *Config) (vustorage.Storage, error) {
 		}
 	}
 
-	client, err := storage.NewClient(context.Background(), options...)
+	client, err := storage.NewClient(gcsConfig.Context, options...)
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to create client")
@@ -77,6 +79,7 @@ func New(gcsConfig *Config) (vustorage.Storage, error) {
 	st := &Storage{
 		c:                client,
 		config:           *gcsConfig,
+		ctx:              gcsConfig.Context,
 		collatedVersions: vervet.VersionSlice{},
 	}
 	err = st.CreateBucket()
@@ -319,10 +322,8 @@ func (s *Storage) GetCollatedVersionSpec(version string) ([]byte, error) {
 
 // PutObject nice wrapper around the GCS PutObject request.
 func (s *Storage) PutObject(key string, reader io.Reader) (*storage.ObjectHandle, error) {
-	ctx := context.Background()
 	obj := s.c.Bucket(s.config.BucketName).Object(key)
-
-	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
+	ctx, cancel := context.WithTimeout(s.ctx, time.Second*50)
 	defer cancel()
 
 	wc := obj.NewWriter(ctx)
@@ -344,7 +345,7 @@ func (s *Storage) PutObject(key string, reader io.Reader) (*storage.ObjectHandle
 
 // GetObject actually retrieves the json blob form GCS.
 func (s *Storage) GetObject(key string) ([]byte, error) {
-	reader, err := s.c.Bucket(s.config.BucketName).Object(key).NewReader(context.Background())
+	reader, err := s.c.Bucket(s.config.BucketName).Object(key).NewReader(s.ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrObjectNotExist) {
 			return nil, nil
@@ -360,11 +361,11 @@ func (s *Storage) GetObject(key string) ([]byte, error) {
 // with metadata around the storage in GCS.
 func (s *Storage) GetObjectWithMetadata(key string) (*storage.Reader, *storage.ObjectAttrs, error) {
 	handle := s.c.Bucket(s.config.BucketName).Object(key)
-	attrs, err := handle.Attrs(context.Background())
+	attrs, err := handle.Attrs(s.ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	reader, err := handle.NewReader(context.Background())
+	reader, err := handle.NewReader(s.ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -384,7 +385,7 @@ func (s *Storage) ListObjects(key string, delimeter string) ([]storage.ObjectAtt
 	if query.Prefix == "" {
 		query = nil
 	}
-	it := s.c.Bucket(s.config.BucketName).Objects(context.Background(), query)
+	it := s.c.Bucket(s.config.BucketName).Objects(s.ctx, query)
 	r := make([]storage.ObjectAttrs, 0)
 	for {
 		obj, err := it.Next()
@@ -407,7 +408,7 @@ func (s *Storage) ListObjects(key string, delimeter string) ([]storage.ObjectAtt
 
 // DeleteObject deletes a file if it exists.
 func (s *Storage) DeleteObject(key string) error {
-	return s.c.Bucket(s.config.BucketName).Object(key).Delete(context.Background())
+	return s.c.Bucket(s.config.BucketName).Object(key).Delete(s.ctx)
 }
 
 // CreateBucket idempotently creates an GCS bucket for VU.
@@ -422,7 +423,7 @@ func (s *Storage) CreateBucket() error {
 	}
 
 	err = s.c.Bucket(s.config.BucketName).Create(
-		context.Background(),
+		s.ctx,
 		s.config.Credentials.ProjectId,
 		nil)
 	if err != nil {
@@ -435,7 +436,7 @@ func (s *Storage) CreateBucket() error {
 // ListBucketContents lists all available files in a GCS bucket.
 func (s *Storage) ListBucketContents() ([]string, error) {
 	objects := make([]string, 0)
-	it := s.c.Bucket(s.config.BucketName).Objects(context.Background(), &storage.Query{})
+	it := s.c.Bucket(s.config.BucketName).Objects(s.ctx, &storage.Query{})
 	for {
 		attrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
@@ -451,7 +452,7 @@ func (s *Storage) ListBucketContents() ([]string, error) {
 
 // getBucketAttrs gets the metadata around a bucket if it exists.
 func (s *Storage) getBucketAttrs() (*storage.BucketAttrs, error) {
-	return s.c.Bucket(s.config.BucketName).Attrs(context.Background())
+	return s.c.Bucket(s.config.BucketName).Attrs(s.ctx)
 }
 
 // getCollatedVersionFromKey helper function to clean up GCS keys for
