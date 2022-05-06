@@ -107,7 +107,7 @@ func TestScraper(t *testing.T) {
 
 	// No version digests should be known
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsFalse)
 	}
@@ -118,14 +118,14 @@ func TestScraper(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
 
 	c.Assert(len(st.Versions()), qt.Equals, 4)
 	for _, version := range st.Versions() {
-		specData, err := st.Version(version)
+		specData, err := st.Version(ctx, version)
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)
@@ -199,7 +199,9 @@ func TestScraperCollation(t *testing.T) {
 			animalsService.URL,
 		},
 	}
-	st := mem.New()
+	memSt := mem.New()
+	st, ok := memSt.(*mem.Storage)
+	c.Assert(ok, qt.IsTrue)
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
 
@@ -216,7 +218,7 @@ func TestScraperCollation(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
@@ -227,7 +229,7 @@ func TestScraperCollation(t *testing.T) {
 
 	c.Assert(len(st.Versions()), qt.Equals, 4)
 	for _, version := range st.Versions() {
-		specData, err := st.Version(version)
+		specData, err := st.Version(ctx, version)
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)

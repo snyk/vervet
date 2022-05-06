@@ -5,6 +5,7 @@
 package mem
 
 import (
+	"context"
 	"sort"
 	"sync"
 	"time"
@@ -39,7 +40,7 @@ type Storage struct {
 }
 
 // New returns a new Storage instance.
-func New() *Storage {
+func New() storage.Storage {
 	return &Storage{
 		serviceVersions:                   versionedResourceMap{},
 		serviceVersionMappedRevisionSpecs: serviceVersionMappedRevisionSpecs{},
@@ -50,11 +51,11 @@ func New() *Storage {
 }
 
 // NotifyVersions implements scraper.Storage.
-func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersions(ctx context.Context, name string, versions []string, scrapeTime time.Time) error {
 	for _, version := range versions {
 		// TODO: Add method to fetch contents here
 		// TODO: implement notify versions; update sunset when versions are removed
-		err := s.NotifyVersion(name, version, []byte{}, scrapeTime)
+		err := s.NotifyVersion(ctx, name, version, []byte{}, scrapeTime)
 		if err != nil {
 			return err
 		}
@@ -63,7 +64,7 @@ func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time
 }
 
 // HasVersion implements scraper.Storage.
-func (s *Storage) HasVersion(name string, version string, digest string) (bool, error) {
+func (s *Storage) HasVersion(ctx context.Context, name string, version string, digest string) (bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	name = storage.GetSantizedHost(name)
@@ -77,7 +78,7 @@ func (s *Storage) HasVersion(name string, version string, digest string) (bool, 
 }
 
 // NotifyVersion implements scraper.Storage.
-func (s *Storage) NotifyVersion(name string, version string, contents []byte, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	name = storage.GetSantizedHost(name)
@@ -144,7 +145,7 @@ func (s *Storage) Versions() []string {
 }
 
 // Version implements scraper.Storage.
-func (s *Storage) Version(version string) ([]byte, error) {
+func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -166,7 +167,7 @@ func (s *Storage) Version(version string) ([]byte, error) {
 }
 
 // CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
-func (s *Storage) CollateVersions() error {
+func (s *Storage) CollateVersions(ctx context.Context) error {
 	// create an aggregate to process collated data from storage data
 	aggregate := storage.NewCollator()
 	for serv, versions := range s.serviceVersionMappedRevisionSpecs {

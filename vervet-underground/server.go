@@ -60,7 +60,8 @@ func main() {
 
 	// initialize Scraper
 	ticker := time.NewTicker(scrapeInterval)
-	st, err := initializeStorage(cfg)
+	ctx := context.Background()
+	st, err := initializeStorage(ctx, cfg)
 	if err != nil {
 		logError(err)
 		log.Fatal().Msg("unable to initialize storage client")
@@ -75,12 +76,12 @@ func main() {
 		log.Fatal().Msg("unable to load storage")
 	}
 	// initialize
-	err = runScrape(sc)
+	err = runScrape(ctx, sc)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed initialization scraping of service")
 	}
 
-	versionHandlers(router, sc)
+	versionHandlers(ctx, router, sc)
 	healthHandler(router, cfg.Services)
 	router.Handle("/metrics", promhttp.Handler())
 
@@ -98,7 +99,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				if err := runScrape(sc); err != nil {
+				if err := runScrape(ctx, sc); err != nil {
 					logError(err)
 				}
 			case <-quit:
@@ -149,10 +150,10 @@ func main() {
 // runScrape runs scraping all services and can take
 // a longer period of time than standard wait timeout.
 // moves to cancel context once scraping and collation are complete.
-func runScrape(sc *scraper.Scraper) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func runScrape(ctx context.Context, sc *scraper.Scraper) error {
+	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
-	if err := sc.Run(ctx); err != nil {
+	if err := sc.Run(ctxWithCancel); err != nil {
 		return err
 	}
 	log.Info().Msgf("scraper successfully completed run at %s", time.Now().UTC().String())
@@ -181,7 +182,7 @@ func healthHandler(router *mux.Router, services []string) {
 	})
 }
 
-func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
+func versionHandlers(ctx context.Context, router *mux.Router, sc *scraper.Scraper) {
 	router.
 		Path("/openapi").
 		Methods("GET").
@@ -208,7 +209,7 @@ func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
 		Methods("GET").
 		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			version := mux.Vars(r)["version"]
-			bytes, err := sc.Version(version)
+			bytes, err := sc.Version(ctx, version)
 			if err != nil {
 				logError(err)
 				http.Error(w, "Failure to process request", http.StatusBadRequest)
@@ -226,12 +227,12 @@ func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
 		})
 }
 
-func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
+func initializeStorage(ctx context.Context, cfg *config.ServerConfig) (storage.Storage, error) {
 	switch cfg.Storage.Type {
 	case config.StorageTypeMemory:
 		return mem.New(), nil
 	case config.StorageTypeS3:
-		return s3.New(&s3.Config{
+		return s3.New(ctx, &s3.Config{
 			AwsRegion:      cfg.Storage.S3.Region,
 			AwsEndpoint:    cfg.Storage.S3.Endpoint,
 			IamRoleEnabled: cfg.Storage.IamRoleEnabled,
@@ -244,7 +245,7 @@ func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
 			},
 		})
 	case config.StorageTypeGCS:
-		return gcs.New(&gcs.Config{
+		return gcs.New(ctx, &gcs.Config{
 			GcsRegion:      cfg.Storage.GCS.Region,
 			GcsEndpoint:    cfg.Storage.GCS.Endpoint,
 			IamRoleEnabled: cfg.Storage.IamRoleEnabled,

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"net/url"
 	"strings"
 	"time"
@@ -16,28 +17,28 @@ type Storage interface {
 	// NotifyVersions tells the storage which versions are currently available.
 	// This is the primary mechanism by which the storage layer discovers and
 	// processes versions which are removed post-sunset.
-	NotifyVersions(name string, versions []string, scrapeTime time.Time) error
+	NotifyVersions(ctx context.Context, name string, versions []string, scrapeTime time.Time) error
 
 	// CollateVersions tells the storage to execute the compilation and
 	// update all VU-formatted specs from all services and their
 	// respective versions gathered.
-	CollateVersions() error
+	CollateVersions(ctx context.Context) error
 
 	// HasVersion returns whether the storage has already stored the service
 	// API spec version at the given content digest.
-	HasVersion(name string, version string, digest string) (bool, error)
+	HasVersion(ctx context.Context, name string, version string, digest string) (bool, error)
 
 	// NotifyVersion tells the storage to store the given version contents at
 	// the scrapeTime. The storage implementation must detect and ignore
 	// duplicate version contents, as some services may not provide content
 	// digest headers in their responses.
-	NotifyVersion(name string, version string, contents []byte, scrapeTime time.Time) error
+	NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error
 
 	// Versions fetches the Storage Versions compiled by VU
 	Versions() []string
 
 	// Version fetches the Storage Version spec compiled by VU
-	Version(version string) ([]byte, error)
+	Version(ctx context.Context, version string) ([]byte, error)
 }
 
 // CollatedVersionMappedSpecs Compiled aggregated spec for all services at that given version.

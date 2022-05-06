@@ -46,7 +46,8 @@ func isCIEnabled(t *testing.T) bool {
 
 func s3cleanup() {
 	// cleanup
-	client, err := s3.New(s3Cfg)
+	ctx := context.Background()
+	client, err := s3.New(ctx, s3Cfg)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to initialize S3 storage")
 		return
@@ -56,14 +57,14 @@ func s3cleanup() {
 		log.Error().Err(err).Msg("failed to cast to S3 storage")
 		return
 	}
-	revs, err := st.ListObjects("", "")
+	revs, err := st.ListObjects(ctx, "", "")
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to List Objects")
 		return
 	}
 	for _, rev := range revs.Contents {
-		err = st.DeleteObject(*rev.Key)
+		err = st.DeleteObject(ctx, *rev.Key)
 		if err != nil {
 			log.Error().Err(err).Msgf("failed to delete Object %s", *rev.Key)
 		}
@@ -83,6 +84,7 @@ func s3Setup(t *testing.T) *qt.C {
 func TestS3Scraper(t *testing.T) {
 	c := s3Setup(t)
 
+	ctx := context.Background()
 	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
 		service, version, digest string
@@ -97,7 +99,7 @@ func TestS3Scraper(t *testing.T) {
 			animalsService.URL,
 		},
 	}
-	st, err := s3.New(s3Cfg)
+	st, err := s3.New(ctx, s3Cfg)
 	c.Assert(err, qt.IsNil)
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
@@ -108,7 +110,7 @@ func TestS3Scraper(t *testing.T) {
 
 	// No version digests should be known
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsFalse)
 	}
@@ -119,14 +121,14 @@ func TestS3Scraper(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
 
 	c.Assert(len(st.Versions()), qt.Equals, 4)
 	for _, version := range st.Versions() {
-		specData, err := st.Version(version)
+		specData, err := st.Version(ctx, version)
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)
@@ -139,6 +141,7 @@ func TestS3Scraper(t *testing.T) {
 func TestS3ScraperCollation(t *testing.T) {
 	c := s3Setup(t)
 
+	ctx := context.Background()
 	petfoodService := httptest.NewServer(petfood.Handler())
 	c.Cleanup(petfoodService.Close)
 
@@ -159,7 +162,7 @@ func TestS3ScraperCollation(t *testing.T) {
 		},
 	}
 
-	st, err := s3.New(s3Cfg)
+	st, err := s3.New(ctx, s3Cfg)
 	c.Assert(err, qt.IsNil)
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
 	c.Assert(err, qt.IsNil)
@@ -174,14 +177,14 @@ func TestS3ScraperCollation(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
 
 	c.Assert(len(st.Versions()), qt.Equals, 4)
 	for _, version := range st.Versions() {
-		specData, err := st.Version(version)
+		specData, err := st.Version(ctx, version)
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)
