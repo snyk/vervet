@@ -320,9 +320,6 @@ func (s *Storage) GetCollatedVersionSpec(ctx context.Context, version string) ([
 // PutObject nice wrapper around the GCS PutObject request.
 func (s *Storage) PutObject(ctx context.Context, key string, reader io.Reader) (*storage.ObjectHandle, error) {
 	obj := s.c.Bucket(s.config.BucketName).Object(key)
-	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
-	defer cancel()
-
 	wc := obj.NewWriter(ctx)
 	defer wc.Close()
 
