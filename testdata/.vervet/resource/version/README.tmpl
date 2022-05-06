@@ -1,3 +1,9 @@
 This is a generated scaffold for version {{ .Version.String }} of the
 {{ .Resource }} resource in API {{ .API }}.
 
+{{ $envTest := (index .Env "test-value") -}}
+{{- if $envTest -}}
+An environment test value of {{ index .Env "test-value" }} has been provided
+for this scaffold.
+{{- end -}}
+

@@ -18,3 +18,9 @@ export const {{ $opId }} = versions([
 {{ end -}}
 ]);
 {{ end -}}
+{{ $envTest := (index .Env "test-value") -}}
+{{- if $envTest -}}
+// An environment test value of {{ index .Env "test-value" }} has been provided
+// for this scaffold.
+{{- end -}}
+

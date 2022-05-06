@@ -215,6 +215,7 @@ func (g *Generator) Execute(resources ResourceMap) ([]string, error) {
 					Path:            filepath.Join(rcKey.Path, version.DateString()),
 					ResourceVersion: rc,
 					Here:            g.here,
+					Env:             getEnvScope(),
 				}
 				generatedFiles, err := g.execute(scope)
 				if err != nil {
@@ -230,6 +231,7 @@ func (g *Generator) Execute(resources ResourceMap) ([]string, error) {
 				Path:             rcKey.Path,
 				ResourceVersions: rcVersions,
 				Here:             g.here,
+				Env:              getEnvScope(),
 			}
 			generatedFiles, err := g.execute(scope)
 			if err != nil {
@@ -243,6 +245,21 @@ func (g *Generator) Execute(resources ResourceMap) ([]string, error) {
 	return allFiles, nil
 }
 
+func getEnvScope() map[string]string {
+	environPrefix := "VERVET_TEMPLATE_"
+	envScope := make(map[string]string)
+	environ := os.Environ()
+	for _, e := range environ {
+		if strings.HasPrefix(e, environPrefix) {
+			pair := strings.Split(e, "=")
+			key := strings.TrimPrefix(pair[0], environPrefix)
+			val := pair[1]
+			envScope[key] = val
+		}
+	}
+	return envScope
+}
+
 // ResourceScope identifies a resource that the generator is building for.
 type ResourceScope struct {
 	// ResourceVersions contains all the versions of this resource.
@@ -253,6 +270,8 @@ type ResourceScope struct {
 	Path string
 	// Here is the directory containing the executing template.
 	Here string
+	// Env is a map of template values read from the os environment.
+	Env map[string]string
 }
 
 // Resource returns the name of the resource in scope.
@@ -270,6 +289,8 @@ type VersionScope struct {
 	Path string
 	// Here is the directory containing the generator template.
 	Here string
+	// Env is a map of template values read from the os environment.
+	Env map[string]string
 }
 
 // Resource returns the name of the resource in scope.
