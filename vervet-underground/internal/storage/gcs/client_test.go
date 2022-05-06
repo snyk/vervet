@@ -2,6 +2,7 @@ package gcs_test
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"strconv"
 	"testing"
@@ -31,7 +32,8 @@ var cfg = &gcs.Config{
 
 func cleanup() {
 	// cleanup
-	client, err := gcs.New(cfg)
+	ctx := context.Background()
+	client, err := gcs.New(ctx, cfg)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to initialize GCS storage")
 		return
@@ -41,7 +43,7 @@ func cleanup() {
 		log.Error().Msg("failed to cast to GCS storage")
 		return
 	}
-	revs, err := st.ListObjects("", "")
+	revs, err := st.ListObjects(ctx, "", "")
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to List Objects")
@@ -49,7 +51,7 @@ func cleanup() {
 	}
 	for _, rev := range revs {
 		if rev.Name != "" {
-			err := st.DeleteObject(rev.Name)
+			err := st.DeleteObject(ctx, rev.Name)
 			if err != nil {
 				log.Error().Err(err).Msgf("failed to delete Object %s", rev.Prefix+"/"+rev.Name)
 			}
@@ -77,8 +79,8 @@ func setup(t *testing.T) *qt.C {
 func TestPutObject(t *testing.T) {
 	// Arrange
 	c := setup(t)
-
-	st, err := gcs.New(cfg)
+	ctx := context.Background()
+	st, err := gcs.New(ctx, cfg)
 	c.Assert(err, qt.IsNil)
 	client, ok := st.(*gcs.Storage)
 	c.Assert(ok, qt.IsTrue)
@@ -87,7 +89,7 @@ func TestPutObject(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader(data)
-	obj, err := client.PutObject("dummy.txt", reader)
+	obj, err := client.PutObject(ctx, "dummy.txt", reader)
 	c.Assert(err, qt.IsNil)
 
 	// Assert
@@ -98,8 +100,8 @@ func TestPutObject(t *testing.T) {
 func TestGetObject(t *testing.T) {
 	// Arrange
 	c := setup(t)
-
-	st, err := gcs.New(cfg)
+	ctx := context.Background()
+	st, err := gcs.New(ctx, cfg)
 	c.Assert(err, qt.IsNil)
 	client, ok := st.(*gcs.Storage)
 	c.Assert(ok, qt.IsTrue)
@@ -108,17 +110,17 @@ func TestGetObject(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader([]byte(data))
-	obj, err := client.PutObject(storage.CollatedVersionsFolder+"spec.txt", reader)
+	obj, err := client.PutObject(ctx, storage.CollatedVersionsFolder+"spec.txt", reader)
 	c.Assert(err, qt.IsNil)
 	c.Assert(obj.ObjectName(), qt.Equals, storage.CollatedVersionsFolder+"spec.txt")
 
 	// Assert
-	res, err := client.GetObject(storage.CollatedVersionsFolder + "spec.txt")
+	res, err := client.GetObject(ctx, storage.CollatedVersionsFolder+"spec.txt")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(res), qt.Equals, data)
 
 	// Fail silently
-	res, err = client.GetObject(storage.CollatedVersionsFolder + "dummy.txt")
+	res, err = client.GetObject(ctx, storage.CollatedVersionsFolder+"dummy.txt")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(res), qt.Equals, "")
 }
@@ -126,13 +128,13 @@ func TestGetObject(t *testing.T) {
 func TestListObjectsAndPrefixes(t *testing.T) {
 	// Arrange
 	c := setup(t)
-
-	st, err := gcs.New(cfg)
+	ctx := context.Background()
+	st, err := gcs.New(ctx, cfg)
 	c.Assert(err, qt.IsNil)
 	client, ok := st.(*gcs.Storage)
 	c.Assert(ok, qt.IsTrue)
 
-	objects, err := client.ListObjects(storage.CollatedVersionsFolder, "")
+	objects, err := client.ListObjects(ctx, storage.CollatedVersionsFolder, "")
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(objects), qt.Equals, 0)
 
@@ -140,15 +142,15 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader([]byte(data))
-	_, err = client.PutObject(storage.CollatedVersionsFolder+"2022-02-02/spec.txt", reader)
+	_, err = client.PutObject(ctx, storage.CollatedVersionsFolder+"2022-02-02/spec.txt", reader)
 	c.Assert(err, qt.IsNil)
 
 	// Assert
-	res, err := client.ListObjects(storage.CollatedVersionsFolder, "")
+	res, err := client.ListObjects(ctx, storage.CollatedVersionsFolder, "")
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(res), qt.Equals, 1)
 
-	versions, err := client.ListCollatedVersions()
+	versions, err := client.ListCollatedVersions(ctx)
 	c.Assert(err, qt.IsNil)
 	c.Assert(versions, qt.Contains, "2022-02-02")
 }

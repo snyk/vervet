@@ -2,6 +2,7 @@ package s3_test
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"strconv"
 	"testing"
@@ -35,7 +36,8 @@ var cfg = &s3.Config{
 
 func cleanup() {
 	// cleanup
-	client, err := s3.New(cfg)
+	ctx := context.Background()
+	client, err := s3.New(ctx, cfg)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to initialize S3 storage")
 		return
@@ -45,14 +47,14 @@ func cleanup() {
 		log.Error().Err(err).Msg("failed to cast to S3 storage")
 		return
 	}
-	revs, err := st.ListObjects("", "")
+	revs, err := st.ListObjects(ctx, "", "")
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to List Objects")
 		return
 	}
 	for _, rev := range revs.Contents {
-		err = st.DeleteObject(*rev.Key)
+		err = st.DeleteObject(ctx, *rev.Key)
 		if err != nil {
 			log.Error().Err(err).Msgf("failed to delete Object %s", *rev.Key)
 		}
@@ -80,7 +82,8 @@ func TestPutObject(t *testing.T) {
 	// Arrange
 	c := setup(t)
 
-	st, err := s3.New(cfg)
+	ctx := context.Background()
+	st, err := s3.New(ctx, cfg)
 	c.Assert(err, qt.IsNil)
 	client, ok := st.(*s3.Storage)
 	c.Assert(ok, qt.IsTrue)
@@ -89,7 +92,7 @@ func TestPutObject(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader(data)
-	obj, err := client.PutObject("dummy", reader)
+	obj, err := client.PutObject(ctx, "dummy", reader)
 	c.Assert(err, qt.IsNil)
 
 	// Assert
@@ -101,7 +104,8 @@ func TestGetObject(t *testing.T) {
 	// Arrange
 	c := setup(t)
 
-	st, err := s3.New(cfg)
+	ctx := context.Background()
+	st, err := s3.New(ctx, cfg)
 	c.Assert(err, qt.IsNil)
 	client, ok := st.(*s3.Storage)
 	c.Assert(ok, qt.IsTrue)
@@ -110,16 +114,16 @@ func TestGetObject(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader([]byte(data))
-	_, err = client.PutObject(storage.CollatedVersionsFolder+"spec.txt", reader)
+	_, err = client.PutObject(ctx, storage.CollatedVersionsFolder+"spec.txt", reader)
 	c.Assert(err, qt.IsNil)
 
 	// Assert
-	res, err := client.GetObject(storage.CollatedVersionsFolder + "spec.txt")
+	res, err := client.GetObject(ctx, storage.CollatedVersionsFolder+"spec.txt")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(res), qt.Equals, data)
 
 	// Fail silently
-	res, err = client.GetObject(storage.CollatedVersionsFolder + "dummy.txt")
+	res, err = client.GetObject(ctx, storage.CollatedVersionsFolder+"dummy.txt")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(res), qt.Equals, "")
 }
@@ -128,12 +132,13 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 	// Arrange
 	c := setup(t)
 
-	st, err := s3.New(cfg)
+	ctx := context.Background()
+	st, err := s3.New(ctx, cfg)
 	c.Assert(err, qt.IsNil)
 	client, ok := st.(*s3.Storage)
 	c.Assert(ok, qt.IsTrue)
 
-	objects, err := client.ListObjects(storage.CollatedVersionsFolder, "/")
+	objects, err := client.ListObjects(ctx, storage.CollatedVersionsFolder, "/")
 	c.Assert(err, qt.IsNil)
 	c.Assert(objects.Contents, qt.IsNil)
 
@@ -141,15 +146,15 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader([]byte(data))
-	_, err = client.PutObject(storage.CollatedVersionsFolder+"2022-02-02/spec.txt", reader)
+	_, err = client.PutObject(ctx, storage.CollatedVersionsFolder+"2022-02-02/spec.txt", reader)
 	c.Assert(err, qt.IsNil)
 
 	// Assert
-	res, err := client.ListObjects(storage.CollatedVersionsFolder, "/")
+	res, err := client.ListObjects(ctx, storage.CollatedVersionsFolder, "/")
 	c.Assert(err, qt.IsNil)
 	c.Assert(res.Contents, qt.IsNil)
 
-	versions, err := client.ListCollatedVersions()
+	versions, err := client.ListCollatedVersions(ctx)
 	c.Assert(err, qt.IsNil)
 	c.Assert(versions, qt.Contains, "2022-02-02")
 }

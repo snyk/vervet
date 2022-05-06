@@ -35,7 +35,8 @@ var gcsCfg = &gcs.Config{
 
 func gcsCleanup() {
 	// cleanup
-	client, err := gcs.New(gcsCfg)
+	ctx := context.Background()
+	client, err := gcs.New(ctx, gcsCfg)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to initialize GCS storage")
 		return
@@ -45,7 +46,7 @@ func gcsCleanup() {
 		log.Error().Msg("failed to cast to GCS storage")
 		return
 	}
-	revs, err := st.ListObjects("", "")
+	revs, err := st.ListObjects(ctx, "", "")
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to List Objects")
@@ -53,7 +54,7 @@ func gcsCleanup() {
 	}
 	for _, rev := range revs {
 		if rev.Name != "" {
-			err := st.DeleteObject(rev.Name)
+			err := st.DeleteObject(ctx, rev.Name)
 			if err != nil {
 				log.Error().Err(err).Msgf("failed to delete Object %s", rev.Prefix+"/"+rev.Name)
 			}
@@ -81,7 +82,7 @@ func gcsSetup(t *testing.T) *qt.C {
 func TestGCSScraper(t *testing.T) {
 	// Arrange
 	c := gcsSetup(t)
-
+	ctx := context.Background()
 	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
 		service, version, digest string
@@ -97,7 +98,7 @@ func TestGCSScraper(t *testing.T) {
 		},
 	}
 
-	client, err := gcs.New(gcsCfg)
+	client, err := gcs.New(ctx, gcsCfg)
 	c.Assert(err, qt.IsNil)
 	st, ok := client.(*gcs.Storage)
 	c.Assert(ok, qt.IsTrue)
@@ -111,7 +112,7 @@ func TestGCSScraper(t *testing.T) {
 
 	// No version digests should be known
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsFalse)
 	}
@@ -122,14 +123,14 @@ func TestGCSScraper(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
 
 	c.Assert(len(st.Versions()), qt.Equals, 4)
 	for _, version := range st.Versions() {
-		specData, err := st.Version(version)
+		specData, err := st.Version(ctx, version)
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)
@@ -143,6 +144,7 @@ func TestGCSScraperCollation(t *testing.T) {
 	// Arrange
 	c := gcsSetup(t)
 
+	ctx := context.Background()
 	petfoodService := httptest.NewServer(petfood.Handler())
 	c.Cleanup(petfoodService.Close)
 
@@ -163,7 +165,7 @@ func TestGCSScraperCollation(t *testing.T) {
 		},
 	}
 
-	client, err := gcs.New(gcsCfg)
+	client, err := gcs.New(ctx, gcsCfg)
 	c.Assert(err, qt.IsNil)
 	st, ok := client.(*gcs.Storage)
 	c.Assert(ok, qt.IsTrue)
@@ -181,14 +183,14 @@ func TestGCSScraperCollation(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
 
 	c.Assert(len(st.Versions()), qt.Equals, 4)
 	for _, version := range st.Versions() {
-		specData, err := st.Version(version)
+		specData, err := st.Version(ctx, version)
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)

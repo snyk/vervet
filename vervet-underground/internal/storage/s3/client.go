@@ -43,18 +43,16 @@ type Config struct {
 	BucketName     string
 	Credentials    StaticKeyCredentials
 	IamRoleEnabled bool
-	Context        context.Context
 }
 
 type Storage struct {
 	mu               sync.RWMutex
-	ctx              context.Context
 	client           *s3.Client
 	config           Config
 	collatedVersions vervet.VersionSlice
 }
 
-func New(awsCfg *Config) (storage.Storage, error) {
+func New(ctx context.Context, awsCfg *Config) (storage.Storage, error) {
 	if awsCfg == nil || awsCfg.BucketName == "" {
 		return nil, fmt.Errorf("missing S3 configuration")
 	}
@@ -95,7 +93,7 @@ func New(awsCfg *Config) (storage.Storage, error) {
 		credCache = aws.NewCredentialsCache(creds)
 	}
 
-	awsCfgLoader, err := config.LoadDefaultConfig(awsCfg.Context, options...)
+	awsCfgLoader, err := config.LoadDefaultConfig(ctx, options...)
 	if credCache != nil {
 		awsCfgLoader.Credentials = credCache
 	}
@@ -112,10 +110,9 @@ func New(awsCfg *Config) (storage.Storage, error) {
 	st := &Storage{
 		client:           s3Client,
 		config:           *awsCfg,
-		ctx:              awsCfg.Context,
 		collatedVersions: vervet.VersionSlice{},
 	}
-	err = st.CreateBucket()
+	err = st.CreateBucket(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -123,11 +120,11 @@ func New(awsCfg *Config) (storage.Storage, error) {
 }
 
 // NotifyVersions implements scraper.Storage.
-func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersions(ctx context.Context, name string, versions []string, scrapeTime time.Time) error {
 	for _, version := range versions {
 		// TODO: Add method to fetch contents here
 		// TODO: implement notify versions; update sunset when versions are removed
-		err := s.NotifyVersion(name, version, []byte{}, scrapeTime)
+		err := s.NotifyVersion(ctx, name, version, []byte{}, scrapeTime)
 		if err != nil {
 			return err
 		}
@@ -136,9 +133,9 @@ func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time
 }
 
 // HasVersion implements scraper.Storage.
-func (s *Storage) HasVersion(name string, version string, digest string) (bool, error) {
+func (s *Storage) HasVersion(ctx context.Context, name string, version string, digest string) (bool, error) {
 	key := getServiceVersionRevisionKey(name, version, digest)
-	revisions, err := s.ListObjects(key, "")
+	revisions, err := s.ListObjects(ctx, key, "")
 
 	if err != nil {
 		return false, err
@@ -149,7 +146,7 @@ func (s *Storage) HasVersion(name string, version string, digest string) (bool, 
 }
 
 // NotifyVersion implements scraper.Storage.
-func (s *Storage) NotifyVersion(name string, version string, contents []byte, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error {
 	digest := storage.NewDigest(contents)
 	key := getServiceVersionRevisionKey(name, version, string(digest))
 	parsedVersion, err := vervet.ParseVersion(version)
@@ -166,7 +163,7 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 	}
 
 	// will return empty in the event of no keys found without an error
-	serviceVersionRevision, err := s.GetObject(key)
+	serviceVersionRevision, err := s.GetObject(ctx, key)
 	if err != nil {
 		return err
 	}
@@ -178,7 +175,7 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 
 	// Since the digest doesn't exist, add the whole key path
 	reader := bytes.NewReader(currentRevision.Blob)
-	_, err = s.PutObject(key, reader)
+	_, err = s.PutObject(ctx, key, reader)
 	if err != nil {
 		return err
 	}
@@ -198,7 +195,7 @@ func (s *Storage) Versions() []string {
 }
 
 // Version implements scraper.Storage.
-func (s *Storage) Version(version string) ([]byte, error) {
+func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -207,23 +204,23 @@ func (s *Storage) Version(version string) ([]byte, error) {
 		return nil, err
 	}
 
-	blob, err := s.GetCollatedVersionSpec(version)
+	blob, err := s.GetCollatedVersionSpec(ctx, version)
 	if err != nil {
 		resolved, err := s.collatedVersions.Resolve(parsedVersion)
 		if err != nil {
 			return nil, err
 		}
 
-		return s.GetCollatedVersionSpec(resolved.String())
+		return s.GetCollatedVersionSpec(ctx, resolved.String())
 	}
 	return blob, nil
 }
 
 // CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
-func (s *Storage) CollateVersions() error {
+func (s *Storage) CollateVersions(ctx context.Context) error {
 	// create an aggregate to process collated data from storage data
 	aggregate := storage.NewCollator()
-	serviceRevisionResults, err := s.ListObjects(storage.ServiceVersionsFolder, "")
+	serviceRevisionResults, err := s.ListObjects(ctx, storage.ServiceVersionsFolder, "")
 	if err != nil {
 		return err
 	}
@@ -234,7 +231,7 @@ func (s *Storage) CollateVersions() error {
 		if err != nil {
 			return err
 		}
-		rev, err := s.GetObjectWithMetadata(storage.ServiceVersionsFolder + service + "/" + version + "/" + digest + ".json")
+		rev, err := s.GetObjectWithMetadata(ctx, storage.ServiceVersionsFolder+service+"/"+version+"/"+digest+".json")
 		if err != nil {
 			return err
 		}
@@ -271,7 +268,7 @@ func (s *Storage) CollateVersions() error {
 	defer s.mu.Unlock()
 	s.collatedVersions = versions
 
-	objects, err := s.PutCollatedSpecs(specs)
+	objects, err := s.PutCollatedSpecs(ctx, specs)
 	if err != nil {
 		return err
 	}
@@ -285,15 +282,15 @@ func (s *Storage) CollateVersions() error {
 
 // GetCollatedVersionSpecs retrieves a map of vervet.Version strings
 // and their corresponding JSON blobs and returns the result.
-func (s *Storage) GetCollatedVersionSpecs() (map[string][]byte, error) {
+func (s *Storage) GetCollatedVersionSpecs(ctx context.Context) (map[string][]byte, error) {
 	versionSpecs := map[string][]byte{}
-	versions, err := s.ListCollatedVersions()
+	versions, err := s.ListCollatedVersions(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, key := range versions {
-		jsonBlob, err := s.GetCollatedVersionSpec(key)
+		jsonBlob, err := s.GetCollatedVersionSpec(ctx, key)
 		if err != nil {
 			return nil, err
 		}
@@ -305,8 +302,8 @@ func (s *Storage) GetCollatedVersionSpecs() (map[string][]byte, error) {
 
 // GetCollatedVersionSpec retrieves a single collated vervet.Version
 // and returns the JSON blob.
-func (s *Storage) GetCollatedVersionSpec(version string) ([]byte, error) {
-	jsonBlob, err := s.GetObject(storage.CollatedVersionsFolder + version + "/spec.json")
+func (s *Storage) GetCollatedVersionSpec(ctx context.Context, version string) ([]byte, error) {
+	jsonBlob, err := s.GetObject(ctx, storage.CollatedVersionsFolder+version+"/spec.json")
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +312,7 @@ func (s *Storage) GetCollatedVersionSpec(version string) ([]byte, error) {
 }
 
 // PutObject nice wrapper around the S3 PutObject request.
-func (s *Storage) PutObject(key string, reader io.Reader) (*s3.PutObjectOutput, error) {
+func (s *Storage) PutObject(ctx context.Context, key string, reader io.Reader) (*s3.PutObjectOutput, error) {
 	p := s3.PutObjectInput{
 		Bucket: aws.String(s.config.BucketName),
 		Key:    aws.String(key),
@@ -323,7 +320,7 @@ func (s *Storage) PutObject(key string, reader io.Reader) (*s3.PutObjectOutput, 
 		Body:   reader,
 	}
 
-	r, err := s.client.PutObject(s.ctx, &p)
+	r, err := s.client.PutObject(ctx, &p)
 	log.Trace().Msgf("S3 PutObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
@@ -334,7 +331,7 @@ func (s *Storage) PutObject(key string, reader io.Reader) (*s3.PutObjectOutput, 
 
 // PutCollatedSpecs iterative wrapper around the S3 PutObject request.
 // TODO: Look for alternative to iteratively uploading.
-func (s *Storage) PutCollatedSpecs(objects map[vervet.Version]openapi3.T) (res []s3.PutObjectOutput, smith error) {
+func (s *Storage) PutCollatedSpecs(ctx context.Context, objects map[vervet.Version]openapi3.T) (res []s3.PutObjectOutput, smith error) {
 	res = make([]s3.PutObjectOutput, 0)
 	for key, file := range objects {
 		jsonBlob, err := file.MarshalJSON()
@@ -342,7 +339,7 @@ func (s *Storage) PutCollatedSpecs(objects map[vervet.Version]openapi3.T) (res [
 			return nil, fmt.Errorf("failure to marshal json for collation upload: %w", err)
 		}
 		reader := bytes.NewReader(jsonBlob)
-		r, err := s.PutObject(storage.CollatedVersionsFolder+key.String()+"/spec.json", reader)
+		r, err := s.PutObject(ctx, storage.CollatedVersionsFolder+key.String()+"/spec.json", reader)
 		if smith = handleAwsError(err); smith != nil {
 			return nil, smith
 		}
@@ -353,13 +350,13 @@ func (s *Storage) PutCollatedSpecs(objects map[vervet.Version]openapi3.T) (res [
 }
 
 // GetObject nice wrapper around the S3 GetObject request.
-func (s *Storage) GetObject(key string) ([]byte, error) {
+func (s *Storage) GetObject(ctx context.Context, key string) ([]byte, error) {
 	p := s3.GetObjectInput{
 		Bucket: aws.String(s.config.BucketName),
 		Key:    aws.String(key),
 	}
 
-	r, err := s.client.GetObject(s.ctx, &p)
+	r, err := s.client.GetObject(ctx, &p)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
 	}
@@ -372,13 +369,13 @@ func (s *Storage) GetObject(key string) ([]byte, error) {
 
 // GetObjectWithMetadata nice wrapper around the S3 GetObject request.
 // Returns metadata as well.
-func (s *Storage) GetObjectWithMetadata(key string) (*s3.GetObjectOutput, error) {
+func (s *Storage) GetObjectWithMetadata(ctx context.Context, key string) (*s3.GetObjectOutput, error) {
 	p := s3.GetObjectInput{
 		Bucket: aws.String(s.config.BucketName),
 		Key:    aws.String(key),
 	}
 
-	r, err := s.client.GetObject(s.ctx, &p)
+	r, err := s.client.GetObject(ctx, &p)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
 	}
@@ -387,13 +384,13 @@ func (s *Storage) GetObjectWithMetadata(key string) (*s3.GetObjectOutput, error)
 }
 
 // DeleteObject nice wrapper around the S3 DeleteObject request.
-func (s *Storage) DeleteObject(key string) error {
+func (s *Storage) DeleteObject(ctx context.Context, key string) error {
 	p := s3.DeleteObjectInput{
 		Bucket: aws.String(s.config.BucketName),
 		Key:    aws.String(key),
 	}
 
-	r, err := s.client.DeleteObject(s.ctx, &p)
+	r, err := s.client.DeleteObject(ctx, &p)
 	log.Trace().Msgf("S3 DeleteObject response: %+v", r)
 	if err != nil {
 		return err
@@ -406,8 +403,8 @@ func (s *Storage) DeleteObject(key string) error {
 // example: key = "collated-versions/"
 // result: []string{"2022-02-02~wip", "2022-12-02~beta"}
 // Defaults to 1000 results.
-func (s *Storage) ListCollatedVersions() ([]string, error) {
-	res, err := s.ListCommonPrefixes(storage.CollatedVersionsFolder)
+func (s *Storage) ListCollatedVersions(ctx context.Context) ([]string, error) {
+	res, err := s.ListCommonPrefixes(ctx, storage.CollatedVersionsFolder)
 
 	if err != nil {
 		return nil, err
@@ -426,8 +423,8 @@ func (s *Storage) ListCollatedVersions() ([]string, error) {
 // example: key = "collated-versions/"
 // result: []types.CommonPrefix{"collated-versions/2022-02-02~wip/", "collated-versions/2022-12-02~beta/"}
 // Defaults to 1000 results.
-func (s *Storage) ListCommonPrefixes(key string) ([]types.CommonPrefix, error) {
-	r, err := s.ListObjects(key, "/")
+func (s *Storage) ListCommonPrefixes(ctx context.Context, key string) ([]types.CommonPrefix, error) {
+	r, err := s.ListObjects(ctx, key, "/")
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +434,7 @@ func (s *Storage) ListCommonPrefixes(key string) ([]types.CommonPrefix, error) {
 // ListObjects nice wrapper around the S3 ListObjects request.
 // "collated-versions" example.
 // Defaults to 1000 results.
-func (s *Storage) ListObjects(key string, delimeter string) (*s3.ListObjectsV2Output, error) {
+func (s *Storage) ListObjects(ctx context.Context, key string, delimeter string) (*s3.ListObjectsV2Output, error) {
 	p := s3.ListObjectsV2Input{
 		Bucket: aws.String(s.config.BucketName),
 		Prefix: aws.String(key),
@@ -447,7 +444,7 @@ func (s *Storage) ListObjects(key string, delimeter string) (*s3.ListObjectsV2Ou
 		p.Delimiter = aws.String("/")
 	}
 
-	r, err := s.client.ListObjectsV2(s.ctx, &p)
+	r, err := s.client.ListObjectsV2(ctx, &p)
 	log.Trace().Msgf("S3 ListObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
 		return nil, smith
@@ -457,12 +454,12 @@ func (s *Storage) ListObjects(key string, delimeter string) (*s3.ListObjectsV2Ou
 }
 
 // CreateBucket idempotently creates an S3 bucket for VU.
-func (s *Storage) CreateBucket() error {
+func (s *Storage) CreateBucket(ctx context.Context) error {
 	create := &s3.CreateBucketInput{
 		Bucket: aws.String(s.config.BucketName),
 	}
 
-	bucketOutput, err := s.client.ListBuckets(s.ctx, &s3.ListBucketsInput{})
+	bucketOutput, err := s.client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if smith := handleAwsError(err); smith != nil {
 		return smith
 	}
@@ -476,7 +473,7 @@ func (s *Storage) CreateBucket() error {
 	}
 
 	if !exists {
-		bucket, err := s.client.CreateBucket(s.ctx, create)
+		bucket, err := s.client.CreateBucket(ctx, create)
 		if smith := handleAwsError(err); smith != nil {
 			return smith
 		}

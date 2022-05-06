@@ -1,6 +1,7 @@
 package mem
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -13,7 +14,8 @@ var t0 = time.Date(2021, time.December, 3, 20, 49, 51, 0, time.UTC)
 func TestNotifyVersions(t *testing.T) {
 	c := qt.New(t)
 	s := New()
-	err := s.NotifyVersions("petfood", []string{"2021-09-01", "2021-09-16"}, t0)
+	ctx := context.Background()
+	err := s.NotifyVersions(ctx, "petfood", []string{"2021-09-01", "2021-09-16"}, t0)
 	c.Assert(err, qt.IsNil)
 	// TODO: verify side-effects when there are some...
 }
@@ -21,17 +23,17 @@ func TestNotifyVersions(t *testing.T) {
 func TestHasVersion(t *testing.T) {
 	c := qt.New(t)
 	s := New()
-
+	ctx := context.Background()
 	const cricketsDigest = "sha256:mWpHX0/hIZS9mVd8eobfHWm6OkUsKZLiqd6ShRnNzA4="
 	const geckosDigest = "sha256:c5JD7m0g4DVhoaX4z8HFcTP8S/yUOEsjgP8ECkuEHqM="
 	for _, digest := range []string{cricketsDigest, geckosDigest} {
-		ok, err := s.HasVersion("petfood", "2021-09-16", digest)
+		ok, err := s.HasVersion(ctx, "petfood", "2021-09-16", digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsFalse)
 	}
-	err := s.NotifyVersion("petfood", "2021-09-16", []byte("crickets"), t0)
+	err := s.NotifyVersion(ctx, "petfood", "2021-09-16", []byte("crickets"), t0)
 	c.Assert(err, qt.IsNil)
-	err = s.NotifyVersion("animals", "2021-09-16", []byte("geckos"), t0)
+	err = s.NotifyVersion(ctx, "animals", "2021-09-16", []byte("geckos"), t0)
 	c.Assert(err, qt.IsNil)
 
 	tests := []struct {
@@ -47,7 +49,7 @@ func TestHasVersion(t *testing.T) {
 	}
 	for i, t := range tests {
 		c.Logf("test#%d: %v", i, t)
-		ok, err := s.HasVersion(t.service, t.version, t.digest)
+		ok, err := s.HasVersion(ctx, t.service, t.version, t.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.Equals, t.shouldHave)
 	}
@@ -63,25 +65,26 @@ func TestCollateVersions(t *testing.T) {
 	c := qt.New(t)
 	s := New()
 
-	err := s.NotifyVersion("petfood", "2021-09-16", []byte(emptySpec), t0)
+	ctx := context.Background()
+	err := s.NotifyVersion(ctx, "petfood", "2021-09-16", []byte(emptySpec), t0)
 	c.Assert(err, qt.IsNil)
 
-	err = s.CollateVersions()
+	err = s.CollateVersions(ctx)
 	c.Assert(err, qt.IsNil)
-	before, err := s.Version("2021-09-16")
+	before, err := s.Version(ctx, "2021-09-16")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(before), qt.Equals, emptySpec)
 
-	content, err := s.Version("2021-01-01")
+	content, err := s.Version(ctx, "2021-01-01")
 	c.Assert(err.Error(), qt.Equals, fmt.Errorf("no matching version").Error())
 	c.Assert(content, qt.IsNil)
 
-	err = s.NotifyVersion("petfood", "2021-09-16", []byte(spec), t0.Add(time.Second))
+	err = s.NotifyVersion(ctx, "petfood", "2021-09-16", []byte(spec), t0.Add(time.Second))
 	c.Assert(err, qt.IsNil)
-	err = s.CollateVersions()
+	err = s.CollateVersions(ctx)
 	c.Assert(err, qt.IsNil)
 
-	after, err := s.Version("2021-09-16")
+	after, err := s.Version(ctx, "2021-09-16")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(after), qt.Equals, spec)
 }

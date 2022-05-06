@@ -60,7 +60,8 @@ func main() {
 
 	// initialize Scraper
 	ticker := time.NewTicker(scrapeInterval)
-	st, err := initializeStorage(cfg)
+	ctx := context.Background()
+	st, err := initializeStorage(ctx, cfg)
 	if err != nil {
 		logError(err)
 		log.Fatal().Msg("unable to initialize storage client")
@@ -80,7 +81,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed initialization scraping of service")
 	}
 
-	versionHandlers(router, sc)
+	versionHandlers(ctx, router, sc)
 	healthHandler(router, cfg.Services)
 	router.Handle("/metrics", promhttp.Handler())
 
@@ -181,7 +182,7 @@ func healthHandler(router *mux.Router, services []string) {
 	})
 }
 
-func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
+func versionHandlers(ctx context.Context, router *mux.Router, sc *scraper.Scraper) {
 	router.
 		Path("/openapi").
 		Methods("GET").
@@ -208,7 +209,7 @@ func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
 		Methods("GET").
 		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			version := mux.Vars(r)["version"]
-			bytes, err := sc.Version(version)
+			bytes, err := sc.Version(ctx, version)
 			if err != nil {
 				logError(err)
 				http.Error(w, "Failure to process request", http.StatusBadRequest)
@@ -226,18 +227,16 @@ func versionHandlers(router *mux.Router, sc *scraper.Scraper) {
 		})
 }
 
-func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
-	ctx := context.Background()
+func initializeStorage(ctx context.Context, cfg *config.ServerConfig) (storage.Storage, error) {
 	switch cfg.Storage.Type {
 	case config.StorageTypeMemory:
 		return mem.New(), nil
 	case config.StorageTypeS3:
-		return s3.New(&s3.Config{
+		return s3.New(ctx, &s3.Config{
 			AwsRegion:      cfg.Storage.S3.Region,
 			AwsEndpoint:    cfg.Storage.S3.Endpoint,
 			IamRoleEnabled: cfg.Storage.IamRoleEnabled,
 			BucketName:     cfg.Storage.BucketName,
-			Context:        ctx,
 			Credentials: s3.StaticKeyCredentials{
 				AccessKey:  cfg.Storage.S3.AccessKey,
 				SecretKey:  cfg.Storage.S3.SecretKey,
@@ -246,12 +245,11 @@ func initializeStorage(cfg *config.ServerConfig) (storage.Storage, error) {
 			},
 		})
 	case config.StorageTypeGCS:
-		return gcs.New(&gcs.Config{
+		return gcs.New(ctx, &gcs.Config{
 			GcsRegion:      cfg.Storage.GCS.Region,
 			GcsEndpoint:    cfg.Storage.GCS.Endpoint,
 			IamRoleEnabled: cfg.Storage.IamRoleEnabled,
 			BucketName:     cfg.Storage.BucketName,
-			Context:        ctx,
 			Credentials: gcs.StaticKeyCredentials{
 				ProjectId: cfg.Storage.GCS.ProjectId,
 				Filename:  cfg.Storage.GCS.Filename,

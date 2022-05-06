@@ -131,7 +131,7 @@ func (s *Scraper) Run(ctx context.Context) error {
 	if errs != nil {
 		return errs
 	} else {
-		err := s.collateVersions()
+		err := s.collateVersions(ctx)
 		errs = multierr.Append(errs, err)
 	}
 	return errs
@@ -154,7 +154,7 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 			continue
 		}
 
-		err = s.storage.NotifyVersion(svc.base, versions[i], contents, scrapeTime)
+		err = s.storage.NotifyVersion(ctx, svc.base, versions[i], contents, scrapeTime)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -162,8 +162,8 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 	return nil
 }
 
-func (s *Scraper) collateVersions() error {
-	return s.storage.CollateVersions()
+func (s *Scraper) collateVersions(ctx context.Context) error {
+	return s.storage.CollateVersions(ctx)
 }
 
 func (s *Scraper) getVersions(ctx context.Context, svc service) ([]string, error) {
@@ -263,13 +263,13 @@ func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string
 		// Not providing a digest is fine, we'll just come back with a GET
 		return true, nil
 	}
-	return s.storage.HasVersion(svc.base, version, digest)
+	return s.storage.HasVersion(ctx, svc.base, version, digest)
 }
 
 func (s *Scraper) Versions() []string {
 	return s.storage.Versions()
 }
 
-func (s *Scraper) Version(version string) ([]byte, error) {
-	return s.storage.Version(version)
+func (s *Scraper) Version(ctx context.Context, version string) ([]byte, error) {
+	return s.storage.Version(ctx, version)
 }

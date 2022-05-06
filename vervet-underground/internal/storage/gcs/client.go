@@ -34,14 +34,12 @@ type Config struct {
 	GcsEndpoint    string
 	BucketName     string
 	IamRoleEnabled bool
-	Context        context.Context
 	Credentials    StaticKeyCredentials
 }
 
 // Storage implements storage.Storage.
 type Storage struct {
 	mu               sync.RWMutex
-	ctx              context.Context
 	c                *storage.Client
 	config           Config
 	collatedVersions vervet.VersionSlice
@@ -57,7 +55,7 @@ want to test this with https you also need to configure Go to skip
 certificate validation.
 "http://localhost:8080/storage/v1/"
 */
-func New(gcsConfig *Config) (vustorage.Storage, error) {
+func New(ctx context.Context, gcsConfig *Config) (vustorage.Storage, error) {
 	if gcsConfig == nil || gcsConfig.BucketName == "" {
 		return nil, fmt.Errorf("missing GCS configuration")
 	}
@@ -69,7 +67,7 @@ func New(gcsConfig *Config) (vustorage.Storage, error) {
 		}
 	}
 
-	client, err := storage.NewClient(gcsConfig.Context, options...)
+	client, err := storage.NewClient(ctx, options...)
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to create client")
@@ -79,10 +77,9 @@ func New(gcsConfig *Config) (vustorage.Storage, error) {
 	st := &Storage{
 		c:                client,
 		config:           *gcsConfig,
-		ctx:              gcsConfig.Context,
 		collatedVersions: vervet.VersionSlice{},
 	}
-	err = st.CreateBucket()
+	err = st.CreateBucket(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -90,11 +87,11 @@ func New(gcsConfig *Config) (vustorage.Storage, error) {
 }
 
 // NotifyVersions implements scraper.Storage.
-func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersions(ctx context.Context, name string, versions []string, scrapeTime time.Time) error {
 	for _, version := range versions {
 		// TODO: Add method to fetch contents here
 		// TODO: implement notify versions; update sunset when versions are removed
-		err := s.NotifyVersion(name, version, []byte{}, scrapeTime)
+		err := s.NotifyVersion(ctx, name, version, []byte{}, scrapeTime)
 		if err != nil {
 			return err
 		}
@@ -104,10 +101,10 @@ func (s *Storage) NotifyVersions(name string, versions []string, scrapeTime time
 
 // CollateVersions iterates over all possible permutations of Service versions
 // to create a unified version spec for each unique vervet.Version.
-func (s *Storage) CollateVersions() error {
+func (s *Storage) CollateVersions(ctx context.Context) error {
 	// create an aggregate to process collated data from storage data
 	aggregate := vustorage.NewCollator()
-	serviceRevisionResults, err := s.ListObjects(vustorage.ServiceVersionsFolder, "")
+	serviceRevisionResults, err := s.ListObjects(ctx, vustorage.ServiceVersionsFolder, "")
 	if err != nil {
 		return err
 	}
@@ -118,7 +115,7 @@ func (s *Storage) CollateVersions() error {
 		if err != nil {
 			return err
 		}
-		rev, obj, err := s.GetObjectWithMetadata(vustorage.ServiceVersionsFolder + service + "/" + version + "/" + digest + ".json")
+		rev, obj, err := s.GetObjectWithMetadata(ctx, vustorage.ServiceVersionsFolder+service+"/"+version+"/"+digest+".json")
 		if err != nil {
 			return err
 		}
@@ -155,7 +152,7 @@ func (s *Storage) CollateVersions() error {
 	defer s.mu.Unlock()
 	s.collatedVersions = versions
 
-	objects, err := s.PutCollatedSpecs(specs)
+	objects, err := s.PutCollatedSpecs(ctx, specs)
 	if err != nil {
 		return err
 	}
@@ -168,9 +165,9 @@ func (s *Storage) CollateVersions() error {
 }
 
 // HasVersion implements scraper.Storage.
-func (s *Storage) HasVersion(name string, version string, digest string) (bool, error) {
+func (s *Storage) HasVersion(ctx context.Context, name string, version string, digest string) (bool, error) {
 	key := getServiceVersionRevisionKey(name, version, digest)
-	revisions, err := s.ListObjects(key, "")
+	revisions, err := s.ListObjects(ctx, key, "")
 
 	if err != nil {
 		return false, err
@@ -181,7 +178,7 @@ func (s *Storage) HasVersion(name string, version string, digest string) (bool, 
 }
 
 // NotifyVersion updates a Service's storage.ContentRevision if storage.Digest has changed.
-func (s *Storage) NotifyVersion(name string, version string, contents []byte, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error {
 	digest := vustorage.NewDigest(contents)
 	key := getServiceVersionRevisionKey(name, version, string(digest))
 	parsedVersion, err := vervet.ParseVersion(version)
@@ -198,7 +195,7 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 	}
 
 	// will return empty in the event of no keys found without an error
-	serviceVersionRevision, err := s.GetObject(key)
+	serviceVersionRevision, err := s.GetObject(ctx, key)
 	if err != nil {
 		return err
 	}
@@ -210,7 +207,7 @@ func (s *Storage) NotifyVersion(name string, version string, contents []byte, sc
 
 	// Since the digest doesn't exist, add the whole key path
 	reader := bytes.NewReader(currentRevision.Blob)
-	_, err = s.PutObject(key, reader)
+	_, err = s.PutObject(ctx, key, reader)
 	if err != nil {
 		return err
 	}
@@ -230,7 +227,7 @@ func (s *Storage) Versions() []string {
 }
 
 // Version implements scraper.Storage.
-func (s *Storage) Version(version string) ([]byte, error) {
+func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -239,14 +236,14 @@ func (s *Storage) Version(version string) ([]byte, error) {
 		return nil, err
 	}
 
-	blob, err := s.GetCollatedVersionSpec(version)
+	blob, err := s.GetCollatedVersionSpec(ctx, version)
 	if err != nil {
 		resolved, err := s.collatedVersions.Resolve(parsedVersion)
 		if err != nil {
 			return nil, err
 		}
 
-		return s.GetCollatedVersionSpec(resolved.String())
+		return s.GetCollatedVersionSpec(ctx, resolved.String())
 	}
 	return blob, nil
 }
@@ -255,8 +252,8 @@ func (s *Storage) Version(version string) ([]byte, error) {
 // example: key = "collated-versions/"
 // result: []string{"2022-02-02~wip", "2022-12-02~beta"}
 // Defaults to 1000 results.
-func (s *Storage) ListCollatedVersions() ([]string, error) {
-	res, err := s.ListObjects(vustorage.CollatedVersionsFolder, "/")
+func (s *Storage) ListCollatedVersions(ctx context.Context) ([]string, error) {
+	res, err := s.ListObjects(ctx, vustorage.CollatedVersionsFolder, "/")
 
 	if err != nil {
 		return nil, err
@@ -271,7 +268,7 @@ func (s *Storage) ListCollatedVersions() ([]string, error) {
 
 // PutCollatedSpecs iterative wrapper around the GCS PutObject request.
 // TODO: Look for alternative to iteratively uploading.
-func (s *Storage) PutCollatedSpecs(objects map[vervet.Version]openapi3.T) ([]storage.ObjectHandle, error) {
+func (s *Storage) PutCollatedSpecs(ctx context.Context, objects map[vervet.Version]openapi3.T) ([]storage.ObjectHandle, error) {
 	res := make([]storage.ObjectHandle, 0)
 	for key, file := range objects {
 		jsonBlob, err := file.MarshalJSON()
@@ -279,7 +276,7 @@ func (s *Storage) PutCollatedSpecs(objects map[vervet.Version]openapi3.T) ([]sto
 			return nil, fmt.Errorf("failure to marshal json for collation upload: %w", err)
 		}
 		reader := bytes.NewReader(jsonBlob)
-		r, err := s.PutObject(vustorage.CollatedVersionsFolder+key.String()+"/spec.json", reader)
+		r, err := s.PutObject(ctx, vustorage.CollatedVersionsFolder+key.String()+"/spec.json", reader)
 		if err != nil {
 			return nil, err
 		}
@@ -291,15 +288,15 @@ func (s *Storage) PutCollatedSpecs(objects map[vervet.Version]openapi3.T) ([]sto
 
 // GetCollatedVersionSpecs retrieves a map of vervet.Version strings
 // and their corresponding JSON blobs and returns the result.
-func (s *Storage) GetCollatedVersionSpecs() (map[string][]byte, error) {
+func (s *Storage) GetCollatedVersionSpecs(ctx context.Context) (map[string][]byte, error) {
 	versionSpecs := map[string][]byte{}
-	versions, err := s.ListCollatedVersions()
+	versions, err := s.ListCollatedVersions(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, key := range versions {
-		jsonBlob, err := s.GetCollatedVersionSpec(key)
+		jsonBlob, err := s.GetCollatedVersionSpec(ctx, key)
 		if err != nil {
 			return nil, err
 		}
@@ -311,8 +308,8 @@ func (s *Storage) GetCollatedVersionSpecs() (map[string][]byte, error) {
 
 // GetCollatedVersionSpec retrieves a single collated vervet.Version
 // and returns the JSON blob.
-func (s *Storage) GetCollatedVersionSpec(version string) ([]byte, error) {
-	jsonBlob, err := s.GetObject(vustorage.CollatedVersionsFolder + version + "/spec.json")
+func (s *Storage) GetCollatedVersionSpec(ctx context.Context, version string) ([]byte, error) {
+	jsonBlob, err := s.GetObject(ctx, vustorage.CollatedVersionsFolder+version+"/spec.json")
 	if err != nil {
 		return nil, err
 	}
@@ -321,9 +318,9 @@ func (s *Storage) GetCollatedVersionSpec(version string) ([]byte, error) {
 }
 
 // PutObject nice wrapper around the GCS PutObject request.
-func (s *Storage) PutObject(key string, reader io.Reader) (*storage.ObjectHandle, error) {
+func (s *Storage) PutObject(ctx context.Context, key string, reader io.Reader) (*storage.ObjectHandle, error) {
 	obj := s.c.Bucket(s.config.BucketName).Object(key)
-	ctx, cancel := context.WithTimeout(s.ctx, time.Second*50)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
 	defer cancel()
 
 	wc := obj.NewWriter(ctx)
@@ -344,8 +341,8 @@ func (s *Storage) PutObject(key string, reader io.Reader) (*storage.ObjectHandle
 }
 
 // GetObject actually retrieves the json blob form GCS.
-func (s *Storage) GetObject(key string) ([]byte, error) {
-	reader, err := s.c.Bucket(s.config.BucketName).Object(key).NewReader(s.ctx)
+func (s *Storage) GetObject(ctx context.Context, key string) ([]byte, error) {
+	reader, err := s.c.Bucket(s.config.BucketName).Object(key).NewReader(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrObjectNotExist) {
 			return nil, nil
@@ -359,13 +356,13 @@ func (s *Storage) GetObject(key string) ([]byte, error) {
 
 // GetObjectWithMetadata actually retrieves the json blob form GCS
 // with metadata around the storage in GCS.
-func (s *Storage) GetObjectWithMetadata(key string) (*storage.Reader, *storage.ObjectAttrs, error) {
+func (s *Storage) GetObjectWithMetadata(ctx context.Context, key string) (*storage.Reader, *storage.ObjectAttrs, error) {
 	handle := s.c.Bucket(s.config.BucketName).Object(key)
-	attrs, err := handle.Attrs(s.ctx)
+	attrs, err := handle.Attrs(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	reader, err := handle.NewReader(s.ctx)
+	reader, err := handle.NewReader(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -375,7 +372,7 @@ func (s *Storage) GetObjectWithMetadata(key string) (*storage.Reader, *storage.O
 
 // ListObjects nice wrapper around the GCS storage.BucketHandle Objects request.
 // Defaults to 1000 results.
-func (s *Storage) ListObjects(key string, delimeter string) ([]storage.ObjectAttrs, error) {
+func (s *Storage) ListObjects(ctx context.Context, key string, delimeter string) ([]storage.ObjectAttrs, error) {
 	query := &storage.Query{
 		Prefix: key,
 	}
@@ -385,7 +382,7 @@ func (s *Storage) ListObjects(key string, delimeter string) ([]storage.ObjectAtt
 	if query.Prefix == "" {
 		query = nil
 	}
-	it := s.c.Bucket(s.config.BucketName).Objects(s.ctx, query)
+	it := s.c.Bucket(s.config.BucketName).Objects(ctx, query)
 	r := make([]storage.ObjectAttrs, 0)
 	for {
 		obj, err := it.Next()
@@ -407,13 +404,13 @@ func (s *Storage) ListObjects(key string, delimeter string) ([]storage.ObjectAtt
 }
 
 // DeleteObject deletes a file if it exists.
-func (s *Storage) DeleteObject(key string) error {
-	return s.c.Bucket(s.config.BucketName).Object(key).Delete(s.ctx)
+func (s *Storage) DeleteObject(ctx context.Context, key string) error {
+	return s.c.Bucket(s.config.BucketName).Object(key).Delete(ctx)
 }
 
 // CreateBucket idempotently creates an GCS bucket for VU.
-func (s *Storage) CreateBucket() error {
-	bucket, err := s.getBucketAttrs()
+func (s *Storage) CreateBucket(ctx context.Context) error {
+	bucket, err := s.getBucketAttrs(ctx)
 	if err != nil && !errors.Is(err, storage.ErrBucketNotExist) {
 		return err
 	}
@@ -423,7 +420,7 @@ func (s *Storage) CreateBucket() error {
 	}
 
 	err = s.c.Bucket(s.config.BucketName).Create(
-		s.ctx,
+		ctx,
 		s.config.Credentials.ProjectId,
 		nil)
 	if err != nil {
@@ -434,9 +431,9 @@ func (s *Storage) CreateBucket() error {
 }
 
 // ListBucketContents lists all available files in a GCS bucket.
-func (s *Storage) ListBucketContents() ([]string, error) {
+func (s *Storage) ListBucketContents(ctx context.Context) ([]string, error) {
 	objects := make([]string, 0)
-	it := s.c.Bucket(s.config.BucketName).Objects(s.ctx, &storage.Query{})
+	it := s.c.Bucket(s.config.BucketName).Objects(ctx, &storage.Query{})
 	for {
 		attrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
@@ -451,8 +448,8 @@ func (s *Storage) ListBucketContents() ([]string, error) {
 }
 
 // getBucketAttrs gets the metadata around a bucket if it exists.
-func (s *Storage) getBucketAttrs() (*storage.BucketAttrs, error) {
-	return s.c.Bucket(s.config.BucketName).Attrs(s.ctx)
+func (s *Storage) getBucketAttrs(ctx context.Context) (*storage.BucketAttrs, error) {
+	return s.c.Bucket(s.config.BucketName).Attrs(ctx)
 }
 
 // getCollatedVersionFromKey helper function to clean up GCS keys for
