@@ -451,9 +451,13 @@ func (s *Storage) CreateBucket(ctx context.Context) error {
 	}
 
 	_, err := s.client.HeadBucket(ctx, input)
-	if smith := handleAwsError(err); smith != nil {
-		return smith
+	smith := handleAwsError(err)
+	if smith == nil {
+		return nil
 	}
+	log.Info().
+		Err(err).
+		Msg("Head bucket check failed, continuing to bucket creation")
 
 	bucket, err := s.client.CreateBucket(ctx, create)
 	if smith := handleAwsError(err); smith != nil {
