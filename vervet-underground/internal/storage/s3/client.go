@@ -15,10 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
@@ -33,7 +31,6 @@ type StaticKeyCredentials struct {
 	AccessKey  string
 	SecretKey  string
 	SessionKey string
-	RoleArn    string // Role Arn used when IamRoleEnabled
 }
 
 // Config Defines S3 client target used in config.LoadDefaultConfig.
@@ -58,9 +55,8 @@ func New(ctx context.Context, awsCfg *Config) (storage.Storage, error) {
 	}
 
 	var options []func(*config.LoadOptions) error
-	var credCache *aws.CredentialsCache
 	/*
-		Secrets should come from volume or IamRole
+		Secrets should come from AWS injected IAM Role volume
 		localstack defaults to static credentials for local dev
 		awsRegion = os.Getenv("AWS_REGION")
 		awsEndpoint = os.Getenv("AWS_ENDPOINT")
@@ -86,17 +82,9 @@ func New(ctx context.Context, awsCfg *Config) (storage.Storage, error) {
 				awsCfg.Credentials.SecretKey,
 				awsCfg.Credentials.SessionKey)),
 			config.WithEndpointResolverWithOptions(customResolver))
-	} else {
-		stsSvc := sts.New(sts.Options{})
-		creds := stscreds.NewAssumeRoleProvider(stsSvc, awsCfg.Credentials.RoleArn)
-		options = append(options, config.WithCredentialsProvider(creds))
-		credCache = aws.NewCredentialsCache(creds)
 	}
 
 	awsCfgLoader, err := config.LoadDefaultConfig(ctx, options...)
-	if credCache != nil {
-		awsCfgLoader.Credentials = credCache
-	}
 
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot load the AWS configs")
@@ -458,28 +446,21 @@ func (s *Storage) CreateBucket(ctx context.Context) error {
 	create := &s3.CreateBucketInput{
 		Bucket: aws.String(s.config.BucketName),
 	}
+	input := &s3.HeadBucketInput{
+		Bucket: aws.String(s.config.BucketName),
+	}
 
-	bucketOutput, err := s.client.ListBuckets(ctx, &s3.ListBucketsInput{})
+	_, err := s.client.HeadBucket(ctx, input)
 	if smith := handleAwsError(err); smith != nil {
 		return smith
 	}
 
-	exists := false
-	for _, bucket := range bucketOutput.Buckets {
-		if *bucket.Name == s.config.BucketName {
-			exists = true
-			break
-		}
+	bucket, err := s.client.CreateBucket(ctx, create)
+	if smith := handleAwsError(err); smith != nil {
+		return smith
 	}
-
-	if !exists {
-		bucket, err := s.client.CreateBucket(ctx, create)
-		if smith := handleAwsError(err); smith != nil {
-			return smith
-		}
-		if *bucket.Location == "" {
-			return fmt.Errorf("invalid bucket output")
-		}
+	if *bucket.Location == "" {
+		return fmt.Errorf("invalid bucket output")
 	}
 	return nil
 }

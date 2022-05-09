@@ -241,7 +241,6 @@ func initializeStorage(ctx context.Context, cfg *config.ServerConfig) (storage.S
 				AccessKey:  cfg.Storage.S3.AccessKey,
 				SecretKey:  cfg.Storage.S3.SecretKey,
 				SessionKey: cfg.Storage.S3.SessionKey,
-				RoleArn:    cfg.Storage.S3.RoleArn,
 			},
 		})
 	case config.StorageTypeGCS:
