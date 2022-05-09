@@ -512,16 +512,8 @@ For information on other S3 API error codes see:
 https://aws.github.io/aws-sdk-go-v2/docs/handling-errors/
 */
 func handleAwsError(err error) error {
-	var opErr *smithy.OperationError
 	var apiErr smithy.APIError
 	var re *awshttp.ResponseError
-
-	if errors.As(err, &opErr) {
-		log.Error().Err(err).Msgf("failed to call service: %s, operation: %s, error: %v",
-			opErr.Service(),
-			opErr.Operation(),
-			opErr.Unwrap())
-	}
 
 	if errors.As(err, &re) {
 		log.Error().Err(re).Msgf("failed to call service: %s, status_code: %d, error: %v",
