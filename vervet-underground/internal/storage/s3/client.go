@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -513,6 +514,8 @@ https://aws.github.io/aws-sdk-go-v2/docs/handling-errors/
 func handleAwsError(err error) error {
 	var opErr *smithy.OperationError
 	var apiErr smithy.APIError
+	var re *awshttp.ResponseError
+
 	if errors.As(err, &opErr) {
 		log.Error().Err(err).Msgf("failed to call service: %s, operation: %s, error: %v",
 			opErr.Service(),
@@ -520,15 +523,25 @@ func handleAwsError(err error) error {
 			opErr.Unwrap())
 	}
 
-	if opErr != nil {
-		err := opErr.Unwrap()
-		if errors.As(err, &apiErr) {
-			switch apiErr.ErrorCode() {
-			case "NoSuchKey":
-				return nil
-			default:
-				return apiErr
-			}
+	if errors.As(err, &re) {
+		log.Error().Err(re).Msgf("failed to call service: %s, status_code: %d, error: %v",
+			re.ServiceRequestID(),
+			re.HTTPStatusCode(),
+			re.Unwrap())
+		switch re.HTTPStatusCode() {
+		case 404:
+			return nil
+		default:
+			return re
+		}
+	}
+
+	if errors.As(err, &apiErr) {
+		switch apiErr.ErrorCode() {
+		case "NoSuchKey", "NotFound":
+			return nil
+		default:
+			return apiErr
 		}
 	}
 
