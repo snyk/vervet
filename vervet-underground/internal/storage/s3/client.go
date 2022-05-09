@@ -446,28 +446,21 @@ func (s *Storage) CreateBucket(ctx context.Context) error {
 	create := &s3.CreateBucketInput{
 		Bucket: aws.String(s.config.BucketName),
 	}
+	input := &s3.HeadBucketInput{
+		Bucket: aws.String(s.config.BucketName),
+	}
 
-	bucketOutput, err := s.client.ListBuckets(ctx, &s3.ListBucketsInput{})
+	_, err := s.client.HeadBucket(ctx, input)
 	if smith := handleAwsError(err); smith != nil {
 		return smith
 	}
 
-	exists := false
-	for _, bucket := range bucketOutput.Buckets {
-		if *bucket.Name == s.config.BucketName {
-			exists = true
-			break
-		}
+	bucket, err := s.client.CreateBucket(ctx, create)
+	if smith := handleAwsError(err); smith != nil {
+		return smith
 	}
-
-	if !exists {
-		bucket, err := s.client.CreateBucket(ctx, create)
-		if smith := handleAwsError(err); smith != nil {
-			return smith
-		}
-		if *bucket.Location == "" {
-			return fmt.Errorf("invalid bucket output")
-		}
+	if *bucket.Location == "" {
+		return fmt.Errorf("invalid bucket output")
 	}
 	return nil
 }
