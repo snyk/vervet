@@ -514,26 +514,25 @@ https://aws.github.io/aws-sdk-go-v2/docs/handling-errors/
 func handleAwsError(err error) error {
 	var apiErr smithy.APIError
 	var re *awshttp.ResponseError
+	fault := "client"
 
+	_ = errors.As(err, &apiErr)
+	if apiErr != nil {
+		fault = apiErr.ErrorFault().String()
+	}
 	if errors.As(err, &re) {
-		log.Error().Err(re).Msgf("failed to call service: %s, status_code: %d, error: %v",
-			re.ServiceRequestID(),
-			re.HTTPStatusCode(),
-			re.Unwrap())
+		log.Error().Err(re).
+			Str("service_request_id", re.ServiceRequestID()).
+			Int("status_code", re.HTTPStatusCode()).
+			Str("smithy_fault", fault).
+			Str("request_url", re.HTTPResponse().Request.URL.String()).
+			Str("request_method", re.HTTPResponse().Request.Method).
+			Msg("S3 call failed")
 		switch re.HTTPStatusCode() {
 		case 404:
 			return nil
 		default:
 			return re
-		}
-	}
-
-	if errors.As(err, &apiErr) {
-		switch apiErr.ErrorCode() {
-		case "NoSuchKey", "NotFound":
-			return nil
-		default:
-			return apiErr
 		}
 	}
 

@@ -158,3 +158,18 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(versions, qt.Contains, "2022-02-02")
 }
+
+func TestHandleAwsError(t *testing.T) {
+	c := setup(t)
+	ctx := context.Background()
+
+	st, err := s3.New(ctx, cfg)
+	c.Assert(err, qt.IsNil)
+	client, ok := st.(*s3.Storage)
+	c.Assert(ok, qt.IsTrue)
+
+	// Fail silently
+	res, err := client.GetObject(ctx, storage.CollatedVersionsFolder+"dummy.txt")
+	c.Assert(err, qt.IsNil)
+	c.Assert(string(res), qt.Equals, "")
+}
