@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -451,9 +452,13 @@ func (s *Storage) CreateBucket(ctx context.Context) error {
 	}
 
 	_, err := s.client.HeadBucket(ctx, input)
-	if smith := handleAwsError(err); smith != nil {
-		return smith
+	smith := handleAwsError(err)
+	if smith == nil {
+		return nil
 	}
+	log.Info().
+		Err(err).
+		Msg("Head bucket check failed, continuing to bucket creation")
 
 	bucket, err := s.client.CreateBucket(ctx, create)
 	if smith := handleAwsError(err); smith != nil {
@@ -507,24 +512,27 @@ For information on other S3 API error codes see:
 https://aws.github.io/aws-sdk-go-v2/docs/handling-errors/
 */
 func handleAwsError(err error) error {
-	var opErr *smithy.OperationError
 	var apiErr smithy.APIError
-	if errors.As(err, &opErr) {
-		log.Error().Err(err).Msgf("failed to call service: %s, operation: %s, error: %v",
-			opErr.Service(),
-			opErr.Operation(),
-			opErr.Unwrap())
-	}
+	var re *awshttp.ResponseError
+	fault := "client"
 
-	if opErr != nil {
-		err := opErr.Unwrap()
-		if errors.As(err, &apiErr) {
-			switch apiErr.ErrorCode() {
-			case "NoSuchKey":
-				return nil
-			default:
-				return apiErr
-			}
+	_ = errors.As(err, &apiErr)
+	if apiErr != nil {
+		fault = apiErr.ErrorFault().String()
+	}
+	if errors.As(err, &re) {
+		log.Error().Err(re).
+			Str("service_request_id", re.ServiceRequestID()).
+			Int("status_code", re.HTTPStatusCode()).
+			Str("smithy_fault", fault).
+			Str("request_url", re.HTTPResponse().Request.URL.String()).
+			Str("request_method", re.HTTPResponse().Request.Method).
+			Msg("S3 call failed")
+		switch re.HTTPStatusCode() {
+		case 404:
+			return nil
+		default:
+			return re
 		}
 	}
 
