@@ -80,19 +80,14 @@ type OpticCILinter struct {
 	// Debug turns on debug logging.
 	Debug bool `json:"debug,omitempty"`
 
-	// CIContext specifies the location of an optional CI context JSON file to
-	// use when performing an optic-ci compare or bulk-compare. If this file is
-	// present when vervet lints, it will be passed to optic using the
-	// --ci-context option.
-	//
-	// See https://www.npmjs.com/package/@useoptic/api-checks#expected-contexts
-	// for more information.
-	CIContext string `json:"ciContext"`
+	// DEPRECATED: CIContext is no longer used and should be removed in the
+	// next major release.
+	CIContext string `json:"-"`
 
-	// UploadResults indicates that the comparison results from optic-ci should
-	// be uploaded to Optic Cloud. This only happens if the file specified by
-	// CIContext exists.
-	UploadResults bool `json:"uploadResults"`
+	// DEPRECATED: UploadResults is no longer used and should be removed in the
+	// next major release. Uploading optic-ci comparison results to Optic
+	// Cloud is determined by the presence of environment variables.
+	UploadResults bool `json:"-"`
 
 	// Exceptions are files that are excluded from CI checks. This is an escape
 	// hatch of last resort, if a file needs to land and can't pass CI yet.

@@ -79,10 +79,8 @@ apis:
 			"ci-rules": {
 				Name: "ci-rules",
 				OpticCI: &config.OpticCILinter{
-					Image:         "snyk/sweater-comb:latest",
-					Original:      "target-branch",
-					CIContext:     "ci-context.json",
-					UploadResults: true,
+					Image:    "snyk/sweater-comb:latest",
+					Original: "target-branch",
 				},
 			},
 		},

@@ -249,11 +249,9 @@ func TestGitScript(t *testing.T) {
 
 	// Sanity check constructor
 	l, err := New(ctx, &config.OpticCILinter{
-		Script:        "/usr/local/lib/node_modules/.bin/sweater-comb",
-		Original:      commitHash.String(),
-		Proposed:      "",
-		CIContext:     "ci-context.json",
-		UploadResults: true,
+		Script:   "/usr/local/lib/node_modules/.bin/sweater-comb",
+		Original: commitHash.String(),
+		Proposed: "",
 	})
 	c.Assert(err, qt.IsNil)
 	c.Assert(l.image, qt.Equals, "")
@@ -279,7 +277,7 @@ func TestGitScript(t *testing.T) {
 	cmdline := strings.Join(runner.runs[0], " ")
 	c.Assert(cmdline, qt.Matches,
 		`/usr/local/lib/node_modules/.bin/sweater-comb bulk-compare --input `+filepath.Clean(os.TempDir())+`.*-input.json `+
-			`--upload-results --ci-context ci-context.json`)
+			`--upload-results`)
 	assertInputJSON(c, `^.* --input (.*-input\.json).*`, cmdline, func(c *qt.C, cmp comparison) {
 		c.Assert(cmp.From, qt.Not(qt.Contains), "/from")
 		c.Assert(cmp.To, qt.Not(qt.Contains), "/to")
