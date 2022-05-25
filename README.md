@@ -216,7 +216,7 @@ NPM packaging adapted from https://github.com/manifoldco/torus-cli.
 
 Go >= 1.16 required.
 
-    go install github.com/snyk/vervet@latest
+    go install github.com/snyk/vervet/v4/cmd/vervet@latest
 
 Building from source locally:
 
