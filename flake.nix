@@ -12,10 +12,9 @@
       let pkgs = nixpkgs.legacyPackages.${system};
       in rec {
         packages = flake-utils.lib.flattenTree {
-          vervet = pkgs.callPackage ./default.nix { inherit lastMod; };
+          default = pkgs.callPackage ./default.nix { inherit lastMod; };
         };
-        defaultPackage = packages.vervet;
-        defaultApp = flake-utils.lib.mkApp { drv = packages.vervet; };
+        apps.default = flake-utils.lib.mkApp { drv = packages.default; };
         devShell = pkgs.callPackage ./shell.nix { inherit pkgs; };
       });
 }
