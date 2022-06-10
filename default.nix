@@ -1,12 +1,10 @@
-{ buildGoModule, lib }:
-
+{ buildGoModule, lib, lastMod }:
 buildGoModule rec {
   pname = "vervet";
-  version = "4.6.6";
+  version = builtins.substring 0 8 lastMod;
   src = ./.;
 
-  vendorSha256 = null;
-  proxyVendor = true;
+  vendorSha256 = "sha256-KcxaAOp9+d2DN4qFmmNDH3Di+TmiqhTbLsujh2aKRmk=";
 
   meta = with lib; {
     description = "API resource versioning tool";
