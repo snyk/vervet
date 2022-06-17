@@ -16,7 +16,7 @@ rules:
     description: Parameter names must be snake_case.
     message: '{{description}}'
     severity: error
-    given: $..parameters[*]
+    given: $..parameters[?(@.in!='header')]
     then:
       field: 'name'
       function: casing
