@@ -228,9 +228,12 @@ func versionHandlers(ctx context.Context, router *mux.Router, sc *scraper.Scrape
 }
 
 func initializeStorage(ctx context.Context, cfg *config.ServerConfig) (storage.Storage, error) {
+	newCollator := func() *storage.Collator {
+		return storage.NewCollatorExcludePatterns(cfg.Merging.ExcludePatterns)
+	}
 	switch cfg.Storage.Type {
 	case config.StorageTypeMemory:
-		return mem.New(), nil
+		return mem.New(mem.NewCollator(newCollator)), nil
 	case config.StorageTypeS3:
 		return s3.New(ctx, &s3.Config{
 			AwsRegion:      cfg.Storage.S3.Region,
@@ -242,7 +245,7 @@ func initializeStorage(ctx context.Context, cfg *config.ServerConfig) (storage.S
 				SecretKey:  cfg.Storage.S3.SecretKey,
 				SessionKey: cfg.Storage.S3.SessionKey,
 			},
-		})
+		}, s3.NewCollator(newCollator))
 	case config.StorageTypeGCS:
 		return gcs.New(ctx, &gcs.Config{
 			GcsRegion:      cfg.Storage.GCS.Region,
@@ -253,7 +256,7 @@ func initializeStorage(ctx context.Context, cfg *config.ServerConfig) (storage.S
 				ProjectId: cfg.Storage.GCS.ProjectId,
 				Filename:  cfg.Storage.GCS.Filename,
 			},
-		})
+		}, gcs.NewCollator(newCollator))
 	}
 	return nil, fmt.Errorf("unknown storage backend: %s", cfg.Storage.Type)
 }

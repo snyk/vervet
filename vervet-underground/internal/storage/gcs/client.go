@@ -43,6 +43,7 @@ type Storage struct {
 	c                *storage.Client
 	config           Config
 	collatedVersions vervet.VersionSlice
+	newCollator      func() *vustorage.Collator
 }
 
 /*
@@ -55,19 +56,19 @@ want to test this with https you also need to configure Go to skip
 certificate validation.
 "http://localhost:8080/storage/v1/"
 */
-func New(ctx context.Context, gcsConfig *Config) (vustorage.Storage, error) {
+func New(ctx context.Context, gcsConfig *Config, options ...Option) (vustorage.Storage, error) {
 	if gcsConfig == nil || gcsConfig.BucketName == "" {
 		return nil, fmt.Errorf("missing GCS configuration")
 	}
-	var options []option.ClientOption
+	var clientOptions []option.ClientOption
 	if !gcsConfig.IamRoleEnabled {
-		options = []option.ClientOption{option.WithEndpoint(gcsConfig.GcsEndpoint)}
+		clientOptions = []option.ClientOption{option.WithEndpoint(gcsConfig.GcsEndpoint)}
 		if gcsConfig.Credentials.Filename != "" {
-			options = append(options, option.WithCredentialsFile(gcsConfig.Credentials.Filename))
+			clientOptions = append(clientOptions, option.WithCredentialsFile(gcsConfig.Credentials.Filename))
 		}
 	}
 
-	client, err := storage.NewClient(ctx, options...)
+	client, err := storage.NewClient(ctx, clientOptions...)
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to create client")
@@ -78,12 +79,27 @@ func New(ctx context.Context, gcsConfig *Config) (vustorage.Storage, error) {
 		c:                client,
 		config:           *gcsConfig,
 		collatedVersions: vervet.VersionSlice{},
+		newCollator:      vustorage.NewCollator,
+	}
+	for _, option := range options {
+		option(st)
 	}
 	err = st.CreateBucket(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return st, nil
+}
+
+// Option defines a Storage constructor option.
+type Option func(*Storage)
+
+// NewCollator configures the Storage instance to use the given constructor
+// function for creating collator instances.
+func NewCollator(newCollator func() *vustorage.Collator) Option {
+	return func(s *Storage) {
+		s.newCollator = newCollator
+	}
 }
 
 // NotifyVersions implements scraper.Storage.
@@ -103,7 +119,7 @@ func (s *Storage) NotifyVersions(ctx context.Context, name string, versions []st
 // to create a unified version spec for each unique vervet.Version.
 func (s *Storage) CollateVersions(ctx context.Context) error {
 	// create an aggregate to process collated data from storage data
-	aggregate := vustorage.NewCollator()
+	aggregate := s.newCollator()
 	serviceRevisionResults, err := s.ListObjects(ctx, vustorage.ServiceVersionsFolder, "")
 	if err != nil {
 		return err

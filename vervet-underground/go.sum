@@ -489,6 +489,8 @@ github.com/slok/go-http-metrics v0.10.0 h1:rh0LaYEKza5eaYRGDXujKrOln57nHBi4TtVhm
 github.com/slok/go-http-metrics v0.10.0/go.mod h1:lFqdaS4kWMfUKCSukjC47PdCeTk+hXDUVm8kLHRqJ38=
 github.com/snyk/vervet/v4 v4.15.1 h1:Kz77gfocq/Hqb0WRrOIUb1EyV0cQsGW77xSNWwUNGlk=
 github.com/snyk/vervet/v4 v4.15.1/go.mod h1:44bzoNXULEwlfmIZh9KCrYQdjTI4LHZZNhky5IW0Jrc=
+github.com/snyk/vervet/v4 v4.19.0 h1:JnI+m979DWTXC9A8ESpWlSjF3JT6Q7SzdcCj8s2UAeU=
+github.com/snyk/vervet/v4 v4.19.0/go.mod h1:44bzoNXULEwlfmIZh9KCrYQdjTI4LHZZNhky5IW0Jrc=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.8.2 h1:xehSyVa0YnHWsJ49JFljMpg1HX19V6NDZ1fkm1Xznbo=
 github.com/spf13/afero v1.8.2/go.mod h1:CtAatgMJh6bJEIs48Ay/FOnkljP3WeGUG0MC1RfAqwo=

@@ -17,13 +17,22 @@ type Collator struct {
 	revisions map[string]*ServiceRevisions
 	// uniqueVersions is API versions of all services.
 	uniqueVersions vervet.VersionSlice
+	// excludePatterns identifies elements to be removed from the collated OpenAPI output.
+	excludePatterns vervet.ExcludePatterns
 }
 
 // NewCollator returns a new Collator instance.
 func NewCollator() *Collator {
+	return NewCollatorExcludePatterns(vervet.ExcludePatterns{})
+}
+
+// NewCollatorExcludePatterns returns a new Collator instance with patterns for
+// excluding elements from the output.
+func NewCollatorExcludePatterns(excludePatterns vervet.ExcludePatterns) *Collator {
 	return &Collator{
-		revisions:      make(map[string]*ServiceRevisions),
-		uniqueVersions: nil,
+		revisions:       make(map[string]*ServiceRevisions),
+		uniqueVersions:  nil,
+		excludePatterns: excludePatterns,
 	}
 }
 
@@ -50,7 +59,7 @@ func (c *Collator) Add(service string, revision ContentRevision) {
 }
 
 // Collate processes added service revisions to collate unified versions and OpenAPI specs for each version.
-func (c Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T, error) {
+func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T, error) {
 	specs := make(map[vervet.Version]openapi3.T)
 	sort.Sort(c.uniqueVersions)
 
@@ -69,6 +78,11 @@ func (c Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T,
 		if len(revisions) > 0 {
 			spec, err := mergeRevisions(revisions)
 			if err != nil {
+				log.Error().Err(err).Msgf("could not merge revision for version %s", version)
+				collatorMergeError.WithLabelValues(version.String()).Inc()
+				return nil, nil, err
+			}
+			if err := vervet.RemoveElements(spec, c.excludePatterns); err != nil {
 				log.Error().Err(err).Msgf("could not merge revision for version %s", version)
 				collatorMergeError.WithLabelValues(version.String()).Inc()
 				return nil, nil, err
