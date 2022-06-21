@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/snyk/vervet/v4/config"
 	"github.com/snyk/vervet/v4/internal/generator"
@@ -21,6 +22,7 @@ type GeneratorParams struct {
 	Debug          bool
 	DryRun         bool
 	FS             fs.FS
+	Functions      template.FuncMap
 }
 
 // Generate executes code generators against OpenAPI specs.
@@ -83,6 +85,9 @@ func Generate(params GeneratorParams) error {
 	}
 	if params.FS != nil {
 		options = append(options, generator.Filesystem(params.FS))
+	}
+	if len(params.Functions) > 0 {
+		options = append(options, generator.Functions(params.Functions))
 	}
 	generators := map[string]*generator.Generator{}
 	for k, genConf := range proj.Generators {
