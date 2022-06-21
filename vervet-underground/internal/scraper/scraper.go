@@ -226,7 +226,7 @@ func (s *Scraper) getNewVersion(ctx context.Context, svc service, version string
 		return nil, false, errors.WithStack(err)
 	}
 	// For now, let's just see if the response can be unmarshaled
-	// TODO: Load w/kin-openapi and validate it?
+	// TODO: Load w/kin-openapi and remove excluded elements
 	var doc map[string]interface{}
 	err = json.Unmarshal(respContents, &doc)
 	if err != nil {

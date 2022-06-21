@@ -617,6 +617,11 @@ paths:
         required: true
         schema:
           type: string
+      - description: It's a secret to everybody
+        in: header
+        name: x-private-matter
+        schema:
+          type: string
       responses:
         "204":
           description: Project was deleted
