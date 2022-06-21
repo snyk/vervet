@@ -199,6 +199,14 @@ func Filesystem(FS fs.FS) Option {
 	}
 }
 
+func Functions(funcs template.FuncMap) Option {
+	return func(g *Generator) {
+		for k := range funcs {
+			g.functions[k] = funcs[k]
+		}
+	}
+}
+
 // Execute runs the generator on the given resources.
 func (g *Generator) Execute(resources ResourceMap) ([]string, error) {
 	var allFiles []string
