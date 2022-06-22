@@ -48,14 +48,15 @@ type Storage struct {
 	client           *s3.Client
 	config           Config
 	collatedVersions vervet.VersionSlice
+	newCollator      func() *storage.Collator
 }
 
-func New(ctx context.Context, awsCfg *Config) (storage.Storage, error) {
+func New(ctx context.Context, awsCfg *Config, options ...Option) (storage.Storage, error) {
 	if awsCfg == nil || awsCfg.BucketName == "" {
 		return nil, fmt.Errorf("missing S3 configuration")
 	}
 
-	var options []func(*config.LoadOptions) error
+	var loadOptions []func(*config.LoadOptions) error
 	/*
 		Secrets should come from AWS injected IAM Role volume
 		localstack defaults to static credentials for local dev
@@ -64,7 +65,7 @@ func New(ctx context.Context, awsCfg *Config) (storage.Storage, error) {
 		bucketName = os.Getenv("S3_BUCKET")
 	*/
 	if !awsCfg.IamRoleEnabled {
-		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, loadOptions ...interface{}) (aws.Endpoint, error) {
 			if awsCfg.AwsEndpoint != "" {
 				return aws.Endpoint{
 					PartitionID:   "aws",
@@ -77,7 +78,7 @@ func New(ctx context.Context, awsCfg *Config) (storage.Storage, error) {
 			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
 		})
 
-		options = append(options, config.WithRegion(awsCfg.AwsRegion),
+		loadOptions = append(loadOptions, config.WithRegion(awsCfg.AwsRegion),
 			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 				awsCfg.Credentials.AccessKey,
 				awsCfg.Credentials.SecretKey,
@@ -85,7 +86,7 @@ func New(ctx context.Context, awsCfg *Config) (storage.Storage, error) {
 			config.WithEndpointResolverWithOptions(customResolver))
 	}
 
-	awsCfgLoader, err := config.LoadDefaultConfig(ctx, options...)
+	awsCfgLoader, err := config.LoadDefaultConfig(ctx, loadOptions...)
 
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot load the AWS configs")
@@ -100,12 +101,27 @@ func New(ctx context.Context, awsCfg *Config) (storage.Storage, error) {
 		client:           s3Client,
 		config:           *awsCfg,
 		collatedVersions: vervet.VersionSlice{},
+		newCollator:      storage.NewCollator,
+	}
+	for _, option := range options {
+		option(st)
 	}
 	err = st.CreateBucket(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return st, nil
+}
+
+// Option defines a Storage constructor option.
+type Option func(*Storage)
+
+// NewCollator configures the Storage instance to use the given constructor
+// function for creating collator instances.
+func NewCollator(newCollator func() *storage.Collator) Option {
+	return func(s *Storage) {
+		s.newCollator = newCollator
+	}
 }
 
 // NotifyVersions implements scraper.Storage.
@@ -208,7 +224,7 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 // CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
 func (s *Storage) CollateVersions(ctx context.Context) error {
 	// create an aggregate to process collated data from storage data
-	aggregate := storage.NewCollator()
+	aggregate := s.newCollator()
 	serviceRevisionResults, err := s.ListObjects(ctx, storage.ServiceVersionsFolder, "")
 	if err != nil {
 		return err

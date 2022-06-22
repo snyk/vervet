@@ -2,6 +2,7 @@
 package config
 
 import (
+	"github.com/snyk/vervet/v4"
 	"github.com/spf13/viper"
 )
 
@@ -19,8 +20,18 @@ type ServerConfig struct {
 	Host     string
 	Services []string
 	Storage  StorageConfig
+	Merging  MergeConfig
 }
 
+// MergeConfig contains configuration options defining how to merge OpenAPI
+// documents when collating aggregate OpenAPI specifications across all
+// services.
+type MergeConfig struct {
+	ExcludePatterns vervet.ExcludePatterns
+}
+
+// StorageConfig defines the configuration options for storage.
+// The value of Type determines which of S3 or GCS will be used.
 type StorageConfig struct {
 	Type           StorageType
 	BucketName     string
@@ -29,6 +40,7 @@ type StorageConfig struct {
 	GCS            GcsConfig
 }
 
+// S3Config defines configuration options for AWS S3 storage.
 type S3Config struct {
 	Region     string
 	Endpoint   string
@@ -37,6 +49,7 @@ type S3Config struct {
 	SessionKey string
 }
 
+// GcsConfig defines configuration options for Google Cloud Storage (GCS).
 type GcsConfig struct {
 	Region    string
 	Endpoint  string

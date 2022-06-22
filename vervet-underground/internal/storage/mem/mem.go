@@ -37,16 +37,35 @@ type Storage struct {
 
 	collatedVersions       vervet.VersionSlice
 	collatedVersionedSpecs storage.CollatedVersionMappedSpecs
+
+	newCollator func() *storage.Collator
 }
 
 // New returns a new Storage instance.
-func New() storage.Storage {
-	return &Storage{
+func New(options ...Option) storage.Storage {
+	s := &Storage{
 		serviceVersions:                   versionedResourceMap{},
 		serviceVersionMappedRevisionSpecs: serviceVersionMappedRevisionSpecs{},
 
 		collatedVersions:       vervet.VersionSlice{},
 		collatedVersionedSpecs: storage.CollatedVersionMappedSpecs{},
+
+		newCollator: storage.NewCollator,
+	}
+	for _, option := range options {
+		option(s)
+	}
+	return s
+}
+
+// Option defines a Storage constructor option.
+type Option func(*Storage)
+
+// NewCollator configures the Storage instance to use the given constructor
+// function for creating collator instances.
+func NewCollator(newCollator func() *storage.Collator) Option {
+	return func(s *Storage) {
+		s.newCollator = newCollator
 	}
 }
 
@@ -169,7 +188,7 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 // CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
 func (s *Storage) CollateVersions(ctx context.Context) error {
 	// create an aggregate to process collated data from storage data
-	aggregate := storage.NewCollator()
+	aggregate := s.newCollator()
 	for serv, versions := range s.serviceVersionMappedRevisionSpecs {
 		for _, revisions := range versions {
 			for _, revision := range revisions {

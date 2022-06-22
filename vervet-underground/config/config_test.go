@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+	"github.com/snyk/vervet/v4"
 
 	"vervet-underground/config"
 )
@@ -50,6 +51,35 @@ func TestLoad(t *testing.T) {
 		expected := config.ServerConfig{
 			Host:     "0.0.0.0",
 			Services: []string{"localhost"},
+			Storage: config.StorageConfig{
+				Type: config.StorageTypeMemory,
+			},
+		}
+		c.Assert(*conf, qt.DeepEquals, expected)
+	})
+
+	c.Run("specify excludes", func(c *qt.C) {
+		f := createTestFile(c, []byte(`{
+			"merging": {
+				"excludePatterns": {
+					"extensionPatterns": "^x-snyk-.*",
+					"headerPatterns": ".*-internal$"
+				}
+			}
+		}`))
+
+		conf, err := config.Load(f.Name())
+		c.Assert(err, qt.IsNil)
+
+		expected := config.ServerConfig{
+			Host:     "localhost",
+			Services: nil,
+			Merging: config.MergeConfig{
+				ExcludePatterns: vervet.ExcludePatterns{
+					ExtensionPatterns: []string{"^x-snyk-.*"},
+					HeaderPatterns:    []string{".*-internal$"},
+				},
+			},
 			Storage: config.StorageConfig{
 				Type: config.StorageTypeMemory,
 			},
