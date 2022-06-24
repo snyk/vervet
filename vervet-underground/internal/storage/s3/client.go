@@ -537,12 +537,20 @@ func handleAwsError(err error) error {
 		fault = apiErr.ErrorFault().String()
 	}
 	if errors.As(err, &re) {
+		resp := re.HTTPResponse()
+		var reqURL, reqMethod string
+		if resp != nil && resp.Request != nil {
+			if resp.Request.URL != nil {
+				reqURL = resp.Request.URL.String()
+			}
+			reqMethod = resp.Request.Method
+		}
 		log.Error().Err(re).
 			Str("service_request_id", re.ServiceRequestID()).
 			Int("status_code", re.HTTPStatusCode()).
 			Str("smithy_fault", fault).
-			Str("request_url", re.HTTPResponse().Request.URL.String()).
-			Str("request_method", re.HTTPResponse().Request.Method).
+			Str("request_url", reqURL).
+			Str("request_method", reqMethod).
 			Msg("S3 call failed")
 		switch re.HTTPStatusCode() {
 		case 404:
