@@ -101,6 +101,17 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 	}, nil
 }
 
+// NewResolvedDocument returns a Document that has already been loaded and
+// references resolved from the given URL. The URL is provided to indicate the
+// document's origin in logging and error messages.
+func NewResolvedDocument(t *openapi3.T, url *url.URL) *Document {
+	return &Document{
+		T:    t,
+		path: url.String(),
+		url:  url,
+	}
+}
+
 // MarshalJSON implements json.Marshaler.
 func (d *Document) MarshalJSON() ([]byte, error) {
 	return d.T.MarshalJSON()
