@@ -6,7 +6,7 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o server
 
 # Run
-FROM alpine:3.14
+FROM gcr.io/distroless/base-debian11
 WORKDIR /
 COPY --from=builder /src/server .
 EXPOSE 8080

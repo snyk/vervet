@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"net/url"
 	"sort"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -96,8 +97,8 @@ func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T
 
 func mergeRevisions(revisions []ContentRevision) (*openapi3.T, error) {
 	collator := vervet.NewCollator()
-	loader := openapi3.NewLoader()
 	for _, revision := range revisions {
+		loader := openapi3.NewLoader()
 		// JSON will deserialize here correctly
 		src, err := loader.LoadFromData(revision.Blob)
 		if err != nil {
@@ -105,9 +106,13 @@ func mergeRevisions(revisions []ContentRevision) (*openapi3.T, error) {
 		}
 
 		rv := &vervet.ResourceVersion{
-			Document: &vervet.Document{T: src},
-			Name:     revision.Service,
-			Version:  revision.Version,
+			Document: vervet.NewResolvedDocument(src, &url.URL{
+				Scheme: "vu",
+				Host:   revision.Service,
+				Path:   revision.Version.String() + "@" + string(revision.Digest),
+			}),
+			Name:    revision.Service,
+			Version: revision.Version,
 		}
 		if err := collator.Collate(rv); err != nil {
 			return nil, fmt.Errorf("could not collate revision %s-%s-%s: %w", revision.Service, revision.Version, revision.Digest, err)
