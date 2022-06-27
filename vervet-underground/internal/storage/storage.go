@@ -20,9 +20,9 @@ type Storage interface {
 	NotifyVersions(ctx context.Context, name string, versions []string, scrapeTime time.Time) error
 
 	// CollateVersions tells the storage to execute the compilation and
-	// update all VU-formatted specs from all services and their
+	// update all VU-formatted specs from the given list of services and their
 	// respective versions gathered.
-	CollateVersions(ctx context.Context) error
+	CollateVersions(ctx context.Context, services ...string) error
 
 	// HasVersion returns whether the storage has already stored the service
 	// API spec version at the given content digest.

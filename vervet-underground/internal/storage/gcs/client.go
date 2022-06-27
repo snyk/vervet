@@ -117,7 +117,12 @@ func (s *Storage) NotifyVersions(ctx context.Context, name string, versions []st
 
 // CollateVersions iterates over all possible permutations of Service versions
 // to create a unified version spec for each unique vervet.Version.
-func (s *Storage) CollateVersions(ctx context.Context) error {
+func (s *Storage) CollateVersions(ctx context.Context, services ...string) error {
+	servicesSet := map[string]struct{}{}
+	for i := range services {
+		servicesSet[services[i]] = struct{}{}
+	}
+
 	// create an aggregate to process collated data from storage data
 	aggregate := s.newCollator()
 	serviceRevisionResults, err := s.ListObjects(ctx, vustorage.ServiceVersionsFolder, "")
@@ -131,6 +136,10 @@ func (s *Storage) CollateVersions(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		if _, ok := servicesSet[service]; !ok {
+			continue
+		}
+
 		rev, obj, err := s.GetObjectWithMetadata(ctx, vustorage.ServiceVersionsFolder+service+"/"+version+"/"+digest+".json")
 		if err != nil {
 			return err
