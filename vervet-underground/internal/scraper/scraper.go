@@ -31,6 +31,7 @@ type Scraper struct {
 type service struct {
 	base string
 	url  *url.URL
+	name string
 }
 
 // Option defines an option that may be specified when creating a new Scraper.
@@ -58,14 +59,14 @@ func New(cfg *config.ServerConfig, store storage.Storage, options ...Option) (*S
 func setupScraper(s *Scraper, cfg *config.ServerConfig, options []Option) error {
 	s.services = make([]service, len(cfg.Services))
 	for i := range cfg.Services {
-		u, err := url.Parse(cfg.Services[i] + "/openapi")
+		u, err := url.Parse(cfg.Services[i].URL + "/openapi")
 		if err != nil {
-			return errors.Wrapf(err, "invalid service %q", cfg.Services[i])
+			return errors.Wrapf(err, "invalid service %q", cfg.Services[i].Name)
 		}
 		// Handle for local/smaller deployments and tests
-		s.services[i] = service{base: cfg.Services[i], url: u}
+		s.services[i] = service{base: cfg.Services[i].URL, url: u, name: cfg.Services[i].Name}
 		if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
-			s.services[i] = service{base: u.Host, url: u}
+			s.services[i] = service{base: u.Host, url: u, name: cfg.Services[i].Name}
 		}
 	}
 	for i := range options {
@@ -154,7 +155,7 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 			continue
 		}
 
-		err = s.storage.NotifyVersion(ctx, svc.base, versions[i], contents, scrapeTime)
+		err = s.storage.NotifyVersion(ctx, svc.name, versions[i], contents, scrapeTime)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -263,7 +264,7 @@ func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string
 		// Not providing a digest is fine, we'll just come back with a GET
 		return true, nil
 	}
-	return s.storage.HasVersion(ctx, svc.base, version, digest)
+	return s.storage.HasVersion(ctx, svc.name, version, digest)
 }
 
 func (s *Scraper) Versions() []string {

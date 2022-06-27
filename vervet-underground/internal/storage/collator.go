@@ -97,12 +97,27 @@ func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T
 
 func mergeRevisions(revisions []ContentRevision) (*openapi3.T, error) {
 	collator := vervet.NewCollator()
+	var haveOpenAPI, haveOpenAPIVersion bool
 	for _, revision := range revisions {
 		loader := openapi3.NewLoader()
 		// JSON will deserialize here correctly
 		src, err := loader.LoadFromData(revision.Blob)
 		if err != nil {
 			return nil, fmt.Errorf("could not load revision %s-%s-%s: %w", revision.Service, revision.Version, revision.Digest, err)
+		}
+
+		// Each service will declare their own /openapi paths. Collate only the
+		// first instances of these paths and remove them from subsequent specs
+		// to prevent failing the collate on conflicting paths.
+		if haveOpenAPI {
+			delete(src.Paths, "/openapi")
+		} else if _, ok := src.Paths["/openapi"]; ok {
+			haveOpenAPI = true
+		}
+		if haveOpenAPIVersion {
+			delete(src.Paths, "/openapi/{version}")
+		} else if _, ok := src.Paths["/openapi/{version}"]; ok {
+			haveOpenAPIVersion = true
 		}
 
 		rv := &vervet.ResourceVersion{

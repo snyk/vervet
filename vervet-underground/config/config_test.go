@@ -42,7 +42,7 @@ func TestLoad(t *testing.T) {
 	c.Run("specify config", func(c *qt.C) {
 		f := createTestFile(c, []byte(`{
 			"host": "0.0.0.0",
-			"services": ["localhost"]
+			"services": [{"url":"localhost","name":"localhost"}]
 		}`))
 
 		conf, err := config.Load(f.Name())
@@ -50,7 +50,7 @@ func TestLoad(t *testing.T) {
 
 		expected := config.ServerConfig{
 			Host:     "0.0.0.0",
-			Services: []string{"localhost"},
+			Services: []config.ServiceConfig{{URL: "localhost", Name: "localhost"}},
 			Storage: config.StorageConfig{
 				Type: config.StorageTypeMemory,
 			},
@@ -90,7 +90,7 @@ func TestLoad(t *testing.T) {
 	c.Run("s3 config", func(c *qt.C) {
 		f := createTestFile(c, []byte(`{
 			"host": "0.0.0.0",
-			"services": ["localhost"],
+			"services": [{"url":"localhost","name":"localhost"}],
 			"storage": {
 				"type": "s3",
 				"s3": {
@@ -108,7 +108,7 @@ func TestLoad(t *testing.T) {
 
 		expected := config.ServerConfig{
 			Host:     "0.0.0.0",
-			Services: []string{"localhost"},
+			Services: []config.ServiceConfig{{URL: "localhost", Name: "localhost"}},
 			Storage: config.StorageConfig{
 				Type: config.StorageTypeS3,
 				S3: config.S3Config{
@@ -126,7 +126,7 @@ func TestLoad(t *testing.T) {
 	c.Run("gcs config", func(c *qt.C) {
 		f := createTestFile(c, []byte(`{
 			"host": "0.0.0.0",
-			"services": ["localhost"],
+			"services": [{"url":"localhost","name":"localhost"}],
 			"storage": {
 				"type": "gcs",
 				"gcs": {
@@ -143,7 +143,7 @@ func TestLoad(t *testing.T) {
 
 		expected := config.ServerConfig{
 			Host:     "0.0.0.0",
-			Services: []string{"localhost"},
+			Services: []config.ServiceConfig{{URL: "localhost", Name: "localhost"}},
 			Storage: config.StorageConfig{
 				Type: config.StorageTypeGCS,
 				GCS: config.GcsConfig{
@@ -165,7 +165,7 @@ func TestLoad(t *testing.T) {
 			}
 		}`))
 		secretConfig := createTestFile(c, []byte(`{
-			"services": ["http://user:password@localhost"],
+			"services": [{"url":"http://user:password@localhost","name":"localhost"}],
 			"storage": {
 				"type": "memory"
 			}
@@ -176,11 +176,35 @@ func TestLoad(t *testing.T) {
 
 		expected := config.ServerConfig{
 			Host:     "0.0.0.0",
-			Services: []string{"http://user:password@localhost"},
+			Services: []config.ServiceConfig{{URL: "http://user:password@localhost", Name: "localhost"}},
 			Storage: config.StorageConfig{
 				Type: config.StorageTypeMemory,
 			},
 		}
 		c.Assert(*conf, qt.DeepEquals, expected)
+	})
+
+	c.Run("invalid service config - no name", func(c *qt.C) {
+		cfg := createTestFile(c, []byte(`{
+			"host": "0.0.0.0",
+			"services": [{"url":"http://user:password@localhost"}],
+			"storage": {
+				"type": "memory"
+			}
+		}`))
+		_, err := config.Load(cfg.Name())
+		c.Assert(err, qt.ErrorMatches, `missing service name`)
+	})
+
+	c.Run("invalid service config - duplicate name", func(c *qt.C) {
+		cfg := createTestFile(c, []byte(`{
+			"host": "0.0.0.0",
+			"services": [{"url":"http://service-a","name":"service-a"},{"url":"http://service-a","name":"service-a"}],
+			"storage": {
+				"type": "memory"
+			}
+		}`))
+		_, err := config.Load(cfg.Name())
+		c.Assert(err, qt.ErrorMatches, `duplicate service name "service-a"`)
 	})
 }

@@ -2,6 +2,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/snyk/vervet/v4"
 	"github.com/spf13/viper"
 )
@@ -18,9 +20,29 @@ const (
 // ServerConfig defines the configuration options for the Vervet Underground service.
 type ServerConfig struct {
 	Host     string
-	Services []string
+	Services []ServiceConfig
 	Storage  StorageConfig
 	Merging  MergeConfig
+}
+
+func (c *ServerConfig) validate() error {
+	serviceNames := map[string]struct{}{}
+	for _, svc := range c.Services {
+		if svc.Name == "" {
+			return fmt.Errorf("missing service name")
+		}
+		if _, ok := serviceNames[svc.Name]; ok {
+			return fmt.Errorf("duplicate service name %q", svc.Name)
+		}
+		serviceNames[svc.Name] = struct{}{}
+	}
+	return nil
+}
+
+// ServiceConfig defines configuration options on a service.
+type ServiceConfig struct {
+	Name string
+	URL  string
 }
 
 // MergeConfig contains configuration options defining how to merge OpenAPI
@@ -84,6 +106,11 @@ func Load(configPaths ...string) (*ServerConfig, error) {
 
 	var config ServerConfig
 	err := viper.Unmarshal(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	err = config.validate()
 	if err != nil {
 		return nil, err
 	}

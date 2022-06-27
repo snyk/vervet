@@ -92,10 +92,11 @@ func TestGCSScraper(t *testing.T) {
 	}
 
 	cfg := &config.ServerConfig{
-		Services: []string{
-			petfoodService.URL,
-			animalsService.URL,
-		},
+		Services: []config.ServiceConfig{{
+			Name: "petfood", URL: petfoodService.URL,
+		}, {
+			Name: "animals", URL: animalsService.URL,
+		}},
 	}
 
 	client, err := gcs.New(ctx, gcsCfg)
@@ -159,10 +160,11 @@ func TestGCSScraperCollation(t *testing.T) {
 	}
 
 	cfg := &config.ServerConfig{
-		Services: []string{
-			petfoodService.URL,
-			animalsService.URL,
-		},
+		Services: []config.ServiceConfig{{
+			Name: "petfood", URL: petfoodService.URL,
+		}, {
+			Name: "animals", URL: animalsService.URL,
+		}},
 	}
 
 	client, err := gcs.New(ctx, gcsCfg)

@@ -169,10 +169,8 @@ func logError(err error) {
 		Msg("UnhandledException")
 }
 
-func healthHandler(router *mux.Router, services []string) {
+func healthHandler(router *mux.Router, services []config.ServiceConfig) {
 	router.Path("/").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
-		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		encoder := json.NewEncoder(w)
 		if err := encoder.Encode(map[string]interface{}{"msg": "success", "services": services}); err != nil {
