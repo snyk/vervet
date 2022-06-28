@@ -85,17 +85,18 @@ func TestScraper(t *testing.T) {
 
 	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
-		service, version, digest string
+		name, version, digest string
 	}{
-		{petfoodService.URL, "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
-		{animalsService.URL, "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
+		{"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
+		{"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
 	}
 
 	cfg := &config.ServerConfig{
-		Services: []string{
-			petfoodService.URL,
-			animalsService.URL,
-		},
+		Services: []config.ServiceConfig{{
+			Name: "petfood", URL: petfoodService.URL,
+		}, {
+			Name: "animals", URL: animalsService.URL,
+		}},
 	}
 	st := mem.New()
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
@@ -107,7 +108,7 @@ func TestScraper(t *testing.T) {
 
 	// No version digests should be known
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsFalse)
 	}
@@ -118,7 +119,7 @@ func TestScraper(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
@@ -156,7 +157,7 @@ func TestEmptyScrape(t *testing.T) {
 func TestScrapeClientError(t *testing.T) {
 	c := qt.New(t)
 	cfg := &config.ServerConfig{
-		Services: []string{"http://example.com/nope"},
+		Services: []config.ServiceConfig{{Name: "nope", URL: "http://example.com/nope"}},
 	}
 	st := mem.New()
 	sc, err := scraper.New(cfg, st,
@@ -187,17 +188,19 @@ func TestScraperCollation(t *testing.T) {
 
 	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
-		service, version, digest string
-	}{
-		{petfoodService.URL, "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
-		{animalsService.URL, "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
-	}
+		name, version, digest string
+	}{{
+		"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w=",
+	}, {
+		"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg=",
+	}}
 
 	cfg := &config.ServerConfig{
-		Services: []string{
-			petfoodService.URL,
-			animalsService.URL,
-		},
+		Services: []config.ServiceConfig{{
+			Name: "petfood", URL: petfoodService.URL,
+		}, {
+			Name: "animals", URL: animalsService.URL,
+		}},
 	}
 	memSt := mem.New()
 	st, ok := memSt.(*mem.Storage)
@@ -218,7 +221,7 @@ func TestScraperCollation(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}

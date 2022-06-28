@@ -26,6 +26,16 @@ paths:
         '204':
           x-internal: its a secret to everybody
           description: An empty response
+  /openapi:
+    get:
+      responses:
+        '200':
+          description: List OpenAPI versions
+  /openapi/{version}:
+    get:
+      responses:
+        '200':
+          description: Get OpenAPI at version
 `
 
 const serviceBSpec = `
@@ -43,6 +53,16 @@ paths:
         '204':
           x-internal: its a secret to everybody
           description: An empty response
+  /openapi:
+    get:
+      responses:
+        '200':
+          description: List OpenAPI versions
+  /openapi/{version}:
+    get:
+      responses:
+        '200':
+          description: Get OpenAPI at version
 `
 
 func TestCollator_Collate(t *testing.T) {

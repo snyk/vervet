@@ -87,17 +87,18 @@ func TestS3Scraper(t *testing.T) {
 	ctx := context.Background()
 	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
-		service, version, digest string
+		name, version, digest string
 	}{
-		{petfoodService.URL, "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
-		{animalsService.URL, "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
+		{"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
+		{"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
 	}
 
 	cfg := &config.ServerConfig{
-		Services: []string{
-			petfoodService.URL,
-			animalsService.URL,
-		},
+		Services: []config.ServiceConfig{{
+			Name: "petfood", URL: petfoodService.URL,
+		}, {
+			Name: "animals", URL: animalsService.URL,
+		}},
 	}
 	st, err := s3.New(ctx, s3Cfg)
 	c.Assert(err, qt.IsNil)
@@ -110,7 +111,7 @@ func TestS3Scraper(t *testing.T) {
 
 	// No version digests should be known
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsFalse)
 	}
@@ -121,7 +122,7 @@ func TestS3Scraper(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
@@ -149,19 +150,20 @@ func TestS3ScraperCollation(t *testing.T) {
 	c.Cleanup(animalsService.Close)
 
 	tests := []struct {
-		service, version, digest string
-	}{
-		{petfoodService.URL, "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
-		{animalsService.URL, "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
-	}
+		name, version, digest string
+	}{{
+		"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w=",
+	}, {
+		"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg=",
+	}}
 
 	cfg := &config.ServerConfig{
-		Services: []string{
-			petfoodService.URL,
-			animalsService.URL,
-		},
+		Services: []config.ServiceConfig{{
+			Name: "petfood", URL: petfoodService.URL,
+		}, {
+			Name: "animals", URL: animalsService.URL,
+		}},
 	}
-
 	st, err := s3.New(ctx, s3Cfg)
 	c.Assert(err, qt.IsNil)
 	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
@@ -177,7 +179,7 @@ func TestS3ScraperCollation(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+		ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 		c.Assert(err, qt.IsNil)
 		c.Assert(ok, qt.IsTrue)
 	}
