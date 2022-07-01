@@ -47,6 +47,10 @@ type SpectralLinter struct {
 	// Rules are a list of Spectral ruleset file locations
 	Rules []string `json:"rules"`
 
+	// Script identifies the path to the spectral script to use for linting.
+	// If not defined linting will look for spectral-cli on $PATH.
+	Script string `json:"script"`
+
 	// ExtraArgs may be used to pass extra arguments to `spectral lint`. If not
 	// specified, the default arguments `--format text` are used when running
 	// spectral. The `-r` flag must not be specified here, as this argument is
