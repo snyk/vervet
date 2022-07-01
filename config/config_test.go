@@ -19,6 +19,7 @@ linters:
     spectral:
       rules:
         - resource-rules.yaml
+      script: node_modules/.bin/spectral
   apitest-compiled:
     description: Test compiled rules
     spectral:
@@ -63,6 +64,7 @@ apis:
 					Rules: []string{
 						"resource-rules.yaml",
 					},
+					Script:    "node_modules/.bin/spectral",
 					ExtraArgs: []string{"--format", "text"},
 				},
 			},

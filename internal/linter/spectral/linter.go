@@ -30,7 +30,11 @@ func New(ctx context.Context, cfg *config.SpectralLinter) (*Spectral, error) {
 	if len(rules) == 0 {
 		return nil, fmt.Errorf("missing spectral rules")
 	}
-	spectralPath, ok := findSpectralAdjacent()
+	spectralPath := cfg.Script
+	ok := (cfg.Script != "")
+	if !ok {
+		spectralPath, ok = findSpectralAdjacent()
+	}
 	if !ok {
 		spectralPath, ok = findSpectralFromPath()
 	}
