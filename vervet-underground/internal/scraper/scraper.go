@@ -164,7 +164,11 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 }
 
 func (s *Scraper) collateVersions(ctx context.Context) error {
-	return s.storage.CollateVersions(ctx)
+	services := make([]string, len(s.services))
+	for i := range s.services {
+		services[i] = s.services[i].name
+	}
+	return s.storage.CollateVersions(ctx, services...)
 }
 
 func (s *Scraper) getVersions(ctx context.Context, svc service) ([]string, error) {

@@ -71,6 +71,11 @@ func TestCollateVersions(t *testing.T) {
 
 	err = s.CollateVersions(ctx)
 	c.Assert(err, qt.IsNil)
+	_, err = s.Version(ctx, "2021-09-16")
+	c.Assert(err, qt.ErrorMatches, "no matching version")
+
+	err = s.CollateVersions(ctx, "petfood")
+	c.Assert(err, qt.IsNil)
 	before, err := s.Version(ctx, "2021-09-16")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(before), qt.Equals, emptySpec)
@@ -81,7 +86,7 @@ func TestCollateVersions(t *testing.T) {
 
 	err = s.NotifyVersion(ctx, "petfood", "2021-09-16", []byte(spec), t0.Add(time.Second))
 	c.Assert(err, qt.IsNil)
-	err = s.CollateVersions(ctx)
+	err = s.CollateVersions(ctx, "petfood")
 	c.Assert(err, qt.IsNil)
 
 	after, err := s.Version(ctx, "2021-09-16")
