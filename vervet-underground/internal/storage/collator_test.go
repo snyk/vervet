@@ -91,7 +91,8 @@ func TestCollator_Collate(t *testing.T) {
 		Stability: vervet.StabilityGA,
 	}
 
-	collator := storage.NewCollator()
+	collator, err := storage.NewCollator()
+	c.Assert(err, qt.IsNil)
 	collator.Add("service-a", storage.ContentRevision{
 		Version: v20220201_beta,
 		Blob:    []byte(serviceASpec),
@@ -138,9 +139,10 @@ func TestCollator_Collate_ExcludePatterns(t *testing.T) {
 		Stability: vervet.StabilityGA,
 	}
 
-	collator := storage.NewCollatorExcludePatterns(vervet.ExcludePatterns{
+	collator, err := storage.NewCollator(storage.CollatorExcludePattern(vervet.ExcludePatterns{
 		ExtensionPatterns: []string{"^x.*-internal$"},
-	})
+	}))
+	c.Assert(err, qt.IsNil)
 
 	collator.Add("service-a", storage.ContentRevision{
 		Version: v20220301_ga,
@@ -165,7 +167,8 @@ func TestCollator_Collate_Conflict(t *testing.T) {
 		Stability: vervet.StabilityGA,
 	}
 
-	collator := storage.NewCollator()
+	collator, err := storage.NewCollator()
+	c.Assert(err, qt.IsNil)
 
 	spec1, err := os.ReadFile(testdata.Path("conflict/_examples/2021-06-15/spec.yaml"))
 	c.Assert(err, qt.IsNil)
@@ -183,4 +186,51 @@ func TestCollator_Collate_Conflict(t *testing.T) {
 
 	_, _, err = collator.Collate()
 	c.Assert(err.Error(), qt.Contains, "conflict in #/paths /examples/hello-world")
+}
+
+var testOverlay = `
+info:
+    title: Snyk Awesome API
+    version: REST
+servers:
+    - url: https://awesome.snyk.io/rest
+      description: An awesome API
+components:
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+security:
+    - BearerAuth: []
+`[1:]
+
+func TestCollator_Collate_Overlay(t *testing.T) {
+	c := qt.New(t)
+
+	v20220301_ga := vervet.Version{
+		Date:      time.Date(2022, 3, 1, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityGA,
+	}
+	v20220401_ga := vervet.Version{
+		Date:      time.Date(2022, 4, 1, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityGA,
+	}
+
+	collator, err := storage.NewCollator(
+		storage.CollatorOverlay(testOverlay),
+	)
+	c.Assert(err, qt.IsNil)
+
+	collator.Add("service-a", storage.ContentRevision{
+		Version: v20220301_ga,
+		Blob:    []byte(serviceASpec),
+	})
+	collator.Add("service-b", storage.ContentRevision{
+		Version: v20220401_ga,
+		Blob:    []byte(serviceBSpec),
+	})
+	_, specs, err := collator.Collate()
+	c.Assert(err, qt.IsNil)
+
+	c.Assert(specs[v20220401_ga].Servers[0].URL, qt.Equals, "https://awesome.snyk.io/rest")
 }

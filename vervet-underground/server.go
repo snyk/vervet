@@ -26,12 +26,15 @@ func main() {
 	var wait time.Duration
 	var scrapeInterval time.Duration
 	var configJson string
+	var overlayFile string
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*15,
 		"the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.DurationVar(&scrapeInterval, "scrape-interval", time.Minute,
 		"the frequency at which scraping occurs  - e.g. 15s, 1m, 1h")
 	flag.StringVar(&configJson, "config-file", "config.default.json",
 		"the configuration file holding target services and the host address to run server on")
+	flag.StringVar(&overlayFile, "overlay-file", "",
+		"OpenAPI document fragment overlay applied to all collated output")
 
 	flag.Parse()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -45,10 +48,19 @@ func main() {
 	}
 	log.Info().Msgf("services: %s", cfg.Services)
 
+	var overlayContents []byte
+	if overlayFile != "" {
+		overlayContents, err = os.ReadFile(overlayFile)
+		if err != nil {
+			logError(err)
+			log.Fatal().Msgf("unable to load overlay file %q", overlayFile)
+		}
+	}
+
 	// initialize Scraper
 	ticker := time.NewTicker(scrapeInterval)
 	ctx := context.Background()
-	st, err := initializeStorage(ctx, cfg)
+	st, err := initializeStorage(ctx, cfg, overlayContents)
 	if err != nil {
 		logError(err)
 		log.Fatal().Msg("unable to initialize storage client")
@@ -154,9 +166,13 @@ func logError(err error) {
 		Msg("UnhandledException")
 }
 
-func initializeStorage(ctx context.Context, cfg *config.ServerConfig) (storage.Storage, error) {
-	newCollator := func() *storage.Collator {
-		return storage.NewCollatorExcludePatterns(cfg.Merging.ExcludePatterns)
+func initializeStorage(ctx context.Context, cfg *config.ServerConfig, overlayContents []byte) (storage.Storage, error) {
+	collatorOpts := []storage.CollatorOption{storage.CollatorExcludePattern(cfg.Merging.ExcludePatterns)}
+	if overlayContents != nil {
+		collatorOpts = append(collatorOpts, storage.CollatorOverlay(string(overlayContents)))
+	}
+	newCollator := func() (*storage.Collator, error) {
+		return storage.NewCollator(collatorOpts...)
 	}
 	switch cfg.Storage.Type {
 	case config.StorageTypeMemory:

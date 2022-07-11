@@ -46,7 +46,7 @@ type Config struct {
 type Storage struct {
 	client      *s3.Client
 	config      Config
-	newCollator func() *storage.Collator
+	newCollator func() (*storage.Collator, error)
 
 	mu               sync.RWMutex
 	collatedVersions vervet.VersionSlice
@@ -101,7 +101,7 @@ func New(ctx context.Context, awsCfg *Config, options ...Option) (storage.Storag
 		client:           s3Client,
 		config:           *awsCfg,
 		collatedVersions: vervet.VersionSlice{},
-		newCollator:      storage.NewCollator,
+		newCollator:      func() (*storage.Collator, error) { return storage.NewCollator() },
 	}
 	for _, option := range options {
 		option(st)
@@ -118,7 +118,7 @@ type Option func(*Storage)
 
 // NewCollator configures the Storage instance to use the given constructor
 // function for creating collator instances.
-func NewCollator(newCollator func() *storage.Collator) Option {
+func NewCollator(newCollator func() (*storage.Collator, error)) Option {
 	return func(s *Storage) {
 		s.newCollator = newCollator
 	}
@@ -219,7 +219,10 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 // CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
 func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]bool) error {
 	// create an aggregate to process collated data from storage data
-	aggregate := s.newCollator()
+	aggregate, err := s.newCollator()
+	if err != nil {
+		return err
+	}
 	serviceRevisionResults, err := s.ListObjects(ctx, storage.ServiceVersionsFolder, "")
 	if err != nil {
 		return err
