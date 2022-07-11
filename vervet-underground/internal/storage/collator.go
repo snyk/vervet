@@ -2,10 +2,13 @@ package storage
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
+	"os"
 	"sort"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/ghodss/yaml"
 	"github.com/rs/zerolog/log"
 	"github.com/snyk/vervet/v4"
 )
@@ -88,6 +91,7 @@ func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T
 				collatorMergeError.WithLabelValues(version.String()).Inc()
 				return nil, nil, err
 			}
+			applyOverlay(spec)
 			specs[version] = *spec
 		}
 	}
@@ -134,4 +138,54 @@ func mergeRevisions(revisions []ContentRevision) (*openapi3.T, error) {
 		}
 	}
 	return collator.Result(), nil
+}
+
+type InlineOverlay struct {
+	Overlays []*Overlay `json:"overlays"`
+}
+
+type Overlay struct {
+	Include string `json:"include"`
+	Inline  string `json:"inline"`
+}
+
+func loadConfig() (*InlineOverlay, error) {
+	configPath := ".vervet.yaml"
+	var o InlineOverlay
+
+	f, err := os.Open(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %q: %w", configPath, err)
+	}
+	defer f.Close()
+
+	buf, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read project configuration: %w", err)
+	}
+	err = yaml.Unmarshal(buf, &o)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal project configuration: %w", err)
+	}
+
+	return &o, nil
+}
+
+func applyOverlay(spec *openapi3.T) (*openapi3.T, error) {
+	o, err := loadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	for _, doc := range o.Overlays {
+		docString := os.ExpandEnv(doc.Inline)
+		l := openapi3.NewLoader()
+		newDoc, err := l.LoadFromData([]byte(docString))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load template: %w", err)
+		}
+		vervet.Merge(spec, newDoc, true)
+	}
+
+	return spec, err
 }
