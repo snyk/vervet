@@ -69,7 +69,8 @@ func TestCollateVersions(t *testing.T) {
 	err := s.NotifyVersion(ctx, "petfood", "2021-09-16", []byte(emptySpec), t0)
 	c.Assert(err, qt.IsNil)
 
-	err = s.CollateVersions(ctx)
+	serviceFilter := map[string]bool{"petfood": true}
+	err = s.CollateVersions(ctx, serviceFilter)
 	c.Assert(err, qt.IsNil)
 	before, err := s.Version(ctx, "2021-09-16")
 	c.Assert(err, qt.IsNil)
@@ -81,7 +82,7 @@ func TestCollateVersions(t *testing.T) {
 
 	err = s.NotifyVersion(ctx, "petfood", "2021-09-16", []byte(spec), t0.Add(time.Second))
 	c.Assert(err, qt.IsNil)
-	err = s.CollateVersions(ctx)
+	err = s.CollateVersions(ctx, serviceFilter)
 	c.Assert(err, qt.IsNil)
 
 	after, err := s.Version(ctx, "2021-09-16")
