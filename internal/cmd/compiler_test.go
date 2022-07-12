@@ -90,14 +90,3 @@ func TestBuildConflict(t *testing.T) {
 	err := cmd.Vervet.Run([]string{"vervet", "build", testdata.Path("conflict"), dstDir})
 	c.Assert(err, qt.ErrorMatches, `failed to load spec versions: conflict: .*`)
 }
-
-func TestBuildConflictComponents(t *testing.T) {
-	c := qt.New(t)
-	dstDir := c.TempDir()
-	err := cmd.Vervet.Run([]string{"vervet", "build", testdata.Path("conflict-components"), dstDir})
-	// Order of errors is not guaranteed, but these should show up
-	c.Assert(err.Error(), qt.Contains, `failed to load spec versions: the following errors occurred:`)
-	c.Assert(err.Error(), qt.Contains, "\n -  conflict in #/components/parameters/Version:")
-	c.Assert(err.Error(), qt.Contains, "\n -  conflict in #/components/responses/400:")
-	c.Assert(err.Error(), qt.Contains, "\n -  conflict in #/tags Something:")
-}

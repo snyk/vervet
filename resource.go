@@ -96,12 +96,15 @@ func (rv *ResourceVersion) cleanRefs() error {
 	if err != nil {
 		return err
 	}
-	var doc openapi3.T
-	err = json.Unmarshal(buf, &doc)
+	loader := openapi3.NewLoader()
+	doc, err := loader.LoadFromData(buf)
 	if err != nil {
 		return err
 	}
-	rv.T = &doc
+	if err := loader.ResolveRefsIn(rv.T, rv.url); err != nil {
+		return err
+	}
+	rv.T = doc
 	return nil
 }
 

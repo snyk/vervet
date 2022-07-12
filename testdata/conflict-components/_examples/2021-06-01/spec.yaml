@@ -6,9 +6,6 @@ info:
 servers:
   - url: /api/v3
     description: Snyk Registry
-tags:
-  - name: Something
-    description: Something
 paths:
   /examples/hello-world/{id}:
     get:
