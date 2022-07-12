@@ -209,7 +209,6 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 	return err
 }
 
-// GetCollatedVersionSpecs
 func (s *Storage) GetCollatedVersionSpecs() (map[string][]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

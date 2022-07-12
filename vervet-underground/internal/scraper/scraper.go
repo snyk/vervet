@@ -59,6 +59,7 @@ func New(cfg *config.ServerConfig, store storage.Storage, options ...Option) (*S
 
 func setupScraper(s *Scraper, cfg *config.ServerConfig, options []Option) error {
 	s.services = make([]service, len(cfg.Services))
+	s.serviceFilter = make(map[string]bool)
 	for i := range cfg.Services {
 		s.serviceFilter[cfg.Services[i].Name] = true
 		u, err := url.Parse(cfg.Services[i].URL + "/openapi")

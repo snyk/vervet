@@ -27,7 +27,7 @@ type ServerConfig struct {
 
 // ServiceFilter provides a map of service names to quickly filter old services.
 func (c *ServerConfig) ServiceFilter() map[string]bool {
-	var services map[string]bool
+	services := make(map[string]bool)
 	for _, s := range c.Services {
 		services[s.Name] = true
 	}

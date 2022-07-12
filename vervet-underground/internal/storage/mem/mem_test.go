@@ -7,6 +7,8 @@ import (
 	"time"
 
 	qt "github.com/frankban/quicktest"
+
+	"vervet-underground/internal/storage"
 )
 
 var t0 = time.Date(2021, time.December, 3, 20, 49, 51, 0, time.UTC)
@@ -88,4 +90,11 @@ func TestCollateVersions(t *testing.T) {
 	after, err := s.Version(ctx, "2021-09-16")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(after), qt.Equals, spec)
+}
+
+func TestMemStorageCollateVersion(t *testing.T) {
+	s := New()
+	c := qt.New(t)
+
+	storage.AssertCollateVersion(c, s)
 }
