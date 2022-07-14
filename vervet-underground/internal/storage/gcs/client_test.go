@@ -154,3 +154,12 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(versions, qt.Contains, "2022-02-02")
 }
+
+func TestS3StorageCollateVersion(t *testing.T) {
+	c := setup(t)
+	ctx := context.Background()
+	s, err := gcs.New(ctx, cfg)
+
+	c.Assert(err, qt.IsNil)
+	storage.AssertCollateVersion(c, s)
+}

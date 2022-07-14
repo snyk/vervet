@@ -186,10 +186,13 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 }
 
 // CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
-func (s *Storage) CollateVersions(ctx context.Context) error {
+func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]bool) error {
 	// create an aggregate to process collated data from storage data
 	aggregate := s.newCollator()
 	for serv, versions := range s.serviceVersionMappedRevisionSpecs {
+		if _, ok := serviceFilter[serv]; !ok {
+			continue
+		}
 		for _, revisions := range versions {
 			for _, revision := range revisions {
 				aggregate.Add(serv, revision)
