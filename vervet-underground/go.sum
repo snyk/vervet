@@ -500,6 +500,8 @@ github.com/snyk/vervet/v4 v4.21.1 h1:Paz3qbMT7/jrjEA2oWlSHg9/8VqA04mRZznDUyKXwCM
 github.com/snyk/vervet/v4 v4.21.1/go.mod h1:44bzoNXULEwlfmIZh9KCrYQdjTI4LHZZNhky5IW0Jrc=
 github.com/snyk/vervet/v4 v4.22.2 h1:vAMSkIAtYjHd7dH7xTiKPDRmRt3+zPyaQa0EJGsvGkw=
 github.com/snyk/vervet/v4 v4.22.2/go.mod h1:44bzoNXULEwlfmIZh9KCrYQdjTI4LHZZNhky5IW0Jrc=
+github.com/snyk/vervet/v4 v4.22.3 h1:qUmLqxwrN+oFx8xTNjHfHlgAerFV8DgW7aiuPi7wFhk=
+github.com/snyk/vervet/v4 v4.22.3/go.mod h1:44bzoNXULEwlfmIZh9KCrYQdjTI4LHZZNhky5IW0Jrc=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.8.2 h1:xehSyVa0YnHWsJ49JFljMpg1HX19V6NDZ1fkm1Xznbo=
 github.com/spf13/afero v1.8.2/go.mod h1:CtAatgMJh6bJEIs48Ay/FOnkljP3WeGUG0MC1RfAqwo=
