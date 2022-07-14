@@ -18,6 +18,8 @@ type Collator struct {
 	componentSources map[string]string
 	pathSources      map[string]string
 	tagSources       map[string]string
+
+	strictTags bool
 }
 
 // RefRemover removes the ref from the component
@@ -184,11 +186,27 @@ func (in *Inliner) Inliner(doc *openapi3.T) error {
 }
 
 // NewCollator returns a new Collator instance.
-func NewCollator() *Collator {
-	return &Collator{
+func NewCollator(options ...CollatorOption) *Collator {
+	coll := &Collator{
 		componentSources: map[string]string{},
 		pathSources:      map[string]string{},
 		tagSources:       map[string]string{},
+		strictTags:       true,
+	}
+	for i := range options {
+		options[i](coll)
+	}
+	return coll
+}
+
+// CollatorOption defines an option when creating a Collator.
+type CollatorOption func(*Collator)
+
+// StrictTags defines whether a collator should enforce a strict conflict check
+// when merging tags.
+func StrictTags(strict bool) CollatorOption {
+	return func(coll *Collator) {
+		coll.strictTags = strict
 	}
 }
 
@@ -236,9 +254,11 @@ func (c *Collator) mergeTags(rv *ResourceVersion) error {
 	}
 	var errs error
 	for _, t := range rv.T.Tags {
-		if current, ok := m[t.Name]; ok && !tagsEqual(current, t) {
+		if current, ok := m[t.Name]; ok && !tagsEqual(current, t) && c.strictTags {
+			// If there is a conflict and we're collating with strict tags, indicate an error.
 			errs = multierr.Append(errs, fmt.Errorf("conflict in #/tags %s: %s and %s differ", t.Name, rv.path, c.tagSources[t.Name]))
 		} else {
+			// Otherwise last tag with this key wins.
 			m[t.Name] = t
 			c.tagSources[t.Name] = rv.path
 		}
