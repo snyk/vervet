@@ -101,7 +101,7 @@ jobs:
       - run: |-
           go install github.com/caarlos0/svu@latest
           export VERSION=$(svu next)
-          if [ -z $(git tag -l ${VERSION} ]; then
+          if [ -z $(git tag -l ${VERSION}) ]; then
             ./scripts/dist.bash
             ./scripts/release.bash
           fi
