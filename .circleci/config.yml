@@ -99,9 +99,9 @@ jobs:
       - attach_workspace:
           at: ~/vervet
       - run: |-
-          go install github.com/smlx/ccv@latest
-          export VERSION=$(ccv)
-          if [ -z $(git tag -l $(ccv)) ]; then
+          go install github.com/caarlos0/svu@latest
+          export VERSION=$(svu next)
+          if [ -z $(git tag -l ${VERSION} ]; then
             ./scripts/dist.bash
             ./scripts/release.bash
           fi
