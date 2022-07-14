@@ -22,7 +22,7 @@ type Storage interface {
 	// CollateVersions tells the storage to execute the compilation and
 	// update all VU-formatted specs from all services and their
 	// respective versions gathered.
-	CollateVersions(ctx context.Context) error
+	CollateVersions(ctx context.Context, serviceFilter map[string]bool) error
 
 	// HasVersion returns whether the storage has already stored the service
 	// API spec version at the given content digest.

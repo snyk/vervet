@@ -22,10 +22,11 @@ import (
 // Scraper gets OpenAPI specs from a collection of services and updates storage
 // accordingly.
 type Scraper struct {
-	storage  storage.Storage
-	services []service
-	http     *http.Client
-	timeNow  func() time.Time
+	storage       storage.Storage
+	services      []service
+	http          *http.Client
+	timeNow       func() time.Time
+	serviceFilter map[string]bool
 }
 
 type service struct {
@@ -58,7 +59,9 @@ func New(cfg *config.ServerConfig, store storage.Storage, options ...Option) (*S
 
 func setupScraper(s *Scraper, cfg *config.ServerConfig, options []Option) error {
 	s.services = make([]service, len(cfg.Services))
+	s.serviceFilter = make(map[string]bool)
 	for i := range cfg.Services {
+		s.serviceFilter[cfg.Services[i].Name] = true
 		u, err := url.Parse(cfg.Services[i].URL + "/openapi")
 		if err != nil {
 			return errors.Wrapf(err, "invalid service %q", cfg.Services[i].Name)
@@ -164,7 +167,7 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 }
 
 func (s *Scraper) collateVersions(ctx context.Context) error {
-	return s.storage.CollateVersions(ctx)
+	return s.storage.CollateVersions(ctx, s.serviceFilter)
 }
 
 func (s *Scraper) getVersions(ctx context.Context, svc service) ([]string, error) {

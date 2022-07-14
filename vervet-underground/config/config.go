@@ -25,6 +25,15 @@ type ServerConfig struct {
 	Merging  MergeConfig
 }
 
+// ServiceFilter provides a map of service names to quickly filter old services.
+func (c *ServerConfig) ServiceFilter() map[string]bool {
+	services := make(map[string]bool)
+	for _, s := range c.Services {
+		services[s.Name] = true
+	}
+	return services
+}
+
 func (c *ServerConfig) validate() error {
 	serviceNames := map[string]struct{}{}
 	for _, svc := range c.Services {

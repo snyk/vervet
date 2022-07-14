@@ -173,3 +173,12 @@ func TestHandleAwsError(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(res), qt.Equals, "")
 }
+
+func TestS3StorageCollateVersion(t *testing.T) {
+	c := setup(t)
+	ctx := context.Background()
+	s, err := s3.New(ctx, cfg)
+
+	c.Assert(err, qt.IsNil)
+	storage.AssertCollateVersion(c, s)
+}
