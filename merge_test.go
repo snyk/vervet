@@ -1,6 +1,7 @@
 package vervet_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -48,6 +49,8 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, dstOrig.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
+
+		c.Assert(dst.Components.Extensions["x-extension"], qt.DeepEquals, dstOrig.Components.Extensions["x-extension"])
 	})
 	c.Run("component with replace", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
@@ -82,6 +85,8 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
+
+		c.Assert(dst.Components.Extensions["x-extension"], openapiCmp, src.Components.Extensions["x-extension"])
 	})
 	c.Run("component with missing sections", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
@@ -116,6 +121,8 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
+
+		c.Assert(dst.Components.Extensions["x-extension"], openapiCmp, src.Components.Extensions["x-extension"])
 	})
 }
 
@@ -188,6 +195,9 @@ servers:
     description: Foo (src)
   - url: https://example.com/bar
     description: Bar (src)
+x-extension:
+  key0: value0
+  key1: value1
 `
 	dstYaml := `
 info:
@@ -205,9 +215,12 @@ servers:
     description: Foo (dst)
   - url: https://example.com/baz
     description: Baz (dst)
+x-extension:
+  key1: value11
+  key2: value2
 `
 	c := qt.New(t)
-	c.Run("servers without replace", func(c *qt.C) {
+	c.Run("without replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
 		vervet.Merge(dst, src, false)
@@ -230,8 +243,13 @@ servers:
 			URL:            "https://example.com/baz",
 			Description:    "Baz (dst)",
 		}})
+		c.Assert(dst.ExtensionProps, qt.DeepEquals, openapi3.ExtensionProps{
+			Extensions: map[string]interface{}{
+				"x-extension": json.RawMessage([]byte(`{"key1":"value11","key2":"value2"}`)),
+			},
+		})
 	})
-	c.Run("servers with replace", func(c *qt.C) {
+	c.Run("with replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
 		vervet.Merge(dst, src, true)
@@ -254,6 +272,11 @@ servers:
 			URL:            "https://example.com/bar",
 			Description:    "Bar (src)",
 		}})
+		c.Assert(dst.ExtensionProps, qt.DeepEquals, openapi3.ExtensionProps{
+			Extensions: map[string]interface{}{
+				"x-extension": json.RawMessage([]byte(`{"key0":"value0","key1":"value1"}`)),
+			},
+		})
 	})
 }
 

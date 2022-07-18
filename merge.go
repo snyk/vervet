@@ -21,12 +21,13 @@ import (
 //   merging.
 func Merge(dst, src *openapi3.T, replace bool) {
 	mergeComponents(dst, src, replace)
+	mergeExtensions(dst, src, replace)
 	mergeInfo(dst, src, replace)
+	mergeOpenAPIVersion(dst, src, replace)
 	mergePaths(dst, src, replace)
 	mergeSecurityRequirements(dst, src, replace)
 	mergeServers(dst, src, replace)
 	mergeTags(dst, src, replace)
-	mergeOpenAPIVersion(dst, src, replace)
 }
 
 func mergeOpenAPIVersion(dst, src *openapi3.T, replace bool) {
@@ -135,6 +136,25 @@ func mergeComponents(dst, src *openapi3.T, replace bool) {
 	}
 }
 
+func mergeExtensions(dst, src *openapi3.T, replace bool) {
+	if src.Extensions != nil && dst.Extensions == nil {
+		dst.Extensions = make(map[string]interface{}, len(src.Extensions))
+	}
+
+	for k, v := range src.Extensions {
+		// It's possible for specs to be merged from multiple stabilities and
+		// we don't want these different stability inputs to override
+		// the declared stability of the output we're building.
+		if k == ExtSnykApiStability {
+			continue
+		}
+
+		if _, ok := dst.Extensions[k]; !ok || replace {
+			dst.Extensions[k] = v
+		}
+	}
+}
+
 func mergeInfo(dst, src *openapi3.T, replace bool) {
 	if src.Info != nil && (dst.Info == nil || replace) {
 		dst.Info = src.Info
@@ -143,7 +163,7 @@ func mergeInfo(dst, src *openapi3.T, replace bool) {
 
 func mergePaths(dst, src *openapi3.T, replace bool) {
 	if src.Paths != nil && dst.Paths == nil {
-		dst.Paths = make(openapi3.Paths)
+		dst.Paths = make(openapi3.Paths, len(src.Paths))
 	}
 	for k, v := range src.Paths {
 		if _, ok := dst.Paths[k]; !ok || replace {
