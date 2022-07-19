@@ -228,22 +228,24 @@ func (c *Collator) Collate(rv *ResourceVersion) error {
 		return err
 	}
 
-	err = c.mergeComponents(rv)
-	if err != nil {
-		errs = multierr.Append(errs, err)
-	}
+	mergeExtensions(c.result, rv.T, false)
 	mergeInfo(c.result, rv.T, false)
-	err = c.mergePaths(rv)
-	if err != nil {
-		errs = multierr.Append(errs, err)
-	}
+	mergeOpenAPIVersion(c.result, rv.T, false)
 	mergeSecurityRequirements(c.result, rv.T, false)
 	mergeServers(c.result, rv.T, false)
-	err = c.mergeTags(rv)
-	if err != nil {
+
+	if err = c.mergeComponents(rv); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	mergeOpenAPIVersion(c.result, rv.T, false)
+
+	if err = c.mergePaths(rv); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	if err = c.mergeTags(rv); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
 	return errs
 }
 

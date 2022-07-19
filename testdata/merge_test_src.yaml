@@ -69,3 +69,6 @@ components:
      value: foo
     Bar:
      value: bar
+  x-extension:
+    key1: value11
+    key2: value2
