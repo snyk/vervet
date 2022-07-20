@@ -96,7 +96,7 @@ func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T
 }
 
 func mergeRevisions(revisions []ContentRevision) (*openapi3.T, error) {
-	collator := vervet.NewCollator()
+	collator := vervet.NewCollator(vervet.StrictTags(false))
 	var haveOpenAPI, haveOpenAPIVersion bool
 	for _, revision := range revisions {
 		loader := openapi3.NewLoader()
