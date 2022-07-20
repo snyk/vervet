@@ -17,6 +17,9 @@ openapi: 3.0.0
 info:
   title: ServiceA API
   version: 0.0.0
+tags:
+  - name: example
+    description: service a example
 paths:
   /test:
     get:
@@ -28,6 +31,8 @@ paths:
           description: An empty response
   /openapi:
     get:
+      tags:
+        - example
       responses:
         '200':
           description: List OpenAPI versions
@@ -43,9 +48,14 @@ openapi: 3.0.0
 info:
   title: ServiceB API
   version: 0.0.0
+tags:
+  - name: example
+    description: service b example
 paths:
   /example:
     post:
+      tags:
+        - example
       x-other-internal: its a secret to everybody else
       operation: postTest
       summary: Example endpoint
