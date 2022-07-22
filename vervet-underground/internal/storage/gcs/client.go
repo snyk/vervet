@@ -30,32 +30,26 @@ type StaticKeyCredentials struct {
 
 // Config holds setting up and targeting proper GCS targets.
 type Config struct {
-	GcsRegion      string
-	GcsEndpoint    string
-	BucketName     string
-	IamRoleEnabled bool
-	Credentials    StaticKeyCredentials
+	GcsRegion             string
+	GcsEndpoint           string
+	BucketName            string
+	IamRoleEnabled        bool
+	Credentials           StaticKeyCredentials
+	WithoutAuthentication bool
 }
 
 // Storage implements storage.Storage.
 type Storage struct {
+	c           *storage.Client
+	config      Config
+	newCollator func() *vustorage.Collator
+
 	mu               sync.RWMutex
-	c                *storage.Client
-	config           Config
 	collatedVersions vervet.VersionSlice
-	newCollator      func() *vustorage.Collator
 }
 
-/*
-New instantiates a gcs.Storage client to handle
-storing and retrieving storage.ContentRevision
-and Collated Versions.
-
-Please note that the sample server is running with http. If you
-want to test this with https you also need to configure Go to skip
-certificate validation.
-"http://localhost:8080/storage/v1/"
-*/
+// New instantiates a gcs.Storage client to handle storing and retrieving
+// storage.ContentRevision and Collated Versions.
 func New(ctx context.Context, gcsConfig *Config, options ...Option) (vustorage.Storage, error) {
 	if gcsConfig == nil || gcsConfig.BucketName == "" {
 		return nil, fmt.Errorf("missing GCS configuration")
@@ -65,6 +59,8 @@ func New(ctx context.Context, gcsConfig *Config, options ...Option) (vustorage.S
 		clientOptions = []option.ClientOption{option.WithEndpoint(gcsConfig.GcsEndpoint)}
 		if gcsConfig.Credentials.Filename != "" {
 			clientOptions = append(clientOptions, option.WithCredentialsFile(gcsConfig.Credentials.Filename))
+		} else if gcsConfig.WithoutAuthentication {
+			clientOptions = append(clientOptions, option.WithoutAuthentication())
 		}
 	}
 
@@ -168,15 +164,15 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.collatedVersions = versions
+	s.mu.Unlock()
 
-	objects, err := s.PutCollatedSpecs(ctx, specs)
+	n, err := s.putCollatedSpecs(ctx, specs)
 	if err != nil {
 		return err
 	}
 
-	if len(objects) == 0 {
+	if n == 0 {
 		return fmt.Errorf("objects uploaded length unexpectedly zero. upload_time: %v", time.Now().UTC())
 	}
 
@@ -226,7 +222,7 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 
 	// Since the digest doesn't exist, add the whole key path
 	reader := bytes.NewReader(currentRevision.Blob)
-	_, err = s.PutObject(ctx, key, reader)
+	err = s.PutObject(ctx, key, reader)
 	if err != nil {
 		return err
 	}
@@ -247,9 +243,6 @@ func (s *Storage) Versions() []string {
 
 // Version implements scraper.Storage.
 func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	parsedVersion, err := vervet.ParseVersion(version)
 	if err != nil {
 		return nil, err
@@ -257,11 +250,12 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 
 	blob, err := s.GetCollatedVersionSpec(ctx, version)
 	if err != nil {
+		s.mu.RLock()
 		resolved, err := s.collatedVersions.Resolve(parsedVersion)
+		s.mu.RUnlock()
 		if err != nil {
 			return nil, err
 		}
-
 		return s.GetCollatedVersionSpec(ctx, resolved.String())
 	}
 	return blob, nil
@@ -285,24 +279,24 @@ func (s *Storage) ListCollatedVersions(ctx context.Context) ([]string, error) {
 	return prefixes, nil
 }
 
-// PutCollatedSpecs iterative wrapper around the GCS PutObject request.
-// TODO: Look for alternative to iteratively uploading.
-func (s *Storage) PutCollatedSpecs(ctx context.Context, objects map[vervet.Version]openapi3.T) ([]storage.ObjectHandle, error) {
-	res := make([]storage.ObjectHandle, 0)
+// putCollatedSpecs stores the given collated specs and returns the number of
+// specs stored to GCS.
+func (s *Storage) putCollatedSpecs(ctx context.Context, objects map[vervet.Version]openapi3.T) (int, error) {
+	var n int
+	// TODO: Look for alternative to iteratively uploading.
 	for key, file := range objects {
 		jsonBlob, err := file.MarshalJSON()
 		if err != nil {
-			return nil, fmt.Errorf("failure to marshal json for collation upload: %w", err)
+			return 0, fmt.Errorf("failure to marshal json for collation upload: %w", err)
 		}
 		reader := bytes.NewReader(jsonBlob)
-		r, err := s.PutObject(ctx, vustorage.CollatedVersionsFolder+key.String()+"/spec.json", reader)
+		err = s.PutObject(ctx, vustorage.CollatedVersionsFolder+key.String()+"/spec.json", reader)
 		if err != nil {
-			return nil, err
+			return n, err
 		}
-		res = append(res, *r)
+		n++
 	}
-
-	return res, nil
+	return n, nil
 }
 
 // GetCollatedVersionSpecs retrieves a map of vervet.Version strings
@@ -337,23 +331,18 @@ func (s *Storage) GetCollatedVersionSpec(ctx context.Context, version string) ([
 }
 
 // PutObject nice wrapper around the GCS PutObject request.
-func (s *Storage) PutObject(ctx context.Context, key string, reader io.Reader) (*storage.ObjectHandle, error) {
-	obj := s.c.Bucket(s.config.BucketName).Object(key)
-	wc := obj.NewWriter(ctx)
-	defer wc.Close()
+func (s *Storage) PutObject(ctx context.Context, key string, reader io.Reader) (putErr error) {
+	wc := s.c.Bucket(s.config.BucketName).Object(key).NewWriter(ctx)
+	defer func() {
+		if err := wc.Close(); err != nil {
+			putErr = err
+		}
+	}()
 
-	buf := new(bytes.Buffer)
-	_, err := buf.ReadFrom(reader)
-	if err != nil {
-		return nil, err
+	if _, err := io.Copy(wc, reader); err != nil {
+		return err
 	}
-
-	// example []byte("top secret")
-	if _, err = wc.Write(buf.Bytes()); err != nil {
-		return nil, err
-	}
-
-	return obj, nil
+	return nil
 }
 
 // GetObject actually retrieves the json blob form GCS.
@@ -365,7 +354,6 @@ func (s *Storage) GetObject(ctx context.Context, key string) ([]byte, error) {
 		}
 		return nil, err
 	}
-
 	defer reader.Close()
 	return io.ReadAll(reader)
 }
