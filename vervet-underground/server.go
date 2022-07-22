@@ -191,9 +191,8 @@ func versionHandlers(ctx context.Context, router *mux.Router, sc *scraper.Scrape
 				http.Error(w, "Failure to process request", http.StatusBadRequest)
 				return
 			}
-
-			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(versionSlice)
 			if err != nil {
 				logError(err)
@@ -213,9 +212,8 @@ func versionHandlers(ctx context.Context, router *mux.Router, sc *scraper.Scrape
 				http.Error(w, "Failure to process request", http.StatusBadRequest)
 				return
 			}
-
-			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(bytes)
 			if err != nil {
 				logError(err)
