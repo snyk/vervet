@@ -3,6 +3,7 @@ package storage_test
 import (
 	"os"
 	"testing"
+	"text/template"
 	"time"
 
 	qt "github.com/frankban/quicktest"
@@ -183,4 +184,37 @@ func TestCollator_Collate_Conflict(t *testing.T) {
 
 	_, _, err = collator.Collate()
 	c.Assert(err.Error(), qt.Contains, "conflict in #/paths /examples/hello-world")
+}
+
+var vervetConfig = `
+overlays:
+	- inline: |-
+		info:
+			title: Snyk Internal API
+			version: REST
+		servers:
+			- url: http://registry-worker/api/internal
+				description: Internal Snyk API
+			- url: /api/internal
+				description: ExpressJS validation routes
+		components:
+			securitySchemes:
+				BearerAuth:
+					type: http
+					scheme: bearer
+		security:
+			- BearerAuth: []
+`[1:]))
+
+func TestCollator_Collate_Overlays(t *testing.T) {
+	c := qt.New(t)
+	
+	// MOCK loadConfig here!!
+	
+	l := openapi3.NewLoader()
+	newDoc, err := l.LoadFromData([]byte(serviceASpec))
+
+	newSpec := applyOverlay(newDoc)
+
+	c.Assert(newSpec.servers[0].url, "http://registry-worker/api/internal")
 }

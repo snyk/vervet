@@ -1,0 +1,19 @@
+overlays:
+  # Declare an inline overlay. This sets the server url and authentication
+  # information.
+  - inline: |-
+      info:
+        title: Snyk Internal API
+        version: REST
+      servers:
+        - url: http://registry-worker/api/internal
+          description: Internal Snyk API
+        - url: /api/internal
+          description: ExpressJS validation routes
+      components:
+        securitySchemes:
+          BearerAuth:
+            type: http
+            scheme: bearer
+      security:
+        - BearerAuth: []
