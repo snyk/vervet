@@ -171,9 +171,8 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 	if err != nil {
 		return err
 	}
-
 	if n == 0 {
-		return fmt.Errorf("objects uploaded length unexpectedly zero. upload_time: %v", time.Now().UTC())
+		return fmt.Errorf("no objects uploaded")
 	}
 
 	return nil

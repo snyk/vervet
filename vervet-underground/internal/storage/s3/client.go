@@ -27,14 +27,14 @@ import (
 	"vervet-underground/internal/storage"
 )
 
-// StaticKeyCredentials Defines credential structure used in config.LoadDefaultConfig.
+// StaticKeyCredentials defines credential structure used in config.LoadDefaultConfig.
 type StaticKeyCredentials struct {
 	AccessKey  string
 	SecretKey  string
 	SessionKey string
 }
 
-// Config Defines S3 client target used in config.LoadDefaultConfig.
+// Config defines S3 client target used in config.LoadDefaultConfig.
 type Config struct {
 	AwsRegion      string
 	AwsEndpoint    string
@@ -44,16 +44,17 @@ type Config struct {
 }
 
 type Storage struct {
+	client      *s3.Client
+	config      Config
+	newCollator func() *storage.Collator
+
 	mu               sync.RWMutex
-	client           *s3.Client
-	config           Config
 	collatedVersions vervet.VersionSlice
-	newCollator      func() *storage.Collator
 }
 
 func New(ctx context.Context, awsCfg *Config, options ...Option) (storage.Storage, error) {
 	if awsCfg == nil || awsCfg.BucketName == "" {
-		return nil, fmt.Errorf("missing S3 configuration")
+		return nil, fmt.Errorf("missing s3 configuration")
 	}
 
 	var loadOptions []func(*config.LoadOptions) error
@@ -87,9 +88,8 @@ func New(ctx context.Context, awsCfg *Config, options ...Option) (storage.Storag
 	}
 
 	awsCfgLoader, err := config.LoadDefaultConfig(ctx, loadOptions...)
-
 	if err != nil {
-		log.Error().Err(err).Msg("Cannot load the AWS configs")
+		log.Error().Err(err).Msg("failed to load AWS config")
 		return nil, err
 	}
 
@@ -156,7 +156,7 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 	key := getServiceVersionRevisionKey(name, version, string(digest))
 	parsedVersion, err := vervet.ParseVersion(version)
 	if err != nil {
-		log.Error().Err(err).Msgf("Failed to resolve Vervet version for %s : %s", name, version)
+		log.Error().Err(err).Msgf("failed to resolve version for %q: %q", name, version)
 		return err
 	}
 	currentRevision := storage.ContentRevision{
@@ -195,15 +195,11 @@ func (s *Storage) Versions() []string {
 	for i, version := range s.collatedVersions {
 		stringVersions[i] = version.String()
 	}
-
 	return stringVersions
 }
 
 // Version implements scraper.Storage.
 func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	parsedVersion, err := vervet.ParseVersion(version)
 	if err != nil {
 		return nil, err
@@ -211,11 +207,12 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 
 	blob, err := s.GetCollatedVersionSpec(ctx, version)
 	if err != nil {
+		s.mu.RLock()
 		resolved, err := s.collatedVersions.Resolve(parsedVersion)
+		s.mu.RUnlock()
 		if err != nil {
 			return nil, err
 		}
-
 		return s.GetCollatedVersionSpec(ctx, resolved.String())
 	}
 	return blob, nil
@@ -247,14 +244,14 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 		// Assuming version is valid in path uploads
 		parsedVersion, err := vervet.ParseVersion(version)
 		if err != nil {
-			log.Error().Err(err).Msg("unexpected version path in S3. Validate Service Revision uploads")
+			log.Error().Err(err).Msgf("invalid version %q in s3 storage key", version)
 			return err
 		}
 
 		blob, err := io.ReadAll(rev.Body)
 		err = multierr.Append(err, rev.Body.Close())
 		if err != nil {
-			log.Error().Err(err).Msg("failed to read Service ContentRevision JSON")
+			log.Error().Err(err).Msgf("failed to parse contents of %s", *revContent.Key)
 			return err
 		}
 
@@ -273,16 +270,15 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.collatedVersions = versions
+	s.mu.Unlock()
 
-	objects, err := s.PutCollatedSpecs(ctx, specs)
+	n, err := s.putCollatedSpecs(ctx, specs)
 	if err != nil {
 		return err
 	}
-
-	if len(objects) == 0 {
-		return fmt.Errorf("objects uploaded length unexpectedly zero. upload_time: %v", time.Now().UTC())
+	if n == 0 {
+		return errors.New("no objects uploaded")
 	}
 
 	return err
@@ -319,7 +315,7 @@ func (s *Storage) GetCollatedVersionSpec(ctx context.Context, version string) ([
 	return jsonBlob, nil
 }
 
-// PutObject nice wrapper around the S3 PutObject request.
+// PutObject performs an S3 PutObject request.
 func (s *Storage) PutObject(ctx context.Context, key string, reader io.Reader) (*s3.PutObjectOutput, error) {
 	p := s3.PutObjectInput{
 		Bucket: aws.String(s.config.BucketName),
@@ -329,35 +325,35 @@ func (s *Storage) PutObject(ctx context.Context, key string, reader io.Reader) (
 	}
 
 	r, err := s.client.PutObject(ctx, &p)
-	log.Trace().Msgf("S3 PutObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
+		log.Error().Err(err).Msgf("s3 PutObject %q failed", key)
 		return nil, smith
 	}
+	log.Trace().Msgf("s3 PutObject response: %+v", r)
 
 	return r, err
 }
 
-// PutCollatedSpecs iterative wrapper around the S3 PutObject request.
-// TODO: Look for alternative to iteratively uploading.
-func (s *Storage) PutCollatedSpecs(ctx context.Context, objects map[vervet.Version]openapi3.T) (res []s3.PutObjectOutput, smith error) {
-	res = make([]s3.PutObjectOutput, 0)
+// putCollatedSpecs stores the given collated OpenAPI document objects.
+func (s *Storage) putCollatedSpecs(ctx context.Context, objects map[vervet.Version]openapi3.T) (int, error) {
+	var n int
+	// TODO: Look for alternative to iteratively uploading.
 	for key, file := range objects {
 		jsonBlob, err := file.MarshalJSON()
 		if err != nil {
-			return nil, fmt.Errorf("failure to marshal json for collation upload: %w", err)
+			return n, fmt.Errorf("failed to marshal json for collation upload: %w", err)
 		}
 		reader := bytes.NewReader(jsonBlob)
-		r, err := s.PutObject(ctx, storage.CollatedVersionsFolder+key.String()+"/spec.json", reader)
-		if smith = handleAwsError(err); smith != nil {
-			return nil, smith
+		_, err = s.PutObject(ctx, storage.CollatedVersionsFolder+key.String()+"/spec.json", reader)
+		if smith := handleAwsError(err); smith != nil {
+			return n, smith
 		}
-		res = append(res, *r)
+		n++
 	}
-
-	return res, smith
+	return n, nil
 }
 
-// GetObject nice wrapper around the S3 GetObject request.
+// GetObject performs an s3 GetObject request.
 func (s *Storage) GetObject(ctx context.Context, key string) ([]byte, error) {
 	p := s3.GetObjectInput{
 		Bucket: aws.String(s.config.BucketName),
@@ -366,17 +362,21 @@ func (s *Storage) GetObject(ctx context.Context, key string) ([]byte, error) {
 
 	r, err := s.client.GetObject(ctx, &p)
 	if smith := handleAwsError(err); smith != nil {
+		log.Error().Err(err).Msgf("s3 GetObject %q failed", key)
 		return nil, smith
 	}
+	log.Trace().Msgf("s3 GetObject response: %+v", r)
 
 	if r != nil {
 		return io.ReadAll(r.Body)
 	}
+
+	log.Debug().Msgf("s3 object %q not found", key)
 	return nil, nil
 }
 
-// GetObjectWithMetadata nice wrapper around the S3 GetObject request.
-// Returns metadata as well.
+// GetObjectWithMetadata performs an S3 GetObject request, returning object
+// metadata.
 func (s *Storage) GetObjectWithMetadata(ctx context.Context, key string) (*s3.GetObjectOutput, error) {
 	p := s3.GetObjectInput{
 		Bucket: aws.String(s.config.BucketName),
@@ -385,13 +385,15 @@ func (s *Storage) GetObjectWithMetadata(ctx context.Context, key string) (*s3.Ge
 
 	r, err := s.client.GetObject(ctx, &p)
 	if smith := handleAwsError(err); smith != nil {
+		log.Error().Err(err).Msgf("s3 GetObject %q failed", key)
 		return nil, smith
 	}
+	log.Trace().Msgf("s3 GetObject response: %+v", r)
 
 	return r, nil
 }
 
-// DeleteObject nice wrapper around the S3 DeleteObject request.
+// DeleteObject performs an S3 DeleteObject request.
 func (s *Storage) DeleteObject(ctx context.Context, key string) error {
 	p := s3.DeleteObjectInput{
 		Bucket: aws.String(s.config.BucketName),
@@ -399,24 +401,26 @@ func (s *Storage) DeleteObject(ctx context.Context, key string) error {
 	}
 
 	r, err := s.client.DeleteObject(ctx, &p)
-	log.Trace().Msgf("S3 DeleteObject response: %+v", r)
 	if err != nil {
+		log.Error().Err(err).Msgf("s3 DeleteObject %q failed", key)
 		return err
 	}
+	log.Trace().Msgf("s3 DeleteObject response: %+v", r)
 
 	return nil
 }
 
-// ListCollatedVersions nice wrapper around the S3 ListCommonPrefixes request.
-// example: key = "collated-versions/"
-// result: []string{"2022-02-02~wip", "2022-12-02~beta"}
-// Defaults to 1000 results.
+// ListCollatedVersions performs an S3 ListCommonPrefixes request on the
+// collated versions folder, returning a slice of available version strings.
+//
+// The returned result is currently truncated at 1000 results.
+// TODO: Paginate all available results?
 func (s *Storage) ListCollatedVersions(ctx context.Context) ([]string, error) {
 	res, err := s.ListCommonPrefixes(ctx, storage.CollatedVersionsFolder)
-
 	if err != nil {
 		return nil, err
 	}
+
 	var prefixes []string
 	for _, v := range res {
 		if v.Prefix != nil {
@@ -427,10 +431,12 @@ func (s *Storage) ListCollatedVersions(ctx context.Context) ([]string, error) {
 	return prefixes, nil
 }
 
-// ListCommonPrefixes nice wrapper around the S3 ListCommonPrefixes request.
-// example: key = "collated-versions/"
-// result: []types.CommonPrefix{"collated-versions/2022-02-02~wip/", "collated-versions/2022-12-02~beta/"}
-// Defaults to 1000 results.
+// ListCommonPrefixes performs an S3 ListCommonPrefixes request.
+// For an example key `collated-versions/`, this function may return a result
+// such as `[]types.CommonPrefix{"collated-versions/2022-02-02~wip/", "collated-versions/2022-12-02~beta/"}`.
+//
+// The returned result is currently truncated at 1000 results.
+// TODO: Paginate all available results?
 func (s *Storage) ListCommonPrefixes(ctx context.Context, key string) ([]types.CommonPrefix, error) {
 	r, err := s.ListObjects(ctx, key, "/")
 	if err != nil {
@@ -439,9 +445,10 @@ func (s *Storage) ListCommonPrefixes(ctx context.Context, key string) ([]types.C
 	return r.CommonPrefixes, nil
 }
 
-// ListObjects nice wrapper around the S3 ListObjects request.
-// "collated-versions" example.
-// Defaults to 1000 results.
+// ListObjects performs an S3 ListObjects request.
+//
+// The returned result is currently truncated at 1000 results.
+// TODO: Paginate all available results?
 func (s *Storage) ListObjects(ctx context.Context, key string, delimeter string) (*s3.ListObjectsV2Output, error) {
 	p := s3.ListObjectsV2Input{
 		Bucket: aws.String(s.config.BucketName),
@@ -453,10 +460,11 @@ func (s *Storage) ListObjects(ctx context.Context, key string, delimeter string)
 	}
 
 	r, err := s.client.ListObjectsV2(ctx, &p)
-	log.Trace().Msgf("S3 ListObject response: %+v", r)
 	if smith := handleAwsError(err); smith != nil {
+		log.Error().Err(err).Msgf("s3 ListObjectsV2 %q failed", key)
 		return nil, smith
 	}
+	log.Trace().Msgf("s3 ListObjectsV2 response: %+v", r)
 
 	return r, nil
 }
@@ -470,22 +478,28 @@ func (s *Storage) CreateBucket(ctx context.Context) error {
 		Bucket: aws.String(s.config.BucketName),
 	}
 
-	_, err := s.client.HeadBucket(ctx, input)
-	smith := handleAwsError(err)
-	if smith == nil {
+	bucketHead, err := s.client.HeadBucket(ctx, input)
+	if smith := handleAwsError(err); smith != nil {
+		log.Error().Err(err).Msgf("s3 HeadBucket failed")
+		return smith
+	}
+	log.Trace().Msgf("s3 HeadBucket response: %+v", bucketHead)
+	if bucketHead != nil {
+		// bucket exists
 		return nil
 	}
-	log.Info().
-		Err(err).
-		Msg("Head bucket check failed, continuing to bucket creation")
+	log.Info().Msg("bucket does not exist, creating")
 
 	bucket, err := s.client.CreateBucket(ctx, create)
 	if smith := handleAwsError(err); smith != nil {
+		log.Error().Err(err).Msgf("s3 CreateBucket failed")
 		return smith
 	}
+	log.Trace().Msgf("s3 CreateBucket response: %+v", bucket)
 	if *bucket.Location == "" {
 		return fmt.Errorf("invalid bucket output")
 	}
+
 	return nil
 }
 
@@ -508,8 +522,8 @@ func parseServiceVersionRevisionKey(key string) (string, string, string, error) 
 	// digest can have "/" chars, so only split for service and version
 	arr := strings.SplitN(strings.TrimPrefix(key, storage.ServiceVersionsFolder), "/", 3)
 	if len(arr) != 3 {
-		err := fmt.Errorf("service Content Revision not able to be parsed: %v", key)
-		log.Error().Err(err).Msg("s3 service path malformed")
+		err := fmt.Errorf("failed to parse service-version-digest key %q", key)
+		log.Error().Err(err).Msg("invalid s3 object key")
 		return "", "", "", err
 	}
 	service, version, digestJson := arr[0], arr[1], arr[2]
@@ -517,24 +531,24 @@ func parseServiceVersionRevisionKey(key string) (string, string, string, error) 
 	return service, version, digest, nil
 }
 
-/*
-handleAwsError parses resulting S3 Operations to view
-specific failure types to handle 404s without problems,
-and avoid red herring errors during processing.
-
-Casting to the awserr.Error type will allow you to inspect the error
-code returned by the service in code. The error code can be used
-to switch on context specific functionality. In this case a context
-specific error message is printed to the user based on the bucket
-and key existing.
-For information on other S3 API error codes see:
-https://aws.github.io/aws-sdk-go-v2/docs/handling-errors/
-*/
+// handleAwsError parses resulting S3 Operations to view specific failure types
+// to handle 404s without problems, and avoid red herring errors during
+// processing.
 func handleAwsError(err error) error {
 	var apiErr smithy.APIError
 	var re *awshttp.ResponseError
 	fault := "client"
 
+	/*
+	   Casting to the awserr.Error type will allow you to inspect the error
+	   code returned by the service. The error code can be used
+	   to switch on context specific functionality. In this case a context
+	   specific error message is printed to the user based on the bucket
+	   and key existing.
+
+	   For information on other S3 API error codes see:
+	   https://aws.github.io/aws-sdk-go-v2/docs/handling-errors/
+	*/
 	_ = errors.As(err, &apiErr)
 	if apiErr != nil {
 		fault = apiErr.ErrorFault().String()
@@ -548,17 +562,26 @@ func handleAwsError(err error) error {
 			}
 			reqMethod = resp.Request.Method
 		}
-		log.Error().Err(re).
-			Str("service_request_id", re.ServiceRequestID()).
-			Int("status_code", re.HTTPStatusCode()).
-			Str("smithy_fault", fault).
-			Str("request_url", reqURL).
-			Str("request_method", reqMethod).
-			Msg("S3 call failed")
 		switch re.HTTPStatusCode() {
 		case 404:
+			// For now, a "not found" is represented as nil result and nil
+			// error in this package.
+			//
+			// TODO: use a well-defined error type to model "not found" more
+			// appropriately.
+			log.Trace().Err(re).
+				Str("request_url", reqURL).
+				Str("request_method", reqMethod).
+				Msg("not found")
 			return nil
 		default:
+			log.Error().Err(re).
+				Str("service_request_id", re.ServiceRequestID()).
+				Int("status_code", re.HTTPStatusCode()).
+				Str("smithy_fault", fault).
+				Str("request_url", reqURL).
+				Str("request_method", reqMethod).
+				Msg("s3 call failed")
 			return re
 		}
 	}
