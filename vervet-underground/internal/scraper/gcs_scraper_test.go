@@ -3,92 +3,29 @@ package scraper_test
 import (
 	"context"
 	"net/http/httptest"
-	"os"
-	"strconv"
 	"testing"
 	"time"
 
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/rs/zerolog/log"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
 	"vervet-underground/internal/storage/gcs"
+	gcstesting "vervet-underground/internal/storage/gcs/testing"
 )
-
-const (
-	gcsEndpoint   = "http://localhost:4443/storage/v1/"
-	gcsRegion     = "US-CENTRAL1" // https://cloud.google.com/storage/docs/locations#location-r
-	projectId     = "test"
-	gcsBucketName = "vervet-underground-specs"
-)
-
-var gcsCfg = &gcs.Config{
-	GcsRegion:   gcsRegion,
-	GcsEndpoint: gcsEndpoint,
-	BucketName:  gcsBucketName,
-	Credentials: gcs.StaticKeyCredentials{
-		ProjectId: projectId,
-	},
-}
-
-func gcsCleanup() {
-	// cleanup
-	ctx := context.Background()
-	client, err := gcs.New(ctx, gcsCfg)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to initialize GCS storage")
-		return
-	}
-	st, ok := client.(*gcs.Storage)
-	if !ok {
-		log.Error().Msg("failed to cast to GCS storage")
-		return
-	}
-	revs, err := st.ListObjects(ctx, "", "")
-
-	if err != nil {
-		log.Error().Err(err).Msg("failed to List Objects")
-		return
-	}
-	for _, rev := range revs {
-		if rev.Name != "" {
-			err := st.DeleteObject(ctx, rev.Name)
-			if err != nil {
-				log.Error().Err(err).Msgf("failed to delete Object %s", rev.Prefix+"/"+rev.Name)
-			}
-		}
-	}
-}
-
-func isGcsCIEnabled(t *testing.T) bool {
-	t.Helper()
-
-	ci, err := strconv.ParseBool(os.Getenv("CI"))
-	return err == nil || ci
-}
-
-func gcsSetup(t *testing.T) *qt.C {
-	t.Helper()
-	c := qt.New(t)
-	if isGcsCIEnabled(t) {
-		c.Skip("CI not enabled")
-	}
-	c.Cleanup(gcsCleanup)
-	return c
-}
 
 func TestGCSScraper(t *testing.T) {
 	// Arrange
-	c := gcsSetup(t)
+	c := qt.New(t)
+	gcsCfg := gcstesting.Setup(c)
 	ctx := context.Background()
 	petfoodService, animalsService := setupHttpServers(c)
 	tests := []struct {
 		service, version, digest string
 	}{
-		{petfoodService.URL, "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
-		{animalsService.URL, "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
+		{"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
+		{"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
 	}
 
 	cfg := &config.ServerConfig{
@@ -143,7 +80,8 @@ func TestGCSScraper(t *testing.T) {
 
 func TestGCSScraperCollation(t *testing.T) {
 	// Arrange
-	c := gcsSetup(t)
+	c := qt.New(t)
+	gcsCfg := gcstesting.Setup(c)
 
 	ctx := context.Background()
 	petfoodService := httptest.NewServer(petfood.Handler())
@@ -155,8 +93,8 @@ func TestGCSScraperCollation(t *testing.T) {
 	tests := []struct {
 		service, version, digest string
 	}{
-		{petfoodService.URL, "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
-		{animalsService.URL, "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
+		{"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
+		{"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
 	}
 
 	cfg := &config.ServerConfig{
