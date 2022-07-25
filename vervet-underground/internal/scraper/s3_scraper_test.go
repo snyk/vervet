@@ -3,86 +3,21 @@ package scraper_test
 import (
 	"context"
 	"net/http/httptest"
-	"os"
-	"strconv"
 	"testing"
 	"time"
 
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/rs/zerolog/log"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
 	"vervet-underground/internal/storage/s3"
+	s3testing "vervet-underground/internal/storage/s3/testing"
 )
-
-const (
-	localstackAccessKey  = "test"
-	localstackSecretKey  = "test"
-	localstackSessionKey = "test"
-	awsEndpoint          = "http://localhost:4566"
-	awsRegion            = "us-east-1"
-	awsBucketName        = "vervet-underground-specs"
-)
-
-var s3Cfg = &s3.Config{
-	AwsRegion:   awsRegion,
-	AwsEndpoint: awsEndpoint,
-	BucketName:  awsBucketName,
-	Credentials: s3.StaticKeyCredentials{
-		AccessKey:  localstackAccessKey,
-		SecretKey:  localstackSecretKey,
-		SessionKey: localstackSessionKey,
-	},
-}
-
-func isCIEnabled(t *testing.T) bool {
-	t.Helper()
-
-	ci, err := strconv.ParseBool(os.Getenv("CI"))
-	return err == nil || ci
-}
-
-func s3cleanup() {
-	// cleanup
-	ctx := context.Background()
-	client, err := s3.New(ctx, s3Cfg)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to initialize S3 storage")
-		return
-	}
-	st, ok := client.(*s3.Storage)
-	if !ok {
-		log.Error().Err(err).Msg("failed to cast to S3 storage")
-		return
-	}
-	revs, err := st.ListObjects(ctx, "", "")
-
-	if err != nil {
-		log.Error().Err(err).Msg("failed to List Objects")
-		return
-	}
-	for _, rev := range revs.Contents {
-		err = st.DeleteObject(ctx, *rev.Key)
-		if err != nil {
-			log.Error().Err(err).Msgf("failed to delete Object %s", *rev.Key)
-		}
-	}
-}
-
-func s3Setup(t *testing.T) *qt.C {
-	t.Helper()
-	c := qt.New(t)
-	if isCIEnabled(t) {
-		c.Skip("CI not enabled")
-	}
-	c.Cleanup(s3cleanup)
-	return c
-}
 
 func TestS3Scraper(t *testing.T) {
-	c := s3Setup(t)
+	c := qt.New(t)
+	s3Cfg := s3testing.Setup(c)
 
 	ctx := context.Background()
 	petfoodService, animalsService := setupHttpServers(c)
@@ -140,7 +75,8 @@ func TestS3Scraper(t *testing.T) {
 }
 
 func TestS3ScraperCollation(t *testing.T) {
-	c := s3Setup(t)
+	c := qt.New(t)
+	s3Cfg := s3testing.Setup(c)
 
 	ctx := context.Background()
 	petfoodService := httptest.NewServer(petfood.Handler())

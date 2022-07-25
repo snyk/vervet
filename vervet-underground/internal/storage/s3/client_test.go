@@ -3,84 +3,19 @@ package s3_test
 import (
 	"bytes"
 	"context"
-	"os"
-	"strconv"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/rs/zerolog/log"
 
 	"vervet-underground/internal/storage"
 	"vervet-underground/internal/storage/s3"
+	s3testing "vervet-underground/internal/storage/s3/testing"
 )
-
-const (
-	bucketName           = "vervet-underground-specs"
-	localstackAccessKey  = "test"
-	localstackSecretKey  = "test"
-	localstackSessionKey = "test"
-	awsEndpoint          = "http://localhost:4566"
-	awsRegion            = "us-east-1"
-)
-
-var cfg = &s3.Config{
-	AwsRegion:   awsRegion,
-	AwsEndpoint: awsEndpoint,
-	BucketName:  bucketName,
-	Credentials: s3.StaticKeyCredentials{
-		AccessKey:  localstackAccessKey,
-		SecretKey:  localstackSecretKey,
-		SessionKey: localstackSessionKey,
-	},
-}
-
-func cleanup() {
-	// cleanup
-	ctx := context.Background()
-	client, err := s3.New(ctx, cfg)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to initialize S3 storage")
-		return
-	}
-	st, ok := client.(*s3.Storage)
-	if !ok {
-		log.Error().Err(err).Msg("failed to cast to S3 storage")
-		return
-	}
-	revs, err := st.ListObjects(ctx, "", "")
-
-	if err != nil {
-		log.Error().Err(err).Msg("failed to List Objects")
-		return
-	}
-	for _, rev := range revs.Contents {
-		err = st.DeleteObject(ctx, *rev.Key)
-		if err != nil {
-			log.Error().Err(err).Msgf("failed to delete Object %s", *rev.Key)
-		}
-	}
-}
-
-func isCIEnabled(t *testing.T) bool {
-	t.Helper()
-
-	ci, err := strconv.ParseBool(os.Getenv("CI"))
-	return err == nil || ci
-}
-
-func setup(t *testing.T) *qt.C {
-	t.Helper()
-	c := qt.New(t)
-	if isCIEnabled(t) {
-		c.Skip("CI not enabled")
-	}
-	c.Cleanup(cleanup)
-	return c
-}
 
 func TestPutObject(t *testing.T) {
 	// Arrange
-	c := setup(t)
+	c := qt.New(t)
+	cfg := s3testing.Setup(c)
 
 	ctx := context.Background()
 	st, err := s3.New(ctx, cfg)
@@ -102,7 +37,8 @@ func TestPutObject(t *testing.T) {
 
 func TestGetObject(t *testing.T) {
 	// Arrange
-	c := setup(t)
+	c := qt.New(t)
+	cfg := s3testing.Setup(c)
 
 	ctx := context.Background()
 	st, err := s3.New(ctx, cfg)
@@ -130,7 +66,8 @@ func TestGetObject(t *testing.T) {
 
 func TestListObjectsAndPrefixes(t *testing.T) {
 	// Arrange
-	c := setup(t)
+	c := qt.New(t)
+	cfg := s3testing.Setup(c)
 
 	ctx := context.Background()
 	st, err := s3.New(ctx, cfg)
@@ -140,6 +77,7 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 
 	objects, err := client.ListObjects(ctx, storage.CollatedVersionsFolder, "/")
 	c.Assert(err, qt.IsNil)
+	c.Assert(objects, qt.Not(qt.IsNil))
 	c.Assert(objects.Contents, qt.IsNil)
 
 	data := "this is some data stored as a byte slice in Go Lang!"
@@ -160,7 +98,8 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 }
 
 func TestHandleAwsError(t *testing.T) {
-	c := setup(t)
+	c := qt.New(t)
+	cfg := s3testing.Setup(c)
 	ctx := context.Background()
 
 	st, err := s3.New(ctx, cfg)
@@ -175,10 +114,10 @@ func TestHandleAwsError(t *testing.T) {
 }
 
 func TestS3StorageCollateVersion(t *testing.T) {
-	c := setup(t)
+	c := qt.New(t)
+	cfg := s3testing.Setup(c)
 	ctx := context.Background()
 	s, err := s3.New(ctx, cfg)
-
 	c.Assert(err, qt.IsNil)
 	storage.AssertCollateVersion(c, s)
 }

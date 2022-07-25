@@ -42,24 +42,10 @@ update-deps:
 
 .PHONY: test-coverage
 test-coverage:
-	go test ./... -count=1 -ginkgo.failFast -coverprofile=covfile
+	go test ./... -count=1 -coverprofile=covfile
 	go tool cover -html=covfile
 	rm -f covfile
 
 .PHONY: start
 start:
 	go run server.go
-
-.PHONY: test-localstack
-test-localstack:
-	docker-compose up --no-start localstack
-	docker-compose start localstack
-	go test ./... -count=1 -race || true
-	docker-compose down
-
-.PHONY: test-gcs
-test-gcs:
-	docker-compose up --no-start fake-gcs
-	docker-compose start fake-gcs
-	go test ./... -count=1 -race || true
-	docker-compose down
