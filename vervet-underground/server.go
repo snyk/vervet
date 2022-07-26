@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -10,16 +9,16 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
-	"github.com/slok/go-http-metrics/middleware/std"
+	middlewarestd "github.com/slok/go-http-metrics/middleware/std"
 
 	"vervet-underground/config"
+	"vervet-underground/internal/handler"
 	"vervet-underground/internal/scraper"
 	"vervet-underground/internal/storage"
 	"vervet-underground/internal/storage/gcs"
@@ -41,14 +40,6 @@ func main() {
 	flag.Parse()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-
-	router := mux.NewRouter()
-	promMiddleware := middleware.New(middleware.Config{
-		Recorder: metrics.NewRecorder(metrics.Config{
-			Prefix: "vu",
-		}),
-	})
-	router.Use(std.HandlerProvider("", promMiddleware))
 
 	var cfg *config.ServerConfig
 	var err error
@@ -81,9 +72,15 @@ func main() {
 		log.Fatal().Err(err).Msg("failed initialization scraping of service")
 	}
 
-	versionHandlers(ctx, router, sc)
-	healthHandler(router, cfg.Services)
-	router.Handle("/metrics", promhttp.Handler())
+	promMiddleware := middleware.New(middleware.Config{
+		Recorder: metrics.NewRecorder(metrics.Config{
+			Prefix: "vu",
+		}),
+	})
+
+	h := handler.New(cfg, sc, func(r chi.Router) {
+		r.Use(middlewarestd.HandlerProvider("", promMiddleware))
+	})
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf("%s:8080", cfg.Host),
@@ -91,7 +88,7 @@ func main() {
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
-		Handler:      router,
+		Handler:      h,
 	}
 
 	quit := make(chan struct{}, 1)
@@ -167,60 +164,6 @@ func logError(err error) {
 		Err(err).
 		Str("cause", fmt.Sprintf("%+v", errors.Cause(err))).
 		Msg("UnhandledException")
-}
-
-func healthHandler(router *mux.Router, services []config.ServiceConfig) {
-	router.Path("/").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		encoder := json.NewEncoder(w)
-		if err := encoder.Encode(map[string]interface{}{"msg": "success", "services": services}); err != nil {
-			http.Error(w, "Failure to write response", http.StatusInternalServerError)
-			return
-		}
-	})
-}
-
-func versionHandlers(ctx context.Context, router *mux.Router, sc *scraper.Scraper) {
-	router.
-		Path("/openapi").
-		Methods("GET").
-		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			versionSlice, err := json.Marshal(sc.Versions())
-			if err != nil {
-				logError(err)
-				http.Error(w, "Failure to process request", http.StatusBadRequest)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(versionSlice)
-			if err != nil {
-				logError(err)
-				http.Error(w, "Failure to write response", http.StatusInternalServerError)
-				return
-			}
-		})
-
-	router.
-		Path("/openapi/{version}").
-		Methods("GET").
-		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			version := mux.Vars(r)["version"]
-			bytes, err := sc.Version(ctx, version)
-			if err != nil {
-				logError(err)
-				http.Error(w, "Failure to process request", http.StatusBadRequest)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(bytes)
-			if err != nil {
-				logError(err)
-				http.Error(w, "Failure to write response", http.StatusInternalServerError)
-				return
-			}
-		})
 }
 
 func initializeStorage(ctx context.Context, cfg *config.ServerConfig) (storage.Storage, error) {

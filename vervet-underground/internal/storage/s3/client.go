@@ -188,14 +188,12 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 }
 
 // Versions implements scraper.Storage.
-func (s *Storage) Versions() []string {
+func (s *Storage) Versions() vervet.VersionSlice {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-	stringVersions := make([]string, len(s.collatedVersions))
-	for i, version := range s.collatedVersions {
-		stringVersions[i] = version.String()
-	}
-	return stringVersions
+	result := make(vervet.VersionSlice, len(s.collatedVersions))
+	copy(result, s.collatedVersions)
+	s.mu.RUnlock()
+	return result
 }
 
 // Version implements scraper.Storage.

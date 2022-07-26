@@ -35,7 +35,7 @@ type Storage interface {
 	NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error
 
 	// Versions fetches the Storage Versions compiled by VU
-	Versions() []string
+	Versions() vervet.VersionSlice
 
 	// Version fetches the Storage Version spec compiled by VU
 	Version(ctx context.Context, version string) ([]byte, error)

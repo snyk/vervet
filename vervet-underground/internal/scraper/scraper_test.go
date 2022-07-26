@@ -126,13 +126,13 @@ func TestScraper(t *testing.T) {
 
 	c.Assert(len(st.Versions()), qt.Equals, 4)
 	for _, version := range st.Versions() {
-		specData, err := st.Version(ctx, version)
+		specData, err := st.Version(ctx, version.String())
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)
 		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
-		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version])
+		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version.String()])
 	}
 }
 
@@ -232,13 +232,13 @@ func TestScraperCollation(t *testing.T) {
 
 	c.Assert(len(st.Versions()), qt.Equals, 4)
 	for _, version := range st.Versions() {
-		specData, err := st.Version(ctx, version)
+		specData, err := st.Version(ctx, version.String())
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
 		spec, err := l.LoadFromData(specData)
 		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
-		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version])
+		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version.String()])
 	}
 
 	// Assert metrics
