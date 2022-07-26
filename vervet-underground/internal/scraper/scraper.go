@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/snyk/vervet/v4"
 	"go.uber.org/multierr"
 
 	"vervet-underground/config"
@@ -270,7 +271,7 @@ func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string
 	return s.storage.HasVersion(ctx, svc.name, version, digest)
 }
 
-func (s *Scraper) Versions() []string {
+func (s *Scraper) Versions() vervet.VersionSlice {
 	return s.storage.Versions()
 }
 

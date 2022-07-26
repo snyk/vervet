@@ -9,8 +9,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.9
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.6
 	github.com/aws/smithy-go v1.12.0
+	github.com/docker/go-connections v0.4.0
+	github.com/elgohr/go-localstack v0.0.0-20220722003056-10868332cbf0
 	github.com/frankban/quicktest v1.14.3
 	github.com/getkin/kin-openapi v0.97.0
+	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
@@ -19,6 +22,7 @@ require (
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/snyk/vervet/v4 v4.22.3
 	github.com/spf13/viper v1.11.0
+	github.com/testcontainers/testcontainers-go v0.13.0
 	go.uber.org/multierr v1.8.0
 	google.golang.org/api v0.76.0
 )
@@ -53,9 +57,7 @@ require (
 	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/elgohr/go-localstack v0.0.0-20220722003056-10868332cbf0 // indirect
 	github.com/fsnotify/fsnotify v1.5.3 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -97,7 +99,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/testcontainers/testcontainers-go v0.13.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
@@ -111,7 +112,6 @@ require (
 	google.golang.org/genproto v0.0.0-20220426171045-31bebdecfb46 // indirect
 	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
