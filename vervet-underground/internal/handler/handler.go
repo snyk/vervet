@@ -7,10 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
+	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
+	prommiddleware "github.com/slok/go-http-metrics/middleware"
+	prommiddlewarestd "github.com/slok/go-http-metrics/middleware/std"
 	"github.com/snyk/vervet/v4"
 	"github.com/snyk/vervet/v4/versionware"
 
@@ -40,6 +44,23 @@ func New(cfg *config.ServerConfig, sc *scraper.Scraper, routerOptions ...func(r 
 	h.router.Get("/metrics", promhttp.Handler().ServeHTTP)
 	h.router.Get("/", h.health)
 	return h
+}
+
+var promMiddlewareConfig = prommiddleware.Config{
+	Recorder: metrics.NewRecorder(metrics.Config{
+		Prefix: "vu",
+	}),
+}
+
+// UseDefaultMiddleware configures a chi.Router to use the default middleware
+// in the Vervet Underground service.
+func UseDefaultMiddleware(r chi.Router) {
+	r.Use(chimiddleware.RequestID)
+	r.Use(chimiddleware.Recoverer)
+	r.Use(chimiddleware.StripSlashes)
+
+	promMiddleware := prommiddleware.New(promMiddlewareConfig)
+	r.Use(prommiddlewarestd.HandlerProvider("", promMiddleware))
 }
 
 // ServeHTTP implements http.Handler.

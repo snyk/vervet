@@ -35,20 +35,45 @@ func TestOpenapi(t *testing.T) {
 	c := qt.New(t)
 	_, h := setup(c)
 
+	for _, path := range []string{"/openapi", "/openapi/"} {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", path, nil)
+		h.ServeHTTP(w, req)
+		c.Assert(w.Code, qt.Equals, 200)
+		contents, err := ioutil.ReadAll(w.Result().Body)
+		c.Assert(err, qt.IsNil)
+		c.Assert(contents, qt.JSONEquals, []string{
+			"2021-06-04~experimental",
+			"2021-10-20~experimental",
+			"2021-10-20~beta",
+			"2022-01-16~experimental",
+			"2022-01-16~beta",
+			"2022-01-16",
+		})
+	}
+}
+
+func TestMetrics(t *testing.T) {
+	c := qt.New(t)
+	_, h := setup(c)
+
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/openapi", nil)
+	// NOTE: Metrics are counted globally, so in order for this metrics test to
+	// reliably pass, this particular version should not be requested in any of
+	// the other tests within this package. Otherwise the count will be thrown
+	// off (and will race among tests bumping the same tag).
+	req := httptest.NewRequest("GET", "/openapi/2021-10-20~beta", nil)
+	h.ServeHTTP(w, req)
+	c.Assert(w.Code, qt.Equals, 200)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/metrics", nil)
 	h.ServeHTTP(w, req)
 	c.Assert(w.Code, qt.Equals, 200)
 	contents, err := ioutil.ReadAll(w.Result().Body)
 	c.Assert(err, qt.IsNil)
-	c.Assert(contents, qt.JSONEquals, []string{
-		"2021-06-04~experimental",
-		"2021-10-20~experimental",
-		"2021-10-20~beta",
-		"2022-01-16~experimental",
-		"2022-01-16~beta",
-		"2022-01-16",
-	})
+	// Metrics captured the /openapi request above
+	c.Assert(string(contents), qt.Contains, `vu_http_response_size_bytes_count{code="200",handler="/openapi/2021-10-20~beta",method="GET",service=""} 1`)
 }
 
 func TestOpenapiVersion(t *testing.T) {
@@ -88,7 +113,7 @@ func setup(c *qt.C) (*config.ServerConfig, *handler.Handler) {
 	st := &mockStorage{}
 	sc, err := scraper.New(cfg, st)
 	c.Assert(err, qt.IsNil)
-	h := handler.New(cfg, sc)
+	h := handler.New(cfg, sc, handler.UseDefaultMiddleware)
 	return cfg, h
 }
 
