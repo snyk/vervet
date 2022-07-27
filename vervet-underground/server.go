@@ -9,13 +9,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
-	"github.com/slok/go-http-metrics/middleware"
-	middlewarestd "github.com/slok/go-http-metrics/middleware/std"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/handler"
@@ -72,15 +68,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed initialization scraping of service")
 	}
 
-	promMiddleware := middleware.New(middleware.Config{
-		Recorder: metrics.NewRecorder(metrics.Config{
-			Prefix: "vu",
-		}),
-	})
-
-	h := handler.New(cfg, sc, func(r chi.Router) {
-		r.Use(middlewarestd.HandlerProvider("", promMiddleware))
-	})
+	h := handler.New(cfg, sc, handler.UseDefaultMiddleware)
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf("%s:8080", cfg.Host),

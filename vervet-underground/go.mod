@@ -13,7 +13,7 @@ require (
 	github.com/elgohr/go-localstack v0.0.0-20220722003056-10868332cbf0
 	github.com/frankban/quicktest v1.14.3
 	github.com/getkin/kin-openapi v0.97.0
-	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
