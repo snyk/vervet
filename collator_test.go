@@ -124,3 +124,51 @@ func TestCollator(t *testing.T) {
 		"\\nhttps://datatracker.ietf.org/doc/html/rfc8594\\n\",\"example\":\"2021-08-02T00:00:00Z\",\"schema\":"+
 		"{\"format\":\"date-time\",\"type\":\"string\"}}}}\n", qt.JSONEquals, exampleResp400Ref.Value)
 }
+
+func TestCollateUseFirstRoute(t *testing.T) {
+	c := qt.New(t)
+	collator := vervet.NewCollator(vervet.UseFirstRoute(true))
+	examples1, err := vervet.LoadResourceVersions(testdata.Path("conflict/_examples"))
+	c.Assert(err, qt.IsNil)
+	examples1v, err := examples1.At("2021-06-15~experimental")
+	c.Assert(err, qt.IsNil)
+
+	examples2, err := vervet.LoadResourceVersions(testdata.Path("conflict/_examples2"))
+	c.Assert(err, qt.IsNil)
+	examples2v, err := examples2.At("2021-06-15~experimental")
+	c.Assert(err, qt.IsNil)
+
+	err = collator.Collate(examples1v)
+	c.Assert(err, qt.IsNil)
+	err = collator.Collate(examples2v)
+	c.Assert(err, qt.IsNil)
+
+	result := collator.Result()
+
+	// First path chosen, route matching rules ignore path variable
+	c.Assert(result.Paths["/examples/hello-world/{id1}"], qt.Not(qt.IsNil))
+	c.Assert(result.Paths["/examples/hello-world/{id2}"], qt.IsNil)
+
+	// First chosen path has description expected
+	c.Assert(result.Paths["/examples/hello-world/{id1}"].Get.Description, qt.Contains, " - from example 1")
+}
+
+func TestCollatePathConflict(t *testing.T) {
+	c := qt.New(t)
+	collator := vervet.NewCollator(vervet.UseFirstRoute(false))
+	examples1, err := vervet.LoadResourceVersions(testdata.Path("conflict/_examples"))
+	c.Assert(err, qt.IsNil)
+	examples1v, err := examples1.At("2021-06-15~experimental")
+	c.Assert(err, qt.IsNil)
+
+	examples2, err := vervet.LoadResourceVersions(testdata.Path("conflict/_examples2"))
+	c.Assert(err, qt.IsNil)
+	examples2v, err := examples2.At("2021-06-15~experimental")
+	c.Assert(err, qt.IsNil)
+
+	err = collator.Collate(examples1v)
+	c.Assert(err, qt.IsNil)
+	err = collator.Collate(examples2v)
+	c.Assert(err, qt.ErrorMatches, `.*conflict in #/paths /examples/hello-world/{id2}: declared in both.*`)
+	c.Assert(err, qt.ErrorMatches, `.*conflict in #/paths /examples/hello-world: declared in both.*`)
+}

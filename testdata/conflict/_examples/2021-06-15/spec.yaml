@@ -9,7 +9,7 @@ servers:
 paths:
   /examples/hello-world:
     post:
-      description: Create a single result from the hello-world example
+      description: Create a single result from the hello-world example - from example 1
       operationId: helloWorldCreate
       requestBody:
         content:
@@ -38,12 +38,12 @@ paths:
                 required: ['jsonapi', 'data', 'links']
                 additionalProperties: false
 
-  /examples/hello-world/{id}:
+  /examples/hello-world/{id1}:
     get:
-      description: Get a single result from the hello-world example
+      description: Get a single result from the hello-world example - from example 1
       operationId: helloWorldGetOne
       parameters:
-        - name: id
+        - name: id1
           description: The id of the hello-world example entity to be retrieved.
           in: path
           required: true
