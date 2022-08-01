@@ -2,13 +2,12 @@ package vervet
 
 import (
 	"fmt"
-	"reflect"
+	"regexp"
 	"sort"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/mitchellh/reflectwalk"
 	"go.uber.org/multierr"
 )
 
@@ -19,170 +18,9 @@ type Collator struct {
 	pathSources      map[string]string
 	tagSources       map[string]string
 
-	strictTags bool
-}
-
-// RefRemover removes the ref from the component
-type RefRemover struct {
-	target interface{}
-}
-
-// Inliner inlines the component
-type Inliner struct {
-	refs map[string]struct{}
-}
-
-func (rr *RefRemover) RemoveRef() error {
-	return reflectwalk.Walk(rr.target, rr)
-}
-
-// Struct implements reflectwalk.StructWalker
-func (rr *RefRemover) Struct(v reflect.Value) error {
-	switch v.Interface().(type) {
-	case openapi3.SchemaRef:
-		valPointer := v.Addr().Interface().(*openapi3.SchemaRef)
-		valPointer.Ref = ""
-	case openapi3.ParameterRef:
-		valPointer := v.Addr().Interface().(*openapi3.ParameterRef)
-		valPointer.Ref = ""
-	case openapi3.HeaderRef:
-		valPointer := v.Addr().Interface().(*openapi3.HeaderRef)
-		valPointer.Ref = ""
-	case openapi3.RequestBodyRef:
-		valPointer := v.Addr().Interface().(*openapi3.RequestBodyRef)
-		valPointer.Ref = ""
-	case openapi3.ResponseRef:
-		valPointer := v.Addr().Interface().(*openapi3.ResponseRef)
-		valPointer.Ref = ""
-	case openapi3.SecuritySchemeRef:
-		valPointer := v.Addr().Interface().(*openapi3.SecuritySchemeRef)
-		valPointer.Ref = ""
-	case openapi3.ExampleRef:
-		valPointer := v.Addr().Interface().(*openapi3.ExampleRef)
-		valPointer.Ref = ""
-	case openapi3.LinkRef:
-		valPointer := v.Addr().Interface().(*openapi3.LinkRef)
-		valPointer.Ref = ""
-	case openapi3.CallbackRef:
-		valPointer := v.Addr().Interface().(*openapi3.CallbackRef)
-		valPointer.Ref = ""
-	}
-
-	return nil
-}
-
-// StructField implements reflectwalk.StructWalker
-func (rr *RefRemover) StructField(field reflect.StructField, v reflect.Value) error {
-	return nil
-}
-
-func NewRefRemover(target interface{}) *RefRemover {
-	return &RefRemover{target: target}
-}
-
-func NewInliner() *Inliner {
-	return &Inliner{refs: map[string]struct{}{}}
-}
-
-func (in *Inliner) AddRef(ref string) {
-	in.refs[ref] = struct{}{}
-}
-
-// Struct implements reflectwalk.StructWalker
-func (in *Inliner) Struct(v reflect.Value) error {
-	switch val := v.Interface().(type) {
-	case openapi3.SchemaRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.SchemaRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ParameterRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ParameterRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.HeaderRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.HeaderRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.RequestBodyRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.RequestBodyRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ResponseRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ResponseRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.SecuritySchemeRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.SecuritySchemeRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ExampleRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ExampleRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.LinkRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.LinkRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.CallbackRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.CallbackRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// StructField implements reflectwalk.StructWalker
-func (in *Inliner) StructField(field reflect.StructField, v reflect.Value) error {
-	return nil
-}
-
-func (in *Inliner) Inliner(doc *openapi3.T) error {
-	return reflectwalk.Walk(doc, in)
+	strictTags    bool
+	useFirstRoute bool
+	seenRoutes    map[string]struct{}
 }
 
 // NewCollator returns a new Collator instance.
@@ -192,6 +30,7 @@ func NewCollator(options ...CollatorOption) *Collator {
 		pathSources:      map[string]string{},
 		tagSources:       map[string]string{},
 		strictTags:       true,
+		seenRoutes:       map[string]struct{}{},
 	}
 	for i := range options {
 		options[i](coll)
@@ -207,6 +46,19 @@ type CollatorOption func(*Collator)
 func StrictTags(strict bool) CollatorOption {
 	return func(coll *Collator) {
 		coll.strictTags = strict
+	}
+}
+
+// UseFirstRoute determines whether a collator should use the first matching
+// path in the result when merging paths. When true, the first matching path
+// goes into the collated result, similar to how a routing table matches a
+// path. When false, a conflicting path route will result in an error.
+//
+// Path variable names do not differentiate path routes; /foo/{bar} and
+// /foo/{baz} are regarded as the same route.
+func UseFirstRoute(useFirstRoute bool) CollatorOption {
+	return func(coll *Collator) {
+		coll.useFirstRoute = useFirstRoute
 	}
 }
 
@@ -366,7 +218,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 		}
 	}
 	if errs == nil {
-		err := inliner.Inliner(rv.T)
+		err := inliner.Inline(rv.T)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 		}
@@ -403,12 +255,24 @@ func (c *Collator) mergePaths(rv *ResourceVersion) error {
 	}
 	var errs error
 	for k, v := range rv.T.Paths {
-		if _, ok := c.result.Paths[k]; ok {
-			errs = multierr.Append(errs, fmt.Errorf("conflict in #/paths %s: declared in both %s and %s", k, rv.path, c.pathSources[k]))
+		route := routeForPath(k)
+		if _, ok := c.seenRoutes[route]; ok {
+			if c.useFirstRoute {
+				continue
+			} else {
+				errs = multierr.Append(errs, fmt.Errorf("conflict in #/paths %s: declared in both %s and %s", k, rv.path, c.pathSources[k]))
+			}
 		} else {
+			c.seenRoutes[route] = struct{}{}
 			c.result.Paths[k] = v
 			c.pathSources[k] = rv.path
 		}
 	}
 	return errs
+}
+
+var routeForPathRE = regexp.MustCompile(`\{[^}]*\}`)
+
+func routeForPath(path string) string {
+	return routeForPathRE.ReplaceAllString(path, "{}")
 }
