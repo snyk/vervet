@@ -13,6 +13,7 @@ import (
 type ExcludePatterns struct {
 	ExtensionPatterns []string
 	HeaderPatterns    []string
+	Paths             []string
 }
 
 type excluder struct {
@@ -20,6 +21,7 @@ type excluder struct {
 
 	extensionPatterns []*regexp.Regexp
 	headerPatterns    []*regexp.Regexp
+	paths             []string
 }
 
 // RemoveElements removes those elements from an OpenAPI document matching the
@@ -29,6 +31,7 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 		doc:               doc,
 		extensionPatterns: make([]*regexp.Regexp, len(excludes.ExtensionPatterns)),
 		headerPatterns:    make([]*regexp.Regexp, len(excludes.HeaderPatterns)),
+		paths:             excludes.Paths,
 	}
 	for i, pat := range excludes.ExtensionPatterns {
 		re, err := regexp.Compile(pat)
@@ -44,6 +47,17 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 		}
 		ex.headerPatterns[i] = re
 	}
+	// Remove excluded paths
+	excludedPaths := map[string]struct{}{}
+	for path := range doc.Paths {
+		if ex.isExcludedPath(path) {
+			excludedPaths[path] = struct{}{}
+		}
+	}
+	for path := range excludedPaths {
+		delete(doc.Paths, path)
+	}
+	// Remove excluded elements
 	if err := ex.apply(); err != nil {
 		return err
 	}
@@ -113,6 +127,15 @@ func (ex *excluder) applyOperation(op *openapi3.Operation) {
 func (ex *excluder) isExcludedExtension(name string) bool {
 	for _, re := range ex.extensionPatterns {
 		if re.MatchString(name) {
+			return true
+		}
+	}
+	return false
+}
+
+func (ex *excluder) isExcludedPath(path string) bool {
+	for _, matchPath := range ex.paths {
+		if matchPath == path {
 			return true
 		}
 	}
