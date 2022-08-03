@@ -184,8 +184,11 @@ func TestCollator_Collate_Conflict(t *testing.T) {
 		Blob:    spec2,
 	})
 
-	_, _, err = collator.Collate()
-	c.Assert(err.Error(), qt.Contains, "conflict in #/paths /examples/hello-world")
+	_, specs, err := collator.Collate()
+	c.Assert(err, qt.IsNil)
+	// First path wins
+	c.Assert(specs[vervet.MustParseVersion("2021-06-15")].Paths["/examples/hello-world"].Post.Description,
+		qt.Equals, "Create a single result from the hello-world example - from example 1")
 }
 
 var testOverlay = `
