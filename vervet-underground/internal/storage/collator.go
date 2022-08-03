@@ -18,22 +18,60 @@ type Collator struct {
 	revisions map[string]*ServiceRevisions
 	// uniqueVersions is API versions of all services.
 	uniqueVersions vervet.VersionSlice
+
 	// excludePatterns identifies elements to be removed from the collated OpenAPI output.
 	excludePatterns vervet.ExcludePatterns
+	// OpenAPI3 document overlay applied to collated result
+	overlay string
 }
 
 // NewCollator returns a new Collator instance.
-func NewCollator() *Collator {
-	return NewCollatorExcludePatterns(vervet.ExcludePatterns{})
+func NewCollator(options ...CollatorOption) (*Collator, error) {
+	coll := &Collator{
+		revisions: map[string]*ServiceRevisions{},
+	}
+	for i := range options {
+		err := options[i](coll)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return coll, nil
 }
 
-// NewCollatorExcludePatterns returns a new Collator instance with patterns for
-// excluding elements from the output.
-func NewCollatorExcludePatterns(excludePatterns vervet.ExcludePatterns) *Collator {
-	return &Collator{
-		revisions:       make(map[string]*ServiceRevisions),
-		uniqueVersions:  nil,
-		excludePatterns: excludePatterns,
+// CollatorOption defines an optional setting when creating a new Collator.
+type CollatorOption func(*Collator) error
+
+// CollatorExcludePattern is a CollatorOption which specifies an exclude
+// pattern to apply when collating OpenAPI document objects.
+func CollatorExcludePattern(excludePatterns vervet.ExcludePatterns) CollatorOption {
+	return func(c *Collator) error {
+		c.excludePatterns = excludePatterns
+		return nil
+	}
+}
+
+// CollatorOverlay is a CollatorOption which specifies an OpenAPI document
+// overlay to apply to the collated result. Top-level fields in the overlay
+// replaces top-level fields in the collated result. Paths are merged.
+func CollatorOverlay(overlay string) CollatorOption {
+	return func(c *Collator) error {
+		// Load the overlays early to validate the config.
+		//
+		// Why don't we reuse these parsed overlays in the long-lived
+		// collator instance for successive merges? It may cause strange
+		// effects that would be hard to debug and troubleshoot.
+		// kin-openapi/openapi3 structures have private state references to
+		// the loader which loaded them, which "come along for the ride" in
+		// a merge. Re-parsing on each merge is safe and known to be
+		// reliable.
+		l := openapi3.NewLoader()
+		_, err := l.LoadFromData([]byte(overlay))
+		if err != nil {
+			return err
+		}
+		c.overlay = overlay
+		return nil
 	}
 }
 
@@ -88,6 +126,11 @@ func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T
 				collatorMergeError.WithLabelValues(version.String()).Inc()
 				return nil, nil, err
 			}
+			if err := c.applyOverlay(spec); err != nil {
+				log.Error().Err(err).Msgf("failed to merge overlay for version %s", version)
+				collatorMergeError.WithLabelValues(version.String()).Inc()
+				return nil, nil, err
+			}
 			specs[version] = *spec
 		}
 	}
@@ -134,4 +177,14 @@ func mergeRevisions(revisions []ContentRevision) (*openapi3.T, error) {
 		}
 	}
 	return collator.Result(), nil
+}
+
+func (c *Collator) applyOverlay(spec *openapi3.T) error {
+	l := openapi3.NewLoader()
+	overlayDoc, err := l.LoadFromData([]byte(c.overlay))
+	if err != nil {
+		return err
+	}
+	vervet.Merge(spec, overlayDoc, true)
+	return nil
 }

@@ -42,7 +42,7 @@ type Config struct {
 type Storage struct {
 	c           *storage.Client
 	config      Config
-	newCollator func() *vustorage.Collator
+	newCollator func() (*vustorage.Collator, error)
 
 	mu               sync.RWMutex
 	collatedVersions vervet.VersionSlice
@@ -75,7 +75,7 @@ func New(ctx context.Context, gcsConfig *Config, options ...Option) (vustorage.S
 		c:                client,
 		config:           *gcsConfig,
 		collatedVersions: vervet.VersionSlice{},
-		newCollator:      vustorage.NewCollator,
+		newCollator:      func() (*vustorage.Collator, error) { return vustorage.NewCollator() },
 	}
 	for _, option := range options {
 		option(st)
@@ -92,7 +92,7 @@ type Option func(*Storage)
 
 // NewCollator configures the Storage instance to use the given constructor
 // function for creating collator instances.
-func NewCollator(newCollator func() *vustorage.Collator) Option {
+func NewCollator(newCollator func() (*vustorage.Collator, error)) Option {
 	return func(s *Storage) {
 		s.newCollator = newCollator
 	}
@@ -115,7 +115,10 @@ func (s *Storage) NotifyVersions(ctx context.Context, name string, versions []st
 // to create a unified version spec for each unique vervet.Version.
 func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]bool) error {
 	// create an aggregate to process collated data from storage data
-	aggregate := s.newCollator()
+	aggregate, err := s.newCollator()
+	if err != nil {
+		return err
+	}
 	serviceRevisionResults, err := s.ListObjects(ctx, vustorage.ServiceVersionsFolder, "")
 	if err != nil {
 		return err
