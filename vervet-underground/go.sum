@@ -761,6 +761,8 @@ github.com/snyk/vervet/v4 v4.22.3 h1:qUmLqxwrN+oFx8xTNjHfHlgAerFV8DgW7aiuPi7wFhk
 github.com/snyk/vervet/v4 v4.22.3/go.mod h1:44bzoNXULEwlfmIZh9KCrYQdjTI4LHZZNhky5IW0Jrc=
 github.com/snyk/vervet/v4 v4.25.0 h1:2HyEqG6OuMjv38FokRdW64Z0GLWl0+fxHL7GBNrxFU8=
 github.com/snyk/vervet/v4 v4.25.0/go.mod h1:44bzoNXULEwlfmIZh9KCrYQdjTI4LHZZNhky5IW0Jrc=
+github.com/snyk/vervet/v4 v4.25.1 h1:kRefKtfE+/svGCiRZF9/XjLUpBUHMK9UdSpHVetcm/8=
+github.com/snyk/vervet/v4 v4.25.1/go.mod h1:44bzoNXULEwlfmIZh9KCrYQdjTI4LHZZNhky5IW0Jrc=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
