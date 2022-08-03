@@ -12,7 +12,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/elgohr/go-localstack v0.0.0-20220722003056-10868332cbf0
 	github.com/frankban/quicktest v1.14.3
-	github.com/getkin/kin-openapi v0.97.0
+	github.com/getkin/kin-openapi v0.98.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/errors v0.9.1
@@ -20,7 +20,7 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/rs/zerolog v1.26.1
 	github.com/slok/go-http-metrics v0.10.0
-	github.com/snyk/vervet/v4 v4.22.3
+	github.com/snyk/vervet/v4 v4.25.0
 	github.com/spf13/viper v1.11.0
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.uber.org/multierr v1.8.0
