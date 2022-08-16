@@ -1,6 +1,7 @@
 package vervet_test
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -318,5 +319,41 @@ func TestDeprecates(t *testing.T) {
 			c.Assert(ok, qt.IsTrue)
 			c.Assert(test.sunset, qt.Equals, sunset)
 		}
+	}
+}
+
+func TestLifecycleAtEnv(t *testing.T) {
+	c := qt.New(t)
+	tests := []struct {
+		version   Version
+		lifecycle string
+		at        string
+	}{{
+		version:   MustParseVersion("2022-08-16~wip"),
+		lifecycle: "sunset",
+		at:        "2022-08-16",
+	}, {
+		version:   MustParseVersion("2022-08-16~experimental"),
+		lifecycle: "deprecated",
+		at:        "2022-08-16",
+	}, {
+		version:   MustParseVersion("2022-08-16~experimental"),
+		lifecycle: "sunset",
+		at:        "2022-11-16",
+	}, {
+		version:   MustParseVersion("2022-08-16~beta"),
+		lifecycle: "released",
+		at:        "2022-08-16",
+	}, {
+		version:   MustParseVersion("2022-08-16~beta"),
+		lifecycle: "released",
+		at:        "2022-11-16",
+	}}
+	for _, test := range tests {
+		c.Run(fmt.Sprintf("test %v", test.version), func(c *qt.C) {
+			c.Setenv("VERVET_LIFECYCLE_AT", test.at)
+			lifecycle := test.version.LifecycleAt(time.Time{})
+			c.Assert(lifecycle.String(), qt.Equals, test.lifecycle)
+		})
 	}
 }
