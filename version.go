@@ -3,6 +3,7 @@ package vervet
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 )
@@ -379,9 +380,17 @@ func (l Lifecycle) Valid() bool {
 	}
 }
 
+// LifecycleAt returns the Lifecycle of the version at the given time. If the
+// time is the zero value (time.Time{}), then the following are used to
+// determine the reference time:
+//
+// If VERVET_LIFECYCLE_AT is set to an ISO date string of the form YYYY-mm-dd,
+// this date is used as the reference time, at midnight UTC.
+//
+// Otherwise `time.Now().UTC()` is used for the reference time.
 func (v *Version) LifecycleAt(t time.Time) Lifecycle {
 	if t.IsZero() {
-		t = time.Now().UTC()
+		t = defaultLifecycleAt()
 	}
 	tdelta := t.Sub(v.Date)
 	if tdelta < 0 {
@@ -398,4 +407,13 @@ func (v *Version) LifecycleAt(t time.Time) Lifecycle {
 		return LifecycleDeprecated
 	}
 	return LifecycleReleased
+}
+
+func defaultLifecycleAt() time.Time {
+	if dateStr := os.Getenv("VERVET_LIFECYCLE_AT"); dateStr != "" {
+		if t, err := time.ParseInLocation("2006-01-02", dateStr, time.UTC); err == nil {
+			return t
+		}
+	}
+	return time.Now().UTC()
 }
