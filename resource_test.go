@@ -2,6 +2,7 @@ package vervet_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -100,4 +101,11 @@ func TestIsExtensionNotFound(t *testing.T) {
 
 	_, err = ExtensionString(resource.ExtensionProps, ExtSnykApiStability)
 	c.Assert(IsExtensionNotFound(err), qt.IsFalse)
+}
+
+func TestLoadResourceVersionsWithDuplicateSpecs(t *testing.T) {
+	c := qt.New(t)
+	ep, err := LoadResourceVersions(testdata.Path("duplicate-specs/2022-08-31"))
+	fmt.Println(ep)
+	c.Assert(err, qt.IsNil)
 }

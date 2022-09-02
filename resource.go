@@ -187,7 +187,15 @@ func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 	if err != nil {
 		return nil, err
 	}
-	return LoadResourceVersionsFileset(specYamls)
+	fmt.Println(specYamls)
+	specYmls, err := filepath.Glob(epPath + "/*/spec.yml")
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(specYmls)
+	specs := append(specYamls, specYmls...)
+	fmt.Println(specs)
+	return LoadResourceVersionsFileset(specs)
 }
 
 // LoadResourceVersionFileset returns a ResourceVersions slice parsed from the
