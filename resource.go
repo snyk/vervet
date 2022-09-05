@@ -183,18 +183,17 @@ func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 // ExtSnykApiStability extension value at the top-level of the OpenAPI
 // document.
 func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
+	// Partially handles edge case where there is a spec.yml and spec.yaml file for the same API
+	// It is assumed that duplicate specs would cause an error elsewhere in vervet
 	specYamls, err := filepath.Glob(epPath + "/*/spec.yaml")
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(specYamls)
 	specYmls, err := filepath.Glob(epPath + "/*/spec.yml")
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(specYmls)
 	specs := append(specYamls, specYmls...)
-	fmt.Println(specs)
 	return LoadResourceVersionsFileset(specs)
 }
 
