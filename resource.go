@@ -9,6 +9,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
@@ -183,17 +184,12 @@ func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 // ExtSnykApiStability extension value at the top-level of the OpenAPI
 // document.
 func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
-	// Partially handles edge case where there is a spec.yml and spec.yaml file for the same API
+	// Handles case where there is either a spec.yml or spec.yaml file but not edge case where there are both specs for the same API
 	// It is assumed that duplicate specs would cause an error elsewhere in vervet
-	specYamls, err := filepath.Glob(epPath + "/*/spec.yaml")
+	specs, err := doublestar.FilepathGlob(epPath + "/*/spec.{yaml, yml}")
 	if err != nil {
 		return nil, err
 	}
-	specYmls, err := filepath.Glob(epPath + "/*/spec.yml")
-	if err != nil {
-		return nil, err
-	}
-	specs := append(specYamls, specYmls...)
 	return LoadResourceVersionsFileset(specs)
 }
 
