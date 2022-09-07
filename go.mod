@@ -3,7 +3,7 @@ module github.com/snyk/vervet/v4
 go 1.17
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.0.2
+	github.com/bmatcuk/doublestar/v4 v4.2.0
 	github.com/dop251/goja v0.0.0-20220408131256-ffe77e20c6f1
 	github.com/frankban/quicktest v1.13.0
 	github.com/getkin/kin-openapi v0.93.0
