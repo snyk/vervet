@@ -30,6 +30,9 @@ func (in *Inliner) Inline(doc *openapi3.T) error {
 
 // Struct implements reflectwalk.StructWalker
 func (in *Inliner) Struct(v reflect.Value) error {
+	if !v.CanInterface() {
+		return nil
+	}
 	switch val := v.Interface().(type) {
 	case openapi3.SchemaRef:
 		if _, ok := in.refs[val.Ref]; ok {
@@ -141,6 +144,9 @@ func (rr *RefRemover) RemoveRef() error {
 
 // Struct implements reflectwalk.StructWalker
 func (rr *RefRemover) Struct(v reflect.Value) error {
+	if !v.CanInterface() {
+		return nil
+	}
 	switch v.Interface().(type) {
 	case openapi3.SchemaRef:
 		valPointer := v.Addr().Interface().(*openapi3.SchemaRef)
