@@ -70,6 +70,9 @@ func (ex *excluder) apply() error {
 
 // Struct implements reflectwalk.StructWalker
 func (ex *excluder) Struct(v reflect.Value) error {
+	if !v.CanInterface() {
+		return nil
+	}
 	switch v.Interface().(type) {
 	case openapi3.ExtensionProps:
 		ex.applyExtensionProps(v.Addr().Interface().(*openapi3.ExtensionProps))
