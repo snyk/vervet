@@ -108,6 +108,5 @@ func TestLoadResourceVersionsWithDuplicateSpecs(t *testing.T) {
 	dirPath := testdata.Path("duplicate-specs")
 	c.Assert(resourceVersions, qt.IsNil)
 	c.Assert(err, qt.IsNotNil)
-	c.Assert(err, qt.ErrorMatches, "duplicate spec found in "+dirPath + "/2022-08-31")
-
+	c.Assert(err, qt.ErrorMatches, "duplicate spec found in "+dirPath+"/2022-08-31")
 }
