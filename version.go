@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var timeNow = time.Now
+
 // Version defines an API version. API versions may be dates of the form
 // "YYYY-mm-dd", or stability tags "beta", "experimental".
 type Version struct {
@@ -385,15 +387,18 @@ func (l Lifecycle) Valid() bool {
 // determine the reference time:
 //
 // If VERVET_LIFECYCLE_AT is set to an ISO date string of the form YYYY-mm-dd,
-// this date is used as the reference time, at midnight UTC.
+// this date is used as the reference time for deprecation, at midnight UTC.
 //
 // Otherwise `time.Now().UTC()` is used for the reference time.
+//
+// The current time is always used for determining whether a version is unreleased.
 func (v *Version) LifecycleAt(t time.Time) Lifecycle {
 	if t.IsZero() {
 		t = defaultLifecycleAt()
 	}
-	tdelta := t.Sub(v.Date)
-	if tdelta < 0 {
+	deprecationDelta := t.Sub(v.Date)
+	releaseDelta := timeNow().UTC().Sub(v.Date)
+	if releaseDelta < 0 {
 		return LifecycleUnreleased
 	}
 	if v.Stability.Compare(StabilityExperimental) <= 0 {
@@ -401,7 +406,7 @@ func (v *Version) LifecycleAt(t time.Time) Lifecycle {
 			return LifecycleSunset
 		}
 		// experimental
-		if tdelta > ExperimentalTTL {
+		if deprecationDelta > ExperimentalTTL {
 			return LifecycleSunset
 		}
 		return LifecycleDeprecated
@@ -415,5 +420,5 @@ func defaultLifecycleAt() time.Time {
 			return t
 		}
 	}
-	return time.Now().UTC()
+	return timeNow().UTC()
 }

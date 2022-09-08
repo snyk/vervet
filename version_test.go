@@ -357,3 +357,44 @@ func TestLifecycleAtEnv(t *testing.T) {
 		})
 	}
 }
+
+func TestLifecycleAtDefaultDate(t *testing.T) {
+	c := qt.New(t)
+	tests := []struct {
+		version   Version
+		lifecycle string
+		at        string
+	}{{
+		version:   MustParseVersion("2022-08-16~wip"),
+		lifecycle: "sunset",
+	}, {
+		version:   MustParseVersion("2022-08-16~experimental"),
+		lifecycle: "deprecated",
+	}, {
+		version:   MustParseVersion("2022-05-16~experimental"),
+		lifecycle: "sunset",
+	}, {
+		version:   MustParseVersion("2022-08-16~beta"),
+		lifecycle: "released",
+	}, {
+		version:   MustParseVersion("2022-08-16~beta"),
+		lifecycle: "released",
+	}}
+	for _, test := range tests {
+		c.Run(fmt.Sprintf("test %v", test.version), func(c *qt.C) {
+			c.Patch(TimeNow, func() time.Time { return time.Date(2022, time.September, 6, 14, 49, 50, 0, time.UTC) })
+			lifecycle := test.version.LifecycleAt(time.Time{})
+			c.Assert(lifecycle.String(), qt.Equals, test.lifecycle)
+		})
+	}
+}
+
+func TestLifecycleAtUnreleasedVersionStringPanics(t *testing.T) {
+	c := qt.New(t)
+	c.Patch(TimeNow, func() time.Time { return time.Date(2022, time.June, 6, 14, 49, 50, 0, time.UTC) })
+	version := MustParseVersion("2022-10-16~wip")
+	lifecycle := version.LifecycleAt(time.Time{})
+	c.Assert(func() {
+		c.Log(lifecycle.String())
+	}, qt.PanicMatches, "invalid lifecycle.*")
+}
