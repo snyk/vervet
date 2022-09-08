@@ -199,7 +199,6 @@ func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 			specDirs[dir] = struct{}{}
 		}
 	}
-
 	return LoadResourceVersionsFileset(specs)
 }
 
