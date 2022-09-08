@@ -104,7 +104,10 @@ func TestIsExtensionNotFound(t *testing.T) {
 
 func TestLoadResourceVersionsWithDuplicateSpecs(t *testing.T) {
 	c := qt.New(t)
-	ep, err := LoadResourceVersions(testdata.Path("duplicate-specs"))
-	c.Assert(ep, qt.IsNotNil)
-	c.Assert(err, qt.IsNil)
+	resourceVersions, err := LoadResourceVersions(testdata.Path("duplicate-specs"))
+	dirPath := testdata.Path("duplicate-specs")
+	c.Assert(resourceVersions, qt.IsNil)
+	c.Assert(err, qt.IsNotNil)
+	c.Assert(err, qt.ErrorMatches, "duplicate spec found in "+dirPath + "/2022-08-31")
+
 }

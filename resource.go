@@ -186,10 +186,20 @@ func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 	// Handles case where there is either a spec.yml or spec.yaml file but not edge case where there are both specs for the same API
 	// It is assumed that duplicate specs would cause an error elsewhere in vervet
-	specs, err := doublestar.FilepathGlob(epPath + "/*/spec.{yaml, yml}")
+	specs, err := doublestar.FilepathGlob(epPath + "/*/spec.{yaml,yml}")
 	if err != nil {
 		return nil, err
 	}
+	specDirs := map[string]struct{}{}
+	for _, spec := range specs {
+		dir := filepath.Dir(spec)
+		if _, ok := specDirs[dir]; ok {
+			return nil, fmt.Errorf("duplicate spec found in " + dir)
+		} else {
+			specDirs[dir] = struct{}{}
+		}
+	}
+
 	return LoadResourceVersionsFileset(specs)
 }
 
