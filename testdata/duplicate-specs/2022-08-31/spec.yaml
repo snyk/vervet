@@ -1,0 +1,93 @@
+openapi: 3.0.3
+x-snyk-api-stability: beta
+info:
+  title: Registry
+  version: 3.0.0
+servers:
+  - url: /api/v3
+    description: Snyk Registry
+paths:
+  /examples/hello-world:
+    post:
+      description: Create a single result from the hello-world example - from spec.yaml
+      operationId: helloWorldCreate
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              properties:
+                attributes:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                    betaField:
+                      type: string
+                  additionalProperties: false
+                  required: ["message", "betaField"]
+              additionalProperties: false
+              required: ["attributes"]
+      responses:
+        "201":
+          description: "A hello world entity being requested is returned"
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                required: ["jsonapi", "data", "links"]
+                additionalProperties: false
+
+  /examples/hello-world/{id1}:
+    get:
+      description: Get a single result from the hello-world example
+      operationId: helloWorldGetOne
+      parameters:
+        - name: id1
+          description: The id of the hello-world example entity to be retrieved.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "A hello world entity being requested is returned"
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                required: ["jsonapi", "data", "links"]
+                additionalProperties: false
+
+components:
+  schemas:
+    HelloWorld:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+          format: uuid
+        attributes:
+          type: object
+          properties:
+            message:
+              type: string
+            requestSubject:
+              type: object
+              properties:
+                publicId:
+                  type: string
+                  format: uuid
+                type:
+                  type: string
+                clientId:
+                  type: string
+                  format: uuid
+              required: ["publicId", "type"]
+              additionalProperties: false
+          required: ["message", "requestSubject"]
+          additionalProperties: false
+      required: ["type", "id", "attributes"]
+      additionalProperties: false
