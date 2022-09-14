@@ -27,7 +27,7 @@ type ContentRevision struct {
 // ServiceRevisions tracks a collection of ContentRevisions and API uniqueVersions for a single service.
 type ServiceRevisions struct {
 	// Revisions is a map of version to a collection of revisions.  During collation, content revision with the latest scraping timestamp is used.
-	Revisions map[vervet.Version][]ContentRevision
+	Revisions map[vervet.Version]Revisions
 	// Versions is a collection of API uniqueVersions that this service serves.
 	Versions vervet.VersionSlice
 }
@@ -35,7 +35,7 @@ type ServiceRevisions struct {
 // NewServiceRevisions returns a new instance of ServiceRevisions.
 func NewServiceRevisions() *ServiceRevisions {
 	return &ServiceRevisions{
-		Revisions: make(map[vervet.Version][]ContentRevision),
+		Revisions: make(map[vervet.Version]Revisions),
 		Versions:  make(vervet.VersionSlice, 0),
 	}
 }
@@ -75,3 +75,16 @@ func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (Content
 	}
 	return revision, nil
 }
+
+type Revisions []ContentRevision
+
+// Less implements sort.Interface.
+func (r Revisions) Less(i, j int) bool {
+	return r[i].Timestamp.After(r[j].Timestamp)
+}
+
+// Len implements sort.Interface.
+func (r Revisions) Len() int { return len(r) }
+
+// Swap implements sort.Interface.
+func (r Revisions) Swap(i, j int) { r[i], r[j] = r[j], r[i] }
