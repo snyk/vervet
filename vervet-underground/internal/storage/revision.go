@@ -27,7 +27,7 @@ type ContentRevision struct {
 // ServiceRevisions tracks a collection of ContentRevisions and API uniqueVersions for a single service.
 type ServiceRevisions struct {
 	// Revisions is a map of version to a collection of revisions.  During collation, content revision with the latest scraping timestamp is used.
-	Revisions map[vervet.Version]Revisions
+	Revisions map[vervet.Version]ContentRevisions
 	// Versions is a collection of API uniqueVersions that this service serves.
 	Versions vervet.VersionSlice
 }
@@ -35,7 +35,7 @@ type ServiceRevisions struct {
 // NewServiceRevisions returns a new instance of ServiceRevisions.
 func NewServiceRevisions() *ServiceRevisions {
 	return &ServiceRevisions{
-		Revisions: make(map[vervet.Version]Revisions),
+		Revisions: make(map[vervet.Version]ContentRevisions),
 		Versions:  make(vervet.VersionSlice, 0),
 	}
 }
@@ -76,15 +76,23 @@ func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (Content
 	return revision, nil
 }
 
-type Revisions []ContentRevision
+// ContentRevisions provides a deterministically ordered slice of content
+// revisions. Revisions are ordered by timestamp, newest to oldest. In the
+// unlikely event of two revisions having the same timestamp, the digest is
+// used as a tie-breaker.
+type ContentRevisions []ContentRevision
 
 // Less implements sort.Interface.
-func (r Revisions) Less(i, j int) bool {
-	return r[i].Timestamp.After(r[j].Timestamp)
+func (r ContentRevisions) Less(i, j int) bool {
+	delta := r[i].Timestamp.Sub(r[j].Timestamp)
+	if delta == 0 {
+		return r[i].Digest > r[j].Digest
+	}
+	return delta > 0
 }
 
 // Len implements sort.Interface.
-func (r Revisions) Len() int { return len(r) }
+func (r ContentRevisions) Len() int { return len(r) }
 
 // Swap implements sort.Interface.
-func (r Revisions) Swap(i, j int) { r[i], r[j] = r[j], r[i] }
+func (r ContentRevisions) Swap(i, j int) { r[i], r[j] = r[j], r[i] }

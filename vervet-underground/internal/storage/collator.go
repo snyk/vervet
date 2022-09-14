@@ -103,7 +103,7 @@ func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T
 	sort.Sort(c.uniqueVersions)
 
 	for _, version := range c.uniqueVersions {
-		revisions := make(Revisions, 0)
+		revisions := make(ContentRevisions, 0)
 		for service, serviceRevisions := range c.revisions {
 			rev, err := serviceRevisions.ResolveLatestRevision(version)
 			if err != nil {
@@ -139,7 +139,7 @@ func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T
 	return c.uniqueVersions, specs, nil
 }
 
-func mergeRevisions(revisions Revisions) (*openapi3.T, error) {
+func mergeRevisions(revisions ContentRevisions) (*openapi3.T, error) {
 	collator := vervet.NewCollator(vervet.StrictTags(false), vervet.UseFirstRoute(true))
 	var haveOpenAPI, haveOpenAPIVersion bool
 	for _, revision := range revisions {
