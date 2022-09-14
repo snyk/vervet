@@ -173,15 +173,17 @@ func TestCollator_Collate_Conflict(t *testing.T) {
 	spec1, err := os.ReadFile(testdata.Path("conflict/_examples/2021-06-15/spec.yaml"))
 	c.Assert(err, qt.IsNil)
 	collator.Add("service-a", storage.ContentRevision{
-		Version: v20210615_ga,
-		Blob:    spec1,
+		Version:   v20210615_ga,
+		Blob:      spec1,
+		Timestamp: time.Date(2021, 6, 15, 12, 0, 0, 0, time.UTC),
 	})
 
 	spec2, err := os.ReadFile(testdata.Path("conflict/_examples2/2021-06-15/spec.yaml"))
 	c.Assert(err, qt.IsNil)
 	collator.Add("service-b", storage.ContentRevision{
-		Version: v20210615_ga,
-		Blob:    spec2,
+		Version:   v20210615_ga,
+		Blob:      spec2,
+		Timestamp: time.Date(2021, 6, 15, 0, 0, 0, 0, time.UTC),
 	})
 
 	_, specs, err := collator.Collate()
