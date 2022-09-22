@@ -17,15 +17,21 @@ func TestServiceRevisions_ResolveLatestRevision(t *testing.T) {
 		Date:      time.Date(2022, 3, 1, 0, 0, 0, 0, time.UTC),
 		Stability: vervet.StabilityGA,
 	}
+	v20220315_beta := vervet.Version{
+		Date:      time.Date(2022, 3, 15, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityBeta,
+	}
 	v20220401_ga := vervet.Version{
 		Date:      time.Date(2022, 4, 1, 0, 0, 0, 0, time.UTC),
 		Stability: vervet.StabilityGA,
 	}
 
 	ut := storage.NewServiceRevisions()
-	ut.Add(storage.ContentRevision{Version: v20220301_ga, Digest: "1", Timestamp: time.Date(2022, 3, 1, 0, 0, 0, 0, time.UTC)})
-	ut.Add(storage.ContentRevision{Version: v20220301_ga, Digest: "2", Timestamp: time.Date(2022, 3, 1, 12, 0, 0, 0, time.UTC)})
-	ut.Add(storage.ContentRevision{Version: v20220401_ga, Digest: "3"})
+	ut.Add(storage.ContentRevision{Version: v20220301_ga, Digest: "0301_0", Timestamp: time.Date(2022, 3, 1, 0, 0, 0, 0, time.UTC)})
+	ut.Add(storage.ContentRevision{Version: v20220301_ga, Digest: "0301_1", Timestamp: time.Date(2022, 3, 1, 12, 0, 0, 0, time.UTC)})
+	ut.Add(storage.ContentRevision{Version: v20220301_ga, Digest: "0301_2", Timestamp: time.Date(2022, 3, 4, 0, 0, 0, 0, time.UTC)})
+	ut.Add(storage.ContentRevision{Version: v20220315_beta, Digest: "0315_0", Timestamp: time.Date(2022, 3, 15, 0, 0, 0, 0, time.UTC)})
+	ut.Add(storage.ContentRevision{Version: v20220401_ga, Digest: "0401_0"})
 
 	tcs := []struct {
 		version        string
@@ -34,23 +40,31 @@ func TestServiceRevisions_ResolveLatestRevision(t *testing.T) {
 	}{
 		{
 			version:        "2022-03-01",
-			expectedDigest: "2",
+			expectedDigest: "0301_2",
 		},
 		{
 			version:        "2022-03-01~beta",
-			expectedDigest: "2",
+			expectedDigest: "0301_2",
 		},
 		{
 			version:        "2022-03-05",
-			expectedDigest: "2",
+			expectedDigest: "0301_2",
+		},
+		{
+			version:        "2022-03-15",
+			expectedDigest: "0301_2",
+		},
+		{
+			version:        "2022-03-15~beta",
+			expectedDigest: "0315_0",
 		},
 		{
 			version:        "2022-04-01",
-			expectedDigest: "3",
+			expectedDigest: "0401_0",
 		},
 		{
 			version:        "2022-04-05~beta",
-			expectedDigest: "3",
+			expectedDigest: "0401_0",
 		},
 		{
 			version:     "2020-01-01",
