@@ -48,6 +48,7 @@ func (s *ServiceRevisions) Add(revision ContentRevision) {
 		sort.Sort(s.Versions)
 	}
 	s.Revisions[version] = append(s.Revisions[version], revision)
+	sort.Sort(s.Revisions[version])
 }
 
 // ResolveLatestRevision returns the latest revision that matches the given version number. If no exact version is found,
@@ -68,12 +69,11 @@ func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (Content
 		}
 	}
 
-	for _, r := range revisions {
-		if revision.Timestamp.IsZero() || r.Timestamp.After(revision.Timestamp) {
-			revision = r
-		}
+	if len(revisions) == 0 {
+		return revision, fmt.Errorf("no revision found for version: %s", version)
 	}
-	return revision, nil
+	// ContentRevisions are sorted in descending order, return first match
+	return revisions[0], nil
 }
 
 // ContentRevisions provides a deterministically ordered slice of content
