@@ -51,9 +51,11 @@ func (s *ServiceRevisions) Add(revision ContentRevision) {
 	sort.Sort(s.Revisions[version])
 }
 
-// ResolveLatestRevision returns the latest revision that matches the given version number. If no exact version is found,
-// it uses vervet to resolve the most recent version. When multiple revisions are found for a given version,
-// the content revision with the latest scrape timestamp is returned.
+// ResolveLatestRevision returns the latest revision that matches the given
+// version date. If no exact version is found, it uses vervet to resolve the
+// most recent version date at the same stability. When multiple revisions are
+// found for a given version, the content revision with the latest scrape
+// timestamp is returned.
 func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (ContentRevision, error) {
 	var revision ContentRevision
 	revisions, ok := s.Revisions[version]
@@ -62,6 +64,12 @@ func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (Content
 		if err != nil {
 			return revision, err
 		}
+		// Resolving the effective version chooses the highest stability. That
+		// works for resolving resources where a resource is only allowed one
+		// release per day. Services on the other hand, publish multiple
+		// concurrently active stabilities on a given day, so we need to
+		// override this with the stability we're looking up.
+		resolvedVersion.Stability = version.Stability
 
 		revisions, ok = s.Revisions[resolvedVersion]
 		if !ok {
