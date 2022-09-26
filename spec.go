@@ -20,7 +20,8 @@ const SpecGlobPattern = "**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/spec.yaml
 // SpecVersions stores a collection of versioned OpenAPI specs.
 type SpecVersions struct {
 	versions  VersionSlice
-	documents []*openapi3.T
+	index     VersionIndex
+	documents map[Version]*openapi3.T
 }
 
 // LoadSpecVersions returns SpecVersions loaded from a directory structure
@@ -76,21 +77,15 @@ func (sv *SpecVersions) Versions() VersionSlice {
 // returned. Returns ErrNoMatchingVersion if there is no release matching this
 // version.
 func (sv *SpecVersions) At(v Version) (*openapi3.T, error) {
-	i, err := sv.versions.ResolveIndex(v)
+	resolvedVersion, err := sv.index.Resolve(v)
 	if err != nil {
 		return nil, err
 	}
-	// Because this collection contains each distinct version date and
-	// stability, perform an exact match on the most recent version date
-	// matching the requested stability. ResolveIndex may overshoot it because
-	// it returns equal or greater stability.
-	for ; i >= 0; i-- {
-		checkVersion := sv.versions[i]
-		if dateCmp, stabilityCmp := checkVersion.compareDateStability(&v); dateCmp <= 0 && stabilityCmp == 0 {
-			return sv.documents[i], nil
-		}
+	doc, ok := sv.documents[resolvedVersion]
+	if !ok {
+		panic(fmt.Sprintf("missing expected document for version %v", resolvedVersion))
 	}
-	return nil, ErrNoMatchingVersion
+	return doc, nil
 }
 
 func (sv *SpecVersions) resolveOperations() error {
@@ -109,8 +104,8 @@ func (sv *SpecVersions) resolveOperations() error {
 	}
 	type operationVersionMap map[operationKey]operationVersion
 	activeOpsByStability := map[Stability]operationVersionMap{}
-	for i, v := range sv.versions {
-		doc := sv.documents[i]
+	for _, v := range sv.versions {
+		doc := sv.documents[v]
 		currentActiveOps, ok := activeOpsByStability[v.Stability]
 		if !ok {
 			currentActiveOps = operationVersionMap{}
@@ -237,6 +232,10 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 			} else if err != nil {
 				return nil, err
 			}
+			if doc.ExtensionProps.Extensions == nil {
+				doc.ExtensionProps.Extensions = map[string]interface{}{}
+			}
+			doc.ExtensionProps.Extensions[ExtSnykApiVersion] = v.String()
 			documentVersions[v] = doc
 		}
 	}
@@ -247,14 +246,8 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 	sort.Sort(versions)
 	sv := &SpecVersions{
 		versions:  versions,
-		documents: make([]*openapi3.T, len(versions)),
-	}
-	for i := range versions {
-		sv.documents[i] = documentVersions[versions[i]]
-		if sv.documents[i].ExtensionProps.Extensions == nil {
-			sv.documents[i].ExtensionProps.Extensions = map[string]interface{}{}
-		}
-		sv.documents[i].ExtensionProps.Extensions[ExtSnykApiVersion] = versions[i].String()
+		index:     NewVersionIndex(versions),
+		documents: documentVersions,
 	}
 	err := sv.resolveOperations()
 	if err != nil {

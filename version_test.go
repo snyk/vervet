@@ -2,7 +2,6 @@ package vervet_test
 
 import (
 	"fmt"
-	"sort"
 	"testing"
 	"time"
 
@@ -115,11 +114,12 @@ func TestVersionDateStrings(t *testing.T) {
 	}), qt.ContentEquals, []string{"2021-06-01", "2021-06-10", "2021-07-12"})
 }
 
-func TestVersionSlice(t *testing.T) {
+func TestVersionIndex(t *testing.T) {
 	type matchTest struct {
-		match  string
-		result string
-		err    string
+		match       string
+		atStability string
+		mostStable  string
+		err         string
 	}
 	tests := []struct {
 		versions   VersionSlice
@@ -139,26 +139,44 @@ func TestVersionSlice(t *testing.T) {
 		first: "2021-06-01~wip",
 		last:  "2021-07-12~beta",
 		matchTests: []matchTest{{
-			match:  "2021-06-10",
-			result: "2021-06-10",
+			match:       "2021-06-10",
+			atStability: "2021-06-10",
+			mostStable:  "2021-06-10",
 		}, {
-			match:  "2021-06-10~beta",
-			result: "2021-06-10",
+			match:       "2021-06-10~beta",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10",
 		}, {
-			match:  "2021-06-10~experimental",
-			result: "2021-06-10",
+			match:       "2021-06-11~beta",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10",
 		}, {
-			match:  "2021-06-11~experimental",
-			result: "2021-06-10",
+			match:       "2021-06-11",
+			atStability: "2021-06-10",
+			mostStable:  "2021-06-10",
+		}, {
+			match:       "2021-06-10~experimental",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10",
+		}, {
+			match:       "2021-06-11~experimental",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10",
 		}, {
 			match: "2021-01-01",
 			err:   "no matching version",
 		}, {
-			match:  "2022-01-01",
-			result: "2021-06-10",
+			match:       "2022-01-01",
+			atStability: "2021-06-10",
+			mostStable:  "2021-06-10",
 		}, {
-			match:  "2022-01-01~experimental",
-			result: "2021-07-12~beta",
+			match:       "2022-01-01~experimental",
+			atStability: "2021-07-12~experimental",
+			mostStable:  "2021-07-12~beta",
+		}, {
+			match:       "2022-01-01~beta",
+			atStability: "2021-07-12~beta",
+			mostStable:  "2021-07-12~beta",
 		}},
 	}, {
 		versions: VersionSlice{
@@ -170,20 +188,24 @@ func TestVersionSlice(t *testing.T) {
 			match: "2021-06-10",
 			err:   "no matching version",
 		}, {
-			match:  "2021-06-10~beta",
-			result: "2021-06-10~beta",
+			match:       "2021-06-10~beta",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10~beta",
 		}, {
-			match:  "2021-06-10~experimental",
-			result: "2021-06-10~beta",
+			match:       "2021-06-10~experimental",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10~beta",
 		}, {
-			match:  "2021-06-11~wip",
-			result: "2021-06-10~beta",
+			match:       "2021-06-11~wip",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10~beta",
 		}, {
 			match: "2021-01-01",
 			err:   "no matching version",
 		}, {
-			match:  "2022-01-01~wip",
-			result: "2021-06-10~beta",
+			match:       "2022-01-01~wip",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10~beta",
 		}},
 	}, {
 		versions: VersionSlice{
@@ -196,11 +218,13 @@ func TestVersionSlice(t *testing.T) {
 			match: "2021-04-10",
 			err:   "no matching version",
 		}, {
-			match:  "2021-08-10~beta",
-			result: "2021-06-10~beta",
+			match:       "2021-08-10~beta",
+			atStability: "2021-06-10~beta",
+			mostStable:  "2021-06-10~beta",
 		}, {
-			match:  "2022-02-10~wip",
-			result: "2022-01-10~experimental",
+			match:       "2022-02-10~wip",
+			atStability: "2022-01-10~experimental",
+			mostStable:  "2022-01-10~experimental",
 		}, {
 			match: "2021-01-30",
 			err:   "no matching version",
@@ -213,30 +237,56 @@ func TestVersionSlice(t *testing.T) {
 		first: "2021-09-06",
 		last:  "2021-10-06",
 		matchTests: []matchTest{{
-			match:  "2021-10-12~wip",
-			result: "2021-10-06",
+			match:       "2021-10-12~wip",
+			atStability: "2021-10-06",
+			mostStable:  "2021-10-06",
+		}},
+	}, {
+		versions: VersionSlice{
+			MustParseVersion("2021-09-06~beta"),
+			MustParseVersion("2021-09-07"),
+			MustParseVersion("2021-09-08~beta"),
+			MustParseVersion("2021-09-09~experimental"),
+		},
+		first: "2021-09-06~beta",
+		last:  "2021-09-09~experimental",
+		matchTests: []matchTest{{
+			match:       "2021-09-10",
+			atStability: "2021-09-07",
+			mostStable:  "2021-09-07",
 		}},
 	}}
 	c := qt.New(t)
 	for _, t := range tests {
-		sort.Sort(t.versions)
+		index := NewVersionIndex(t.versions)
+		c.Log(t.versions)
 		c.Assert(t.versions[0].String(), qt.Equals, t.first)
 		c.Assert(t.versions[len(t.versions)-1].String(), qt.Equals, t.last)
 		for _, mt := range t.matchTests {
+			c.Log(mt)
 			match := MustParseVersion(mt.match)
-			result, err := t.versions.Resolve(match)
+			atStability, err := index.Resolve(match)
 			if err != nil {
 				c.Assert(err, qt.ErrorMatches, mt.err)
 			} else {
-				c.Assert(result.String(), qt.Equals, mt.result)
+				c.Assert(atStability.String(), qt.Equals, mt.atStability)
+			}
+			mostStable, err := index.ResolveForBuild(match)
+			if err != nil {
+				c.Assert(err, qt.ErrorMatches, mt.err)
+			} else {
+				c.Assert(mostStable.String(), qt.Equals, mt.mostStable)
 			}
 		}
 	}
 }
 
-func TestVersionSliceResolveEmpty(t *testing.T) {
+func TestVersionIndexResolveEmpty(t *testing.T) {
 	c := qt.New(t)
-	_, err := VersionSlice{}.Resolve(MustParseVersion("2021-10-31"))
+	vi := NewVersionIndex(VersionSlice{})
+	_, err := vi.Resolve(MustParseVersion("2021-10-31"))
+	c.Assert(err, qt.ErrorMatches, "no matching version")
+	_, err = vi.ResolveForBuild(MustParseVersion("2021-10-31"))
 	c.Assert(err, qt.ErrorMatches, "no matching version")
 }
 
@@ -275,15 +325,14 @@ func TestDeprecatedBy(t *testing.T) {
 
 func TestDeprecates(t *testing.T) {
 	c := qt.New(t)
-	versions := VersionSlice{
+	versions := NewVersionIndex(VersionSlice{
 		MustParseVersion("2021-06-01~experimental"),
 		MustParseVersion("2021-06-07~beta"),
 		MustParseVersion("2021-07-01"),
 		MustParseVersion("2021-08-12~experimental"),
 		MustParseVersion("2021-09-16~beta"),
 		MustParseVersion("2021-10-31"),
-	}
-	sort.Sort(versions)
+	})
 	tests := []struct {
 		name         string
 		target       Version

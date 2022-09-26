@@ -111,7 +111,8 @@ func (rv *ResourceVersion) cleanRefs() error {
 
 // ResourceVersions defines a collection of multiple versions of a resource.
 type ResourceVersions struct {
-	versions resourceVersionSlice
+	versions map[Version]*ResourceVersion
+	index    VersionIndex
 }
 
 // Name returns the resource name for a collection of resource versions.
@@ -122,12 +123,15 @@ func (e *ResourceVersions) Name() string {
 	return ""
 }
 
-// Versions returns a slice containing each Version defined for this resource.
-func (e *ResourceVersions) Versions() []Version {
-	result := make([]Version, len(e.versions))
-	for i := range e.versions {
-		result[i] = e.versions[i].Version
+// Versions returns each Version defined for this resource.
+func (e *ResourceVersions) Versions() VersionSlice {
+	result := make(VersionSlice, len(e.versions))
+	i := 0
+	for v := range e.versions {
+		result[i] = v
+		i++
 	}
+	sort.Sort(result)
 	return result
 }
 
@@ -147,27 +151,16 @@ func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid version %q: %w", vs, err)
 	}
-	for i := len(e.versions) - 1; i >= 0; i-- {
-		ev := e.versions[i].Version
-		if dateCmp, stabilityCmp := ev.compareDateStability(&v); dateCmp <= 0 && stabilityCmp >= 0 {
-			return e.versions[i], nil
-		}
+	resolvedVersion, err := e.index.resolveForBuild(v)
+	if err != nil {
+		return nil, err
 	}
-	return nil, ErrNoMatchingVersion
+	rv, ok := e.versions[resolvedVersion]
+	if !ok {
+		return nil, ErrNoMatchingVersion
+	}
+	return rv, nil
 }
-
-type resourceVersionSlice []*ResourceVersion
-
-// Less implements sort.Interface.
-func (e resourceVersionSlice) Less(i, j int) bool {
-	return e[i].Version.Compare(e[j].Version) < 0
-}
-
-// Len implements sort.Interface.
-func (e resourceVersionSlice) Len() int { return len(e) }
-
-// Swap implements sort.Interface.
-func (e resourceVersionSlice) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
 
 // LoadResourceVersions returns a ResourceVersions slice parsed from a
 // directory structure of resource specs. This directory will be of the form:
@@ -205,7 +198,9 @@ func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 // LoadResourceVersionFileset returns a ResourceVersions slice parsed from the
 // directory structure described above for LoadResourceVersions.
 func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) {
-	var resourceVersions ResourceVersions
+	resourceVersions := ResourceVersions{
+		versions: map[Version]*ResourceVersion{},
+	}
 	var err error
 	type operationKey struct {
 		path, operation string
@@ -242,14 +237,13 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 				}
 			}
 		}
-		resourceVersions.versions = append(resourceVersions.versions, rc)
+		resourceVersions.versions[rc.Version] = rc
 	}
-	// Sort release versions per path
-	for _, releases := range opReleases {
-		sort.Sort(releases)
+	// Index release versions per path
+	opIndexes := make(map[operationKey]VersionIndex, len(opReleases))
+	for opKey, releases := range opReleases {
+		opIndexes[opKey] = NewVersionIndex(releases)
 	}
-	// Sort the resources themselves by version
-	sort.Sort(resourceVersionSlice(resourceVersions.versions))
 	// Annotate each path in each resource version with the other change
 	// versions affecting the path. This supports navigation across versions.
 	for _, rc := range resourceVersions.versions {
@@ -261,9 +255,10 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 				}
 				// Annotate operation with other release versions available for this path
 				releases := opReleases[operationKey{path, opName}]
+				index := opIndexes[operationKey{path, opName}]
 				op.ExtensionProps.Extensions[ExtSnykApiReleases] = releases.Strings()
 				// Annotate operation with deprecated-by and sunset information
-				if deprecatedBy, ok := releases.Deprecates(rc.Version); ok {
+				if deprecatedBy, ok := index.Deprecates(rc.Version); ok {
 					op.ExtensionProps.Extensions[ExtSnykDeprecatedBy] = deprecatedBy.String()
 					if sunset, ok := rc.Version.Sunset(deprecatedBy); ok {
 						op.ExtensionProps.Extensions[ExtSnykSunsetEligible] = sunset.Format("2006-01-02")
@@ -272,6 +267,7 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 			}
 		}
 	}
+	resourceVersions.index = NewVersionIndex((resourceVersions.Versions()))
 	return &resourceVersions, nil
 }
 
