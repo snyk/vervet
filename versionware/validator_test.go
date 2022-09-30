@@ -22,7 +22,7 @@ import (
 const (
 	v20210820 = `
 openapi: 3.0.0
-x-snyk-api-version: 2021-08-20
+x-snyk-api-version: '2021-08-20'
 info:
   title: 'Validator'
   version: '0.0.0'
@@ -91,7 +91,7 @@ components:
 `
 	v20210916 = `
 openapi: 3.0.0
-x-snyk-api-version: 2021-09-16
+x-snyk-api-version: '2021-09-16'
 info:
   title: 'Validator'
   version: '0.0.0'
