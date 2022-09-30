@@ -1,8 +1,8 @@
 nav:
 - Go packages:
-  - github.com/snyk/vervet/v4: github.com/snyk/vervet/v4.md
-  - github.com/snyk/vervet/v4/config: github.com/snyk/vervet/v4/config.md
-  - github.com/snyk/vervet/v4/versionware: github.com/snyk/vervet/v4/versionware.md
+  - github.com/snyk/vervet/v5: github.com/snyk/vervet/v5.md
+  - github.com/snyk/vervet/v5/config: github.com/snyk/vervet/v5/config.md
+  - github.com/snyk/vervet/v5/versionware: github.com/snyk/vervet/v5/versionware.md
 plugins:
 - techdocs-core
 site_name: vervet

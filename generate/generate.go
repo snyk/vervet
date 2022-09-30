@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/snyk/vervet/v4/config"
-	"github.com/snyk/vervet/v4/internal/generator"
+	"github.com/snyk/vervet/v5/config"
+	"github.com/snyk/vervet/v5/internal/generator"
 )
 
 // GeneratorParams contains the metadata needed to execute code generators.

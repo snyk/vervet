@@ -11,7 +11,8 @@ import (
 
 // Project defines collection of APIs and the standards they adhere to.
 type Project struct {
-	Version    string     `json:"version"`
+	Version string `json:"version"`
+	// NOTE: Linters are deprecated and may be removed in v5.
 	Linters    Linters    `json:"linters,omitempty"`
 	Generators Generators `json:"generators,omitempty"`
 	APIs       APIs       `json:"apis"`

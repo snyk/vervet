@@ -3,11 +3,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v4/config"
-	"github.com/snyk/vervet/v4/internal/compiler"
+	"github.com/snyk/vervet/v5/config"
+	"github.com/snyk/vervet/v5/internal/compiler"
 )
 
 // BuildCommand is the `vervet build` subcommand.
@@ -61,11 +62,29 @@ var LintCommand = cli.Command{
 
 // Lint checks versioned resources against linting rules.
 func Lint(ctx *cli.Context) error {
-	project, err := projectFromContext(ctx)
+	fmt.Fprintln(os.Stderr, `
+Vervet is no longer needed to perform API linting.
+Update your projects to use 'spectral lint' or 'sweater-comb lint' instead.
+`[1:])
+	fmt.Fprintln(os.Stderr, `
+Attempting to run 'sweater-comb lint' from your current working directory...
+`[1:])
+	scpath, err := exec.LookPath("sweater-comb")
 	if err != nil {
+		scpath = "node_modules/.bin/sweater-comb"
+	}
+	if _, err := os.Stat(scpath); err != nil {
+		fmt.Fprintln(os.Stderr, `
+Failed to find a 'sweater-comb' executable script.
+'npm install @snyk/sweater-comb' and try again?
+`[1:])
 		return err
 	}
-	return runCompiler(ctx, project, true, false)
+	cmd := exec.Command(scpath, "lint")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func projectFromContext(ctx *cli.Context) (*config.Project, error) {

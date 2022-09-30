@@ -9,8 +9,8 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v4/internal/cmd"
-	"github.com/snyk/vervet/v4/testdata"
+	"github.com/snyk/vervet/v5/internal/cmd"
+	"github.com/snyk/vervet/v5/testdata"
 )
 
 var vervetConfigFile = "./.vervet.yaml"

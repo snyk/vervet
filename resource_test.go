@@ -7,8 +7,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	. "github.com/snyk/vervet/v4"
-	"github.com/snyk/vervet/v4/testdata"
+	. "github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v5/testdata"
 )
 
 func TestResource(t *testing.T) {

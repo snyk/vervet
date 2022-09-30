@@ -10,8 +10,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v4/config"
-	"github.com/snyk/vervet/v4/internal/backstage"
+	"github.com/snyk/vervet/v5/config"
+	"github.com/snyk/vervet/v5/internal/backstage"
 )
 
 // BackstageCommand is the `vervet backstage` subcommand.

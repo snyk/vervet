@@ -6,9 +6,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v4"
-	"github.com/snyk/vervet/v4/internal/cmd"
-	"github.com/snyk/vervet/v4/testdata"
+	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v5/internal/cmd"
+	"github.com/snyk/vervet/v5/testdata"
 )
 
 func TestFilterInclude(t *testing.T) {

@@ -1,7 +1,7 @@
 # config
 
 ```go
-import "github.com/snyk/vervet/v4/config"
+import "github.com/snyk/vervet/v5/config"
 ```
 
 ## Index
@@ -11,7 +11,6 @@ import "github.com/snyk/vervet/v4/config"
 - [type API](<#type-api>)
 - [type APIs](<#type-apis>)
 - [type Generator](<#type-generator>)
-- [type GeneratorData](<#type-generatordata>)
 - [type GeneratorScope](<#type-generatorscope>)
 - [type Generators](<#type-generators>)
   - [func LoadGenerators(r io.Reader) (Generators, error)](<#func-loadgenerators>)
@@ -19,6 +18,7 @@ import "github.com/snyk/vervet/v4/config"
 - [type Linters](<#type-linters>)
 - [type OpticCILinter](<#type-opticcilinter>)
 - [type Output](<#type-output>)
+  - [func (o *Output) ResolvePaths() []string](<#func-output-resolvepaths>)
 - [type Overlay](<#type-overlay>)
 - [type Project](<#type-project>)
   - [func Load(r io.Reader) (*Project, error)](<#func-load>)
@@ -46,7 +46,7 @@ const (
 )
 ```
 
-## func Save
+## func [Save](<https://github.com/snyk/vervet/blob/main/config/project.go#L94>)
 
 ```go
 func Save(w io.Writer, proj *Project) error
@@ -54,7 +54,7 @@ func Save(w io.Writer, proj *Project) error
 
 Save saves a Project configuration to YAML\.
 
-## type API
+## type [API](<https://github.com/snyk/vervet/blob/main/config/api.go#L15-L20>)
 
 An API defines how and where to build versioned OpenAPI documents from a source collection of individual resource specifications and additional overlay content to merge\.
 
@@ -67,7 +67,7 @@ type API struct {
 }
 ```
 
-## type APIs
+## type [APIs](<https://github.com/snyk/vervet/blob/main/config/api.go#L10>)
 
 APIs defines a named map of API instances\.
 
@@ -75,33 +75,22 @@ APIs defines a named map of API instances\.
 type APIs map[string]*API
 ```
 
-## type Generator
+## type [Generator](<https://github.com/snyk/vervet/blob/main/config/generator.go#L11-L18>)
 
 Generator describes how files are generated for a resource\.
 
 ```go
 type Generator struct {
-    Name     string                    `json:"-"`
-    Scope    GeneratorScope            `json:"scope"`
-    Filename string                    `json:"filename,omitempty"`
-    Template string                    `json:"template"`
-    Files    string                    `json:"files,omitempty"`
-    Data     map[string]*GeneratorData `json:"data,omitempty"`
+    Name      string         `json:"-"`
+    Scope     GeneratorScope `json:"scope"`
+    Filename  string         `json:"filename,omitempty"`
+    Template  string         `json:"template"`
+    Files     string         `json:"files,omitempty"`
+    Functions string         `json:"functions,omitempty"`
 }
 ```
 
-## type GeneratorData
-
-GeneratorData describes an item that is added to a generator's template data context\.
-
-```go
-type GeneratorData struct {
-    FieldName string `json:"-"`
-    Include   string `json:"include"`
-}
-```
-
-## type GeneratorScope
+## type [GeneratorScope](<https://github.com/snyk/vervet/blob/main/config/generator.go#L39>)
 
 GeneratorScope determines the template context when running the generator\. Different scopes allow templates to operate over a single resource version\, or all versions in a resource\, for example\.
 
@@ -109,7 +98,7 @@ GeneratorScope determines the template context when running the generator\. Diff
 type GeneratorScope string
 ```
 
-## type Generators
+## type [Generators](<https://github.com/snyk/vervet/blob/main/config/generator.go#L8>)
 
 Generators defines a named map of Generator instances\.
 
@@ -117,7 +106,7 @@ Generators defines a named map of Generator instances\.
 type Generators map[string]*Generator
 ```
 
-### func LoadGenerators
+### func [LoadGenerators](<https://github.com/snyk/vervet/blob/main/config/project.go#L80>)
 
 ```go
 func LoadGenerators(r io.Reader) (Generators, error)
@@ -125,7 +114,7 @@ func LoadGenerators(r io.Reader) (Generators, error)
 
 LoadGenerators loads Generators from their YAML representation\.
 
-## type Linter
+## type [Linter](<https://github.com/snyk/vervet/blob/main/config/linter.go#L15-L21>)
 
 Linter describes a set of standards and rules that an API should satisfy\.
 
@@ -139,7 +128,7 @@ type Linter struct {
 }
 ```
 
-## type Linters
+## type [Linters](<https://github.com/snyk/vervet/blob/main/config/linter.go#L12>)
 
 Linters defines a named map of Linter instances\.
 
@@ -147,7 +136,7 @@ Linters defines a named map of Linter instances\.
 type Linters map[string]*Linter
 ```
 
-## type OpticCILinter
+## type [OpticCILinter](<https://github.com/snyk/vervet/blob/main/config/linter.go#L66-L106>)
 
 OpticCILinter identifies an Optic CI Linter\, which is distributed as a self\-contained docker image\.
 
@@ -173,37 +162,49 @@ type OpticCILinter struct {
     // Debug turns on debug logging.
     Debug bool `json:"debug,omitempty"`
 
-    // CIContext specifies the location of an optional CI context JSON file to
-    // use when performing an optic-ci compare or bulk-compare. If this file is
-    // present when vervet lints, it will be passed to optic using the
-    // --ci-context option.
-    //
-    // See https://www.npmjs.com/package/@useoptic/api-checks#expected-contexts
-    // for more information.
-    CIContext string `json:"ciContext"`
+    // DEPRECATED: CIContext is no longer used and should be removed in the
+    // next major release.
+    CIContext string `json:"-"`
 
-    // UploadResults indicates that the comparison results from optic-ci should
-    // be uploaded to Optic Cloud. This only happens if the file specified by
-    // CIContext exists.
-    UploadResults bool `json:"uploadResults"`
+    // DEPRECATED: UploadResults is no longer used and should be removed in the
+    // next major release. Uploading optic-ci comparison results to Optic
+    // Cloud is determined by the presence of environment variables.
+    UploadResults bool `json:"-"`
+
+    // Exceptions are files that are excluded from CI checks. This is an escape
+    // hatch of last resort, if a file needs to land and can't pass CI yet.
+    // They are specified as a mapping from project relative path to sha256
+    // sums of that spec file that is exempt. This makes the exception very
+    // narrow -- only a specific version of a specific file is skipped, after
+    // outside review and approval.
+    Exceptions map[string][]string
 
     // ExtraArgs may be used to pass extra arguments to `optic-ci`.
     ExtraArgs []string `json:"extraArgs"`
 }
 ```
 
-## type Output
+## type [Output](<https://github.com/snyk/vervet/blob/main/config/api.go#L72-L76>)
 
 Output defines where the aggregate versioned OpenAPI specs should be created during compilation\.
 
 ```go
 type Output struct {
-    Path   string `json:"path"`
-    Linter string `json:"linter"`
+    Path   string   `json:"path,omitempty"`
+    Paths  []string `json:"paths,omitempty"`
+    Linter string   `json:"linter"`
 }
 ```
 
-## type Overlay
+### func \(\*Output\) [ResolvePaths](<https://github.com/snyk/vervet/blob/main/config/api.go#L80>)
+
+```go
+func (o *Output) ResolvePaths() []string
+```
+
+EffectivePaths returns a slice of effective configured output paths\, whether a single or multiple output paths have been configured\.
+
+## type [Overlay](<https://github.com/snyk/vervet/blob/main/config/api.go#L65-L68>)
 
 An Overlay defines additional OpenAPI documents to merge into the aggregate OpenAPI spec when compiling an API\. These might include special endpoints that should be included in the aggregate API but are not versioned\, or top\-level descriptions of the API itself\.
 
@@ -214,7 +215,7 @@ type Overlay struct {
 }
 ```
 
-## type Project
+## type [Project](<https://github.com/snyk/vervet/blob/main/config/project.go#L13-L18>)
 
 Project defines collection of APIs and the standards they adhere to\.
 
@@ -227,7 +228,7 @@ type Project struct {
 }
 ```
 
-### func Load
+### func [Load](<https://github.com/snyk/vervet/blob/main/config/project.go#L65>)
 
 ```go
 func Load(r io.Reader) (*Project, error)
@@ -235,7 +236,7 @@ func Load(r io.Reader) (*Project, error)
 
 Load loads a Project configuration from its YAML representation\.
 
-### func \(\*Project\) APINames
+### func \(\*Project\) [APINames](<https://github.com/snyk/vervet/blob/main/config/project.go#L21>)
 
 ```go
 func (p *Project) APINames() []string
@@ -243,7 +244,7 @@ func (p *Project) APINames() []string
 
 APINames returns the API names in deterministic ascending order\.
 
-## type ResourceSet
+## type [ResourceSet](<https://github.com/snyk/vervet/blob/main/config/api.go#L44-L50>)
 
 A ResourceSet defines a set of versioned resources that adhere to the same standards\.
 
@@ -263,7 +264,7 @@ type ResourceSet struct {
 }
 ```
 
-## type SpectralLinter
+## type [SpectralLinter](<https://github.com/snyk/vervet/blob/main/config/linter.go#L45-L62>)
 
 SpectralLinter identifies a Linter as a collection of Spectral rulesets\.
 
@@ -272,6 +273,10 @@ type SpectralLinter struct {
 
     // Rules are a list of Spectral ruleset file locations
     Rules []string `json:"rules"`
+
+    // Script identifies the path to the spectral script to use for linting.
+    // If not defined linting will look for spectral-cli on $PATH.
+    Script string `json:"script"`
 
     // ExtraArgs may be used to pass extra arguments to `spectral lint`. If not
     // specified, the default arguments `--format text` are used when running

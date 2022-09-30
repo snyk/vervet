@@ -1,7 +1,7 @@
 # versionware
 
 ```go
-import "github.com/snyk/vervet/v4/versionware"
+import "github.com/snyk/vervet/v5/versionware"
 ```
 
 Package versionware provides routing and middleware for building versioned HTTP services\.
@@ -37,7 +37,7 @@ const (
 )
 ```
 
-## func DefaultVersionError
+## func [DefaultVersionError](<https://github.com/snyk/vervet/blob/main/versionware/handler.go#L59>)
 
 ```go
 func DefaultVersionError(w http.ResponseWriter, r *http.Request, status int, err error)
@@ -45,7 +45,7 @@ func DefaultVersionError(w http.ResponseWriter, r *http.Request, status int, err
 
 DefaultVersionError provides a basic implementation of VersionErrorHandler that uses http\.Error\.
 
-## type Handler
+## type [Handler](<https://github.com/snyk/vervet/blob/main/versionware/handler.go#L24-L28>)
 
 Handler is a multiplexing http\.Handler that dispatches requests based on the version query parameter according to vervet's API version matching rules\.
 
@@ -110,7 +110,7 @@ oct
 </p>
 </details>
 
-### func NewHandler
+### func [NewHandler](<https://github.com/snyk/vervet/blob/main/versionware/handler.go#L42>)
 
 ```go
 func NewHandler(vhs ...VersionHandler) *Handler
@@ -118,7 +118,7 @@ func NewHandler(vhs ...VersionHandler) *Handler
 
 NewHandler returns a new Handler instance\, which handles versioned requests with the matching version handler\.
 
-### func \(\*Handler\) HandleErrors
+### func \(\*Handler\) [HandleErrors](<https://github.com/snyk/vervet/blob/main/versionware/handler.go#L65>)
 
 ```go
 func (h *Handler) HandleErrors(errFunc VersionErrorHandler)
@@ -126,7 +126,7 @@ func (h *Handler) HandleErrors(errFunc VersionErrorHandler)
 
 HandleErrors changes the default error handler to the provided function\. It may be used to control the format of versioning error responses\.
 
-### func \(\*Handler\) Resolve
+### func \(\*Handler\) [Resolve](<https://github.com/snyk/vervet/blob/main/versionware/handler.go#L71>)
 
 ```go
 func (h *Handler) Resolve(requested vervet.Version) (*vervet.Version, http.Handler, error)
@@ -134,7 +134,7 @@ func (h *Handler) Resolve(requested vervet.Version) (*vervet.Version, http.Handl
 
 Resolve returns the resolved version and its associated http\.Handler for the requested version\.
 
-### func \(\*Handler\) ServeHTTP
+### func \(\*Handler\) [ServeHTTP](<https://github.com/snyk/vervet/blob/main/versionware/handler.go#L82>)
 
 ```go
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request)
@@ -142,7 +142,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 ServeHTTP implements http\.Handler with the handler matching the version query parameter on the request\. If no matching version is found\, responds 404\.
 
-## type Validator
+## type [Validator](<https://github.com/snyk/vervet/blob/main/versionware/validator.go#L19-L24>)
 
 Validator provides versioned OpenAPI validation middleware for HTTP requests and responses\.
 
@@ -152,7 +152,7 @@ type Validator struct {
 }
 ```
 
-### func NewValidator
+### func [NewValidator](<https://github.com/snyk/vervet/blob/main/versionware/validator.go#L67>)
 
 ```go
 func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, error)
@@ -160,7 +160,7 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 
 NewValidator returns a new validation middleware\, which validates versioned requests according to the given OpenAPI spec versions\. For configuration defaults\, a nil config may be used\.
 
-### func \(\*Validator\) Middleware
+### func \(\*Validator\) [Middleware](<https://github.com/snyk/vervet/blob/main/versionware/validator.go#L121>)
 
 ```go
 func (v *Validator) Middleware(h http.Handler) http.Handler
@@ -168,7 +168,7 @@ func (v *Validator) Middleware(h http.Handler) http.Handler
 
 Middleware returns an http\.Handler which wraps the given handler with request and response validation according to the requested API version\.
 
-## type ValidatorConfig
+## type [ValidatorConfig](<https://github.com/snyk/vervet/blob/main/versionware/validator.go#L27-L41>)
 
 ValidatorConfig defines how a new Validator may be configured\.
 
@@ -190,7 +190,7 @@ type ValidatorConfig struct {
 }
 ```
 
-## type VersionErrorHandler
+## type [VersionErrorHandler](<https://github.com/snyk/vervet/blob/main/versionware/handler.go#L32>)
 
 VersionErrorHandler defines a function which handles versioning error responses in requests\.
 
@@ -198,7 +198,7 @@ VersionErrorHandler defines a function which handles versioning error responses 
 type VersionErrorHandler func(w http.ResponseWriter, r *http.Request, status int, err error)
 ```
 
-## type VersionHandler
+## type [VersionHandler](<https://github.com/snyk/vervet/blob/main/versionware/handler.go#L35-L38>)
 
 VersionHandler expresses a pairing of Version and http\.Handler\.
 
