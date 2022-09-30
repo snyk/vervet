@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sort"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -18,8 +17,8 @@ import (
 // Validator provides versioned OpenAPI validation middleware for HTTP requests
 // and responses.
 type Validator struct {
-	versions   vervet.VersionSlice
-	validators []*openapi3filter.Validator
+	versions   vervet.VersionIndex
+	validators map[vervet.Version]*openapi3filter.Validator
 	errFunc    VersionErrorHandler
 	today      func() time.Time
 }
@@ -89,12 +88,11 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		config.VersionError = DefaultVersionError
 	}
 	v := &Validator{
-		versions:   make([]vervet.Version, len(docs)),
-		validators: make([]*openapi3filter.Validator, len(docs)),
+		validators: map[vervet.Version]*openapi3filter.Validator{},
 		errFunc:    config.VersionError,
 		today:      today,
 	}
-	validatorVersions := make(map[vervet.Version]*openapi3filter.Validator, len(docs))
+	serviceVersions := make(vervet.VersionSlice, len(docs))
 	for i := range docs {
 		if config.ServerURL != "" {
 			docs[i].Servers = []*openapi3.Server{{URL: config.ServerURL}}
@@ -107,26 +105,23 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		if err != nil {
 			return nil, err
 		}
-		v.versions[i] = version
+		serviceVersions[i] = version
 		router, err := gorillamux.NewRouter(docs[i])
 		if err != nil {
 			return nil, err
 		}
-		validatorVersions[version] = openapi3filter.NewValidator(router, config.Options...)
+		v.validators[version] = openapi3filter.NewValidator(router, config.Options...)
 	}
-	sort.Sort(v.versions)
-	for i, version := range v.versions {
-		v.validators[i] = validatorVersions[version]
-	}
+	v.versions = vervet.NewVersionIndex(serviceVersions)
 	return v, nil
 }
 
 // Middleware returns an http.Handler which wraps the given handler with
 // request and response validation according to the requested API version.
 func (v *Validator) Middleware(h http.Handler) http.Handler {
-	handlers := make([]http.Handler, len(v.validators))
-	for i, validator := range v.validators {
-		handlers[i] = validator.Middleware(h)
+	handlers := map[vervet.Version]http.Handler{}
+	for version, validator := range v.validators {
+		handlers[version] = validator.Middleware(h)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		versionParam := req.URL.Query().Get("version")
@@ -144,11 +139,17 @@ func (v *Validator) Middleware(h http.Handler) http.Handler {
 				fmt.Errorf("requested version newer than present date %s", t))
 			return
 		}
-		resolvedIndex, err := v.versions.ResolveIndex(requested)
+		resolvedVersion, err := v.versions.Resolve(requested)
 		if err != nil {
 			v.errFunc(w, req, http.StatusNotFound, err)
 			return
 		}
-		handlers[resolvedIndex].ServeHTTP(w, req)
+		h, ok := handlers[resolvedVersion]
+		if !ok {
+			// Crash noisily, as this indicates a serious bug. Should not
+			// happen if we've initialized our version maps correctly.
+			panic(fmt.Sprintf("missing validator for version %q", resolvedVersion))
+		}
+		h.ServeHTTP(w, req)
 	})
 }

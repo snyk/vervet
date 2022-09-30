@@ -5,7 +5,6 @@ package versionware
 import (
 	"fmt"
 	"net/http"
-	"sort"
 
 	"github.com/snyk/vervet/v4"
 )
@@ -23,8 +22,8 @@ const (
 // Handler is a multiplexing http.Handler that dispatches requests based on the
 // version query parameter according to vervet's API version matching rules.
 type Handler struct {
-	handlers []http.Handler
-	versions vervet.VersionSlice
+	handlers map[vervet.Version]http.Handler
+	index    vervet.VersionIndex
 	errFunc  VersionErrorHandler
 }
 
@@ -42,20 +41,16 @@ type VersionHandler struct {
 // with the matching version handler.
 func NewHandler(vhs ...VersionHandler) *Handler {
 	h := &Handler{
-		handlers: make([]http.Handler, len(vhs)),
-		versions: make([]vervet.Version, len(vhs)),
+		handlers: map[vervet.Version]http.Handler{},
 		errFunc:  DefaultVersionError,
 	}
-	handlerVersions := map[string]http.Handler{}
+	versions := make([]vervet.Version, len(vhs))
 	for i := range vhs {
 		v := vhs[i].Version
-		h.versions[i] = v
-		handlerVersions[v.String()] = vhs[i].Handler
+		versions[i] = v
+		h.handlers[v] = vhs[i].Handler
 	}
-	sort.Sort(h.versions)
-	for i := range h.versions {
-		h.handlers[i] = handlerVersions[h.versions[i].String()]
-	}
+	h.index = vervet.NewVersionIndex(versions)
 	return h
 }
 
@@ -74,12 +69,11 @@ func (h *Handler) HandleErrors(errFunc VersionErrorHandler) {
 // Resolve returns the resolved version and its associated http.Handler for the
 // requested version.
 func (h *Handler) Resolve(requested vervet.Version) (*vervet.Version, http.Handler, error) {
-	resolvedIndex, err := h.versions.ResolveIndex(requested)
+	resolvedVersion, err := h.index.Resolve(requested)
 	if err != nil {
 		return nil, nil, err
 	}
-	resolved := h.versions[resolvedIndex]
-	return &resolved, h.handlers[resolvedIndex], nil
+	return &resolvedVersion, h.handlers[resolvedVersion], nil
 }
 
 // ServeHTTP implements http.Handler with the handler matching the version

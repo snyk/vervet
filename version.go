@@ -4,6 +4,7 @@ package vervet
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -61,6 +62,8 @@ const (
 
 	// StabilityGA means the API has been released and will not change.
 	StabilityGA Stability = iota
+
+	numStabilityLevels = iota
 )
 
 // String returns a string representation of the stability level. This method
@@ -227,75 +230,121 @@ func VersionDateStrings(vs []Version) []string {
 	return result
 }
 
-// VersionSlice is a sortable, searchable slice of Versions.
+// VersionSlice is a sortable slice of Versions.
 type VersionSlice []Version
 
-// Resolve returns the most recent Version in the slice with equal or greater
-// stability.
+// VersionIndex provides a search over versions, resolving which version is in
+// effect for a given date and stability level.
+type VersionIndex struct {
+	versions []effectiveVersion
+}
+
+type effectiveVersion struct {
+	date        time.Time
+	stabilities [numStabilityLevels]time.Time
+}
+
+// NewVersionIndex returns a new VersionIndex of the given versions. The given
+// VersionSlice will be sorted.
+func NewVersionIndex(vs VersionSlice) (vi VersionIndex) {
+	sort.Sort(vs)
+	evIndex := -1
+	currentStabilities := [numStabilityLevels]time.Time{}
+	for i := range vs {
+		if evIndex == -1 || !vi.versions[evIndex].date.Equal(vs[i].Date) {
+			vi.versions = append(vi.versions, effectiveVersion{
+				date:        vs[i].Date,
+				stabilities: [numStabilityLevels]time.Time{},
+			})
+			evIndex++
+			for stab, date := range currentStabilities {
+				vi.versions[evIndex].stabilities[stab] = date
+			}
+		}
+		vi.versions[evIndex].stabilities[vs[i].Stability] = vs[i].Date
+		currentStabilities[vs[i].Stability] = vs[i].Date
+	}
+	return vi
+}
+
+// resolveIndex performs a binary search on the stability versions in effect on
+// the query date.
+func (vi *VersionIndex) resolveIndex(query time.Time) (int, error) {
+	if len(vi.versions) == 0 || vi.versions[0].date.After(query) {
+		return -1, ErrNoMatchingVersion
+	}
+	lower, curr, upper := 0, len(vi.versions)/2, len(vi.versions)
+	for lower < upper-1 {
+		if vi.versions[curr].date.After(query) {
+			upper = curr
+		} else {
+			lower = curr
+		}
+		curr = lower + (upper-lower)/2
+	}
+	return lower, nil
+}
+
+// Resolve returns the released version effective on the query version date at
+// the given version stability. Returns ErrNoMatchingVersion if no version matches.
 //
-// This method requires that the VersionSlice has already been sorted with
-// sort.Sort, otherwise behavior is undefined.
-func (vs VersionSlice) Resolve(q Version) (Version, error) {
-	i, err := vs.ResolveIndex(q)
+// Resolve should be used on a collection of already "compiled" or
+// "collated" API versions.
+func (vi *VersionIndex) Resolve(query Version) (Version, error) {
+	i, err := vi.resolveIndex(query.Date)
 	if err != nil {
 		return Version{}, err
 	}
-	return vs[i], nil
-}
-
-// ResolveIndex returns the slice index of the most recent Version in the slice
-// with equal or greater stability.
-//
-// This method requires that the VersionSlice has already been sorted with
-// sort.Sort, otherwise behavior is undefined.
-func (vs VersionSlice) ResolveIndex(q Version) (int, error) {
-	lower, curr, upper := 0, len(vs)/2, len(vs)
-	if upper == 0 {
-		// Nothing matches an empty slice.
-		return -1, ErrNoMatchingVersion
-	}
-	for curr < upper && lower != upper-1 {
-		dateCmp, stabilityCmp := vs[curr].compareDateStability(&q)
-		if dateCmp > 0 {
-			// Current version is more recent than the query, so it's our new
-			// upper (exclusive) range limit to search.
-			upper = curr
-			curr = lower + (upper-lower)/2
-		} else if dateCmp <= 0 {
-			if stabilityCmp >= 0 {
-				// Matching version found, so it's our new lower (inclusive)
-				// range limit to search.
-				lower = curr
-			}
-			// The edge is somewhere between here and the upper limit.
-			curr = curr + (upper-curr)/2 + (upper-curr)%2
+	for stab := query.Stability; stab < numStabilityLevels; stab++ {
+		if stabDate := vi.versions[i].stabilities[stab]; !stabDate.IsZero() {
+			return Version{Date: stabDate, Stability: stab}, nil
 		}
 	}
-	// Did we find a match?
-	dateCmp, stabilityCmp := vs[lower].compareDateStability(&q)
-	if dateCmp <= 0 && stabilityCmp >= 0 {
-		return lower, nil
+	return Version{}, ErrNoMatchingVersion
+}
+
+// resolveForBuild returns the most stable version effective on the query
+// version date with respect to the given version stability. Returns
+// ErrNoMatchingVersion if no version matches.
+//
+// Use resolveForBuild when resolving version deprecation and effective releases
+// _within a single resource_ during the "compilation" or "collation" process.
+func (vi *VersionIndex) resolveForBuild(query Version) (Version, error) {
+	i, err := vi.resolveIndex(query.Date)
+	if err != nil {
+		return Version{}, err
 	}
-	return -1, ErrNoMatchingVersion
+	var matchDate time.Time
+	var matchStab Stability
+	for stab := query.Stability; stab < numStabilityLevels; stab++ {
+		if stabDate := vi.versions[i].stabilities[stab]; !stabDate.IsZero() && !stabDate.Before(matchDate) && !stabDate.After(query.Date) {
+			matchDate, matchStab = stabDate, stab
+		}
+	}
+	if matchDate.IsZero() {
+		return Version{}, ErrNoMatchingVersion
+	}
+	return Version{Date: matchDate, Stability: matchStab}, nil
 }
 
 // Deprecates returns the version that deprecates the given version in the
 // slice.
-func (vs VersionSlice) Deprecates(q Version) (Version, bool) {
-	match, err := vs.ResolveIndex(q)
+func (vi *VersionIndex) Deprecates(q Version) (Version, bool) {
+	match, err := vi.resolveIndex(q.Date)
 	if err == ErrNoMatchingVersion {
 		return Version{}, false
 	}
 	if err != nil {
 		panic(err)
 	}
-	for i := match + 1; i < len(vs); i++ {
-		dateCmp, stabilityCmp := vs[match].compareDateStability(&vs[i])
-		if stabilityCmp > 0 {
-			continue
-		}
-		if dateCmp < 0 {
-			return vs[i], true
+	for i := match + 1; i < len(vi.versions); i++ {
+		for stab := q.Stability; stab < numStabilityLevels; stab++ {
+			if stabDate := vi.versions[i].stabilities[stab]; stabDate.After(q.Date) {
+				return Version{
+					Date:      vi.versions[i].date,
+					Stability: stab,
+				}, true
+			}
 		}
 	}
 	return Version{}, false

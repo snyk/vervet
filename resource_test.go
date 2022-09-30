@@ -15,7 +15,7 @@ func TestResource(t *testing.T) {
 	c := qt.New(t)
 	eps, err := LoadResourceVersions(testdata.Path("resources/_examples/hello-world"))
 	c.Assert(err, qt.IsNil)
-	c.Assert(eps.Versions(), qt.DeepEquals, []Version{{
+	c.Assert(eps.Versions(), qt.DeepEquals, VersionSlice{{
 		Date:      time.Date(2021, time.June, 1, 0, 0, 0, 0, time.UTC),
 		Stability: StabilityExperimental,
 	}, {

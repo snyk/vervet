@@ -72,7 +72,7 @@ func TestSpecs(t *testing.T) {
 		}},
 	}, {
 		query: "2021-07-01~wip",
-		err:   "no matching version",
+		match: "2021-06-13~experimental",
 	}, {
 		query: "2021-06-01",
 		err:   "no matching version",
