@@ -13,15 +13,18 @@ While Vervet was developed in the context of a RESTful API, Vervet can be used w
 To summarize the API versioning supported by Vervet:
 
 #### What is versioned?
+
 Resource versions are defined in OpenAPI 3, as if each resource were a standalone service.
 
 #### How are resource version specs organized?
+
 Resources are organized in a standard directory structure by release date, using OpenAPI extensions to define lifecycle concepts like stability.
 
 #### How does versioning work?
-* Resources are versioned independently by date and stability, with a well-defined deprecation and sunsetting policy.
-* Additive, non-breaking changes can be made to released versions. Breaking changes trigger a new version.
-* New versions deprecate and sunset prior versions, on a timeline determined by the stability level.
+
+- Resources are versioned independently by date and stability, with a well-defined deprecation and sunsetting policy.
+- Additive, non-breaking changes can be made to released versions. Breaking changes trigger a new version.
+- New versions deprecate and sunset prior versions, on a timeline determined by the stability level.
 
 [Read more about API versioning](https://github.com/snyk/sweater-comb/blob/main/docs/version.md).
 
@@ -60,9 +63,9 @@ and a Vervet project configuration that instructs how to put them together:
 apis:
   my-api:
     resources:
-      - path: 'resources'
+      - path: "resources"
     output:
-      path: 'versions'
+      path: "versions"
 ```
 
 `vervet build` aggregates these resources' individual OpenAPI specifications to describe the entire service API _at each distinct version date and stability level_ from its component parts.
@@ -109,14 +112,6 @@ versions/
     └── spec.yaml
 ```
 
-### Linting
-
-Vervet is not an OpenAPI linter. It coordinates and frontends OpenAPI linting of resource and service-level specifications, allowing different rules to be applied to different parts of an API, or different stages of the compilation process (source component specs, output compiled specs).
-
-Vervet currently supports linting OpenAPI specifications with:
-* [Spectral](https://stoplight.io/open-source/spectral/)
-* [Sweater Comb](https://github.com/snyk/sweater-comb), Snyk's API standards in executable form, powered by [Optic CI](https://www.useoptic.com/optic-ci).
-
 ### Code generation
 
 Since Vervet models the composition, construction and versioning of an API, it is well positioned to coordinate code and artifact generation through the use of templates.
@@ -128,7 +123,7 @@ generators:
   version-readme:
     scope: version
     filename: "{{ .Path }}/README"
-    template: "{{ .Here }}/templates/README.tmpl"  # Located relative to the location of generators.yaml
+    template: "{{ .Here }}/templates/README.tmpl" # Located relative to the location of generators.yaml
 ```
 
 The context of `README.tmpl` has full access to the resource version metadata and OpenAPI document object model.
@@ -194,9 +189,9 @@ In this case, a template is being applied per `operationId` in the `spec.yaml` g
 
 Finally, a note on scoping. Generators can be scoped to either a `version` or a `resource`.
 
-`scope: version` generator templates execute with [VersionScope](https://pkg.go.dev/github.com/snyk/vervet/v4@v4.6.1/internal/generator#VersionScope). This maps 1:1 with a single resource version OpenAPI specification.
+`scope: version` generator templates execute with [VersionScope](https://pkg.go.dev/github.com/snyk/vervet/v5/internal/generator#VersionScope). This maps 1:1 with a single resource version OpenAPI specification.
 
-`scope: resource` generator templates execute with [ResourceScope](https://pkg.go.dev/github.com/snyk/vervet/v4@v4.6.1/internal/generator#ResourceScope). This is a collection of resource versions, useful for building resource routers.
+`scope: resource` generator templates execute with [ResourceScope](https://pkg.go.dev/github.com/snyk/vervet/v5/internal/generator#ResourceScope). This is a collection of resource versions, useful for building resource routers.
 
 ## Installation
 
@@ -216,7 +211,7 @@ NPM packaging adapted from https://github.com/manifoldco/torus-cli.
 
 Go >= 1.16 required.
 
-    go install github.com/snyk/vervet/v4/cmd/vervet@latest
+    go install github.com/snyk/vervet/v5/cmd/vervet@latest
 
 Building from source locally:
 
@@ -235,6 +230,6 @@ output in `testdata/output` to detect regressions.
 When introducing changes that intentionally change the content of compiled
 output:
 
-* Run `go generate ./testdata` to update the contents of `testdata/output`
-* Verify that the compiled output is correct
-* Commit the changes to `testdata/output` in your proposed branch
+- Run `go generate ./testdata` to update the contents of `testdata/output`
+- Verify that the compiled output is correct
+- Commit the changes to `testdata/output` in your proposed branch

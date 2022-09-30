@@ -1,4 +1,4 @@
-module github.com/snyk/vervet/v4/versionware/example
+module github.com/snyk/vervet/v5/versionware/example
 
 go 1.16
 
@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/slok/go-http-metrics v0.10.0
-	github.com/snyk/vervet/v4 v4.0.0-00010101000000-000000000000
+	github.com/snyk/vervet/v5 v5.0.0-00010101000000-000000000000
 )
 
-replace github.com/snyk/vervet/v4 => ../..
+replace github.com/snyk/vervet/v5 => ../..

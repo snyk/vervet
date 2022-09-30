@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 )
 
 const (

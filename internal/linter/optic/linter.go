@@ -22,10 +22,10 @@ import (
 	"github.com/ghodss/yaml"
 	"go.uber.org/multierr"
 
-	"github.com/snyk/vervet/v4"
-	"github.com/snyk/vervet/v4/config"
-	"github.com/snyk/vervet/v4/internal/files"
-	"github.com/snyk/vervet/v4/internal/linter"
+	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v5/config"
+	"github.com/snyk/vervet/v5/internal/files"
+	"github.com/snyk/vervet/v5/internal/linter"
 )
 
 // Optic runs a Docker image containing Optic CI and built-in rules.

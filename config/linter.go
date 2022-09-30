@@ -9,9 +9,11 @@ const (
 var defaultSpectralExtraArgs = []string{"--format", "text"}
 
 // Linters defines a named map of Linter instances.
+// NOTE: Linters are deprecated and may be removed in v5.
 type Linters map[string]*Linter
 
 // Linter describes a set of standards and rules that an API should satisfy.
+// NOTE: Linters are deprecated and may be removed in v5.
 type Linter struct {
 	Name        string          `json:"-"`
 	Description string          `json:"description,omitempty"`
@@ -42,6 +44,7 @@ func (l *Linter) validate() error {
 }
 
 // SpectralLinter identifies a Linter as a collection of Spectral rulesets.
+// NOTE: Linters are deprecated and may be removed in v5.
 type SpectralLinter struct {
 
 	// Rules are a list of Spectral ruleset file locations
@@ -63,6 +66,7 @@ type SpectralLinter struct {
 
 // OpticCILinter identifies an Optic CI Linter, which is distributed as
 // a self-contained docker image.
+// NOTE: Linters are deprecated and may be removed in v5.
 type OpticCILinter struct {
 	// Image identifies the Optic CI docker image to use for linting.
 	Image string

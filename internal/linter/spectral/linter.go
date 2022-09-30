@@ -10,9 +10,9 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/snyk/vervet/v4/config"
-	"github.com/snyk/vervet/v4/internal/files"
-	"github.com/snyk/vervet/v4/internal/linter"
+	"github.com/snyk/vervet/v5/config"
+	"github.com/snyk/vervet/v5/internal/files"
+	"github.com/snyk/vervet/v5/internal/linter"
 )
 
 // Spectral runs spectral on collections of files with a set of rules.

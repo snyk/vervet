@@ -3,7 +3,7 @@ package linter
 import (
 	"context"
 
-	"github.com/snyk/vervet/v4/config"
+	"github.com/snyk/vervet/v5/config"
 )
 
 // A Linter checks that a set of spec files conform to some set of rules and
