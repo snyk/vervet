@@ -1,6 +1,6 @@
 # vervet
 
-Vervet is an HTTP API version lifecycle management tool, allowing APIs to be designed, developed, versioned and released from [resources](https://github.com/snyk/sweater-comb/blob/main/docs/intro.md#resources) independently and concurrently.
+Vervet is an HTTP API version lifecycle management tool, allowing APIs to be designed, developed, versioned and released from [resources](https://github.com/snyk/sweater-comb/blob/main/docs/principles/api_program.md#resources) independently and concurrently.
 
 In a large organization, there might be many teams involved in delivering a large API -- such as at [Snyk](https://snyk.io) where Vervet was developed.
 
@@ -8,7 +8,7 @@ Within a single small team, there is still often a need to simultaneously try ne
 
 While Vervet was developed in the context of a RESTful API, Vervet can be used with any HTTP API expressed in OpenAPI 3 -- even if it does not adhere to strict REST principles.
 
-### [API Versioning](https://github.com/snyk/sweater-comb/blob/main/docs/version.md)
+### [API Versioning](https://github.com/snyk/sweater-comb/blob/main/docs/principles/version.md)
 
 To summarize the API versioning supported by Vervet:
 
@@ -26,7 +26,7 @@ Resources are organized in a standard directory structure by release date, using
 - Additive, non-breaking changes can be made to released versions. Breaking changes trigger a new version.
 - New versions deprecate and sunset prior versions, on a timeline determined by the stability level.
 
-[Read more about API versioning](https://github.com/snyk/sweater-comb/blob/main/docs/version.md).
+[Read more about API versioning](https://github.com/snyk/sweater-comb/blob/main/docs/principles/version.md).
 
 ## Features
 
