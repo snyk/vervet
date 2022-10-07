@@ -2,7 +2,7 @@
 
 # What Vervet Underground does and why
 
-In order to understand _why_ Vervet Underground exists and the problem it solves, you should first become familiar with the [API versioning scheme](https://github.com/snyk/sweater-comb/blob/main/docs/version.md) that Vervet supports. The main idea is, an API may be authored in parts, each of those parts may be versioned, and all the distinct versions are assembled to produce a cohesive timeline of versions for the entire service.
+In order to understand _why_ Vervet Underground exists and the problem it solves, you should first become familiar with the [API versioning scheme](https://github.com/snyk/sweater-comb/blob/main/docs/principles/version.md) that Vervet supports. The main idea is, an API may be authored in parts, each of those parts may be versioned, and all the distinct versions are assembled to produce a cohesive timeline of versions for the entire service.
 
 Just as Vervet compiles a timeline of OpenAPI versions for a single service from independently versioned parts, Vervet Underground (VU) compiles a timeline of OpenAPI spec versions for a SaaS from independently versioned microservices, each of which contributes parts of the SaaS API.
 
@@ -72,7 +72,7 @@ Content-Type: application/json
 
 ## Past API releases can change
 
-The examples so far have been kept simple by assuming released API versions do not change. In practice, non-breaking changes are allowed to be made to existing versions of the API at any time. [Non-breaking changes](https://github.com/snyk/sweater-comb/blob/main/docs/version.md#breaking-changes) must be additive and optional. It is fine to add new HTTP methods, endpoints, request parameters or response fields, so long that the added parameters or fields are not _required_ -- which existing generated client code would have no way of knowing about.
+The examples so far have been kept simple by assuming released API versions do not change. In practice, non-breaking changes are allowed to be made to existing versions of the API at any time. [Non-breaking changes](https://github.com/snyk/sweater-comb/blob/main/docs/principles/version.md#breaking-changes) must be additive and optional. It is fine to add new HTTP methods, endpoints, request parameters or response fields, so long that the added parameters or fields are not _required_ -- which existing generated client code would have no way of knowing about.
 
 With VU, we should be able to request a version of the public SaaS API _as it was on a given date_, regardless of the version release date.
 
