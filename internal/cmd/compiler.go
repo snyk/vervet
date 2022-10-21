@@ -42,7 +42,11 @@ func Build(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return runCompiler(ctx, project, ctx.Bool("lint"), true)
+	comp, err := compiler.New(ctx.Context, project, ctx.Bool("lint"))
+	if err != nil {
+		return err
+	}
+	return comp.BuildAll(ctx.Context)
 }
 
 // LintCommand is the `vervet lint` subcommand.
@@ -126,30 +130,4 @@ func projectFromContext(ctx *cli.Context) (*config.Project, error) {
 		}
 	}
 	return project, nil
-}
-
-func runCompiler(ctx *cli.Context, project *config.Project, lint, build bool) error {
-	comp, err := compiler.New(ctx.Context, project)
-	if err != nil {
-		return err
-	}
-	if lint {
-		err = comp.LintResourcesAll(ctx.Context)
-		if err != nil {
-			return err
-		}
-	}
-	if build {
-		err = comp.BuildAll(ctx.Context)
-		if err != nil {
-			return err
-		}
-	}
-	if lint {
-		err = comp.LintOutputAll(ctx.Context)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
