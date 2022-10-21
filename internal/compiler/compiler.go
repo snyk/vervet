@@ -76,26 +76,31 @@ type output struct {
 }
 
 // New returns a new Compiler for a given project configuration.
-func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (*Compiler, error) {
+func New(ctx context.Context, proj *config.Project, lint bool, options ...CompilerOption) (*Compiler, error) {
 	compiler := &Compiler{
 		apis:      map[string]*api{},
 		linters:   map[string]linter.Linter{},
 		newLinter: defaultLinterFactory,
 	}
+
 	for i := range options {
 		err := options[i](compiler)
 		if err != nil {
 			return nil, err
 		}
 	}
-	// set up linters
-	for linterName, linterConfig := range proj.Linters {
-		linter, err := compiler.newLinter(ctx, linterConfig)
-		if err != nil {
-			return nil, fmt.Errorf("%w (linters.%s)", err, linterName)
+
+	if lint {
+		// set up linters
+		for linterName, linterConfig := range proj.Linters {
+			linter, err := compiler.newLinter(ctx, linterConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%w (linters.%s)", err, linterName)
+			}
+			compiler.linters[linterName] = linter
 		}
-		compiler.linters[linterName] = linter
 	}
+
 	// set up APIs
 	for apiName, apiConfig := range proj.APIs {
 		a := api{}
@@ -108,7 +113,7 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 				linter:          compiler.linters[rcConfig.Linter],
 				linterOverrides: map[string]map[string]config.Linter{},
 			}
-			if r.linter != nil {
+			if lint && r.linter != nil {
 				r.lintFiles, err = r.linter.Match(rcConfig)
 				if err != nil {
 					return nil, fmt.Errorf("%w: (apis.%s.resources[%d].path)", err, apiName, rcIndex)
@@ -235,11 +240,6 @@ func (c *Compiler) lintWithOverrides(ctx context.Context, rc *resourceSet, apiNa
 		return fmt.Errorf("lint failed (apis.%s.resources[%d])", apiName, rcIndex)
 	}
 	return nil
-}
-
-// LintResourcesAll lints resources in all APIs in the project.
-func (c *Compiler) LintResourcesAll(ctx context.Context) error {
-	return c.apisEach(ctx, c.LintResources)
 }
 
 func (c *Compiler) apisEach(ctx context.Context, f func(ctx context.Context, apiName string) error) error {
@@ -405,7 +405,13 @@ var Versions embed.FS
 
 // BuildAll builds all APIs in the project.
 func (c *Compiler) BuildAll(ctx context.Context) error {
-	return c.apisEach(ctx, c.Build)
+	if err := c.apisEach(ctx, c.LintResources); err != nil {
+		return err
+	}
+	if err := c.apisEach(ctx, c.Build); err != nil {
+		return err
+	}
+	return c.apisEach(ctx, c.LintOutput)
 }
 
 // LintOutput applies configured linting rules to the build output.
@@ -434,9 +440,4 @@ func (c *Compiler) LintOutput(ctx context.Context, apiName string) error {
 		}
 	}
 	return nil
-}
-
-// LintOutputAll lints output of all APIs in the project.
-func (c *Compiler) LintOutputAll(ctx context.Context) error {
-	return c.apisEach(ctx, c.LintOutput)
 }

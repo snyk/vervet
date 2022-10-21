@@ -108,7 +108,7 @@ func TestCompilerSmoke(t *testing.T) {
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
 	c.Assert(err, qt.IsNil)
-	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (linter.Linter, error) {
+	compiler, err := New(ctx, proj, true, LinterFactory(func(context.Context, *config.Linter) (linter.Linter, error) {
 		return &mockLinter{}, nil
 	}))
 	c.Assert(err, qt.IsNil)
@@ -124,13 +124,6 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(restApi.overlayIncludes[0].Paths, qt.HasLen, 2)
 	c.Assert(restApi.overlayInlines[0].Servers[0].URL, qt.Contains, "https://example.com/api/rest", qt.Commentf("environment variable interpolation"))
 	c.Assert(restApi.output, qt.Not(qt.IsNil))
-
-	// LintResources stage
-	err = compiler.LintResourcesAll(ctx)
-	c.Assert(err, qt.IsNil)
-	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs, qt.HasLen, 1)
-	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs, qt.HasLen, 0)
-	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs[0], qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
 
 	// Build stage
 	err = compiler.BuildAll(ctx)
@@ -149,11 +142,10 @@ func TestCompilerSmoke(t *testing.T) {
 	_, err = ioutil.ReadFile(outputPath + "/goof")
 	c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")
 
-	// LintOutput stage
-	err = compiler.LintOutputAll(ctx)
-	c.Assert(err, qt.IsNil)
+	// Verify output linting
 	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs, qt.HasLen, 1)
 	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs, qt.HasLen, 1)
+	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs[0], qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
 	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs[0], qt.Contains, outputPath+"/2021-06-04~experimental/spec.yaml")
 	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs[0], qt.Contains, outputPath+"/2021-06-04~experimental/spec.json")
 }
@@ -173,7 +165,7 @@ func TestCompilerSmokePaths(t *testing.T) {
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
 	c.Assert(err, qt.IsNil)
-	compiler, err := New(ctx, proj, LinterFactory(func(context.Context, *config.Linter) (linter.Linter, error) {
+	compiler, err := New(ctx, proj, true, LinterFactory(func(context.Context, *config.Linter) (linter.Linter, error) {
 		return &mockLinter{}, nil
 	}))
 	c.Assert(err, qt.IsNil)
@@ -192,11 +184,9 @@ func TestCompilerSmokePaths(t *testing.T) {
 		c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")
 	}
 
-	// LintOutput stage
+	// Verify resource and compiled rules
 	// Only the first output path is linted, others are copies
-	err = compiler.LintOutputAll(ctx)
-	c.Assert(err, qt.IsNil)
-	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs, qt.HasLen, 0)
+	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs, qt.HasLen, 1)
 	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs, qt.HasLen, 1)
 	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs[0], qt.Contains, outputPaths[0]+"/2021-06-04~experimental/spec.yaml")
 	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs[0], qt.Contains, outputPaths[0]+"/2021-06-04~experimental/spec.json")
