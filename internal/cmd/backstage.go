@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 
 	"github.com/urfave/cli/v2"
 
@@ -156,7 +157,17 @@ func processCatalog(ctx *cli.Context, w io.Writer) error {
 			return true
 		}
 	}
-	for _, apiConf := range proj.APIs {
+
+	// range over maps does not specify order and is not guaranteed to be the
+	// same from one iteration to the next, stability is important when
+	// generating catalog-info to produce reproducible results
+	var apiNames []string
+	for k := range proj.APIs {
+		apiNames = append(apiNames, k)
+	}
+	sort.Strings(apiNames)
+	for _, apiName := range apiNames {
+		apiConf := proj.APIs[apiName]
 		outputPaths := apiConf.Output.ResolvePaths()
 		for _, outputPath := range outputPaths {
 			outputPath = filepath.Join(projectDir, outputPath)
