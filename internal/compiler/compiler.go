@@ -275,6 +275,9 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	}
 	log.Printf("compiling API %s to output versions", apiName)
 	var versionSpecFiles []string
+
+	specMap := make(map[vervet.Version]*openapi3.T)
+
 	for rcIndex, rc := range api.resources {
 		specVersions, err := vervet.LoadSpecVersionsFileset(rc.sourceFiles)
 		if err != nil {
@@ -292,61 +295,68 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 			} else if err != nil {
 				return buildErr(err)
 			}
-
-			// Create the directories, but only if a spec file exists for it.
-			versionDir := api.output.paths[0] + "/" + version.String()
-
-			if spec != nil {
-				err = os.MkdirAll(versionDir, 0755)
-				if err != nil {
-					return buildErr(err)
-				}
+			if specMap[version] == nil {
+				specMap[version] = &openapi3.T{}
 			}
-
-			// Merge all overlays
-			for _, doc := range api.overlayIncludes {
-				vervet.Merge(spec, doc.T, true)
-			}
-			for _, doc := range api.overlayInlines {
-				vervet.Merge(spec, doc, true)
-			}
-
-			// Write the compiled spec to JSON and YAML
-			jsonBuf, err := vervet.ToSpecJSON(spec)
-			if err != nil {
-				return buildErr(err)
-			}
-			jsonSpecPath := versionDir + "/spec.json"
-			jsonEmbedPath, err := filepath.Rel(api.output.paths[0], jsonSpecPath)
-			if err != nil {
-				return buildErr(err)
-			}
-			versionSpecFiles = append(versionSpecFiles, jsonEmbedPath)
-			err = ioutil.WriteFile(jsonSpecPath, jsonBuf, 0644)
-			if err != nil {
-				return buildErr(err)
-			}
-			log.Println(jsonSpecPath)
-			yamlBuf, err := yaml.JSONToYAML(jsonBuf)
-			if err != nil {
-				return buildErr(err)
-			}
-			yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
-			if err != nil {
-				return buildErr(err)
-			}
-			yamlSpecPath := versionDir + "/spec.yaml"
-			yamlEmbedPath, err := filepath.Rel(api.output.paths[0], yamlSpecPath)
-			if err != nil {
-				return buildErr(err)
-			}
-			versionSpecFiles = append(versionSpecFiles, yamlEmbedPath)
-			err = ioutil.WriteFile(yamlSpecPath, yamlBuf, 0644)
-			if err != nil {
-				return buildErr(err)
-			}
-			log.Println(yamlSpecPath)
+			vervet.Merge(specMap[version], spec, false)
 		}
+	}
+	for version, spec := range specMap {
+		buildErr := func(err error) error {
+			return fmt.Errorf("%w (apis.%s.resources)", err, apiName)
+		}
+
+		// Create the directories, but only if a spec file exists for it.
+		versionDir := api.output.paths[0] + "/" + version.String()
+
+		err = os.MkdirAll(versionDir, 0755)
+		if err != nil {
+			return buildErr(err)
+		}
+
+		// Merge all overlays
+		for _, doc := range api.overlayIncludes {
+			vervet.Merge(spec, doc.T, true)
+		}
+		for _, doc := range api.overlayInlines {
+			vervet.Merge(spec, doc, true)
+		}
+
+		// Write the compiled spec to JSON and YAML
+		jsonBuf, err := vervet.ToSpecJSON(spec)
+		if err != nil {
+			return buildErr(err)
+		}
+		jsonSpecPath := versionDir + "/spec.json"
+		jsonEmbedPath, err := filepath.Rel(api.output.paths[0], jsonSpecPath)
+		if err != nil {
+			return buildErr(err)
+		}
+		versionSpecFiles = append(versionSpecFiles, jsonEmbedPath)
+		err = ioutil.WriteFile(jsonSpecPath, jsonBuf, 0644)
+		if err != nil {
+			return buildErr(err)
+		}
+		log.Println(jsonSpecPath)
+		yamlBuf, err := yaml.JSONToYAML(jsonBuf)
+		if err != nil {
+			return buildErr(err)
+		}
+		yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
+		if err != nil {
+			return buildErr(err)
+		}
+		yamlSpecPath := versionDir + "/spec.yaml"
+		yamlEmbedPath, err := filepath.Rel(api.output.paths[0], yamlSpecPath)
+		if err != nil {
+			return buildErr(err)
+		}
+		versionSpecFiles = append(versionSpecFiles, yamlEmbedPath)
+		err = ioutil.WriteFile(yamlSpecPath, yamlBuf, 0644)
+		if err != nil {
+			return buildErr(err)
+		}
+		log.Println(yamlSpecPath)
 	}
 	err = c.writeEmbedGo(filepath.Base(api.output.paths[0]), api, versionSpecFiles)
 	if err != nil {
