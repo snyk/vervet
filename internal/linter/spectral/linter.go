@@ -3,7 +3,6 @@ package spectral
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,7 +42,7 @@ func New(ctx context.Context, cfg *config.SpectralLinter) (*Spectral, error) {
 	}
 
 	var rulesPath string
-	rulesFile, err := ioutil.TempFile("", "*.yaml")
+	rulesFile, err := os.CreateTemp("", "*.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp rules file: %w", err)
 	}

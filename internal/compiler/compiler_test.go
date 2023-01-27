@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -103,7 +102,7 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Create a file that should be removed prior to build
-	err = ioutil.WriteFile(outputPath+"/goof", []byte("goof"), 0777)
+	err = os.WriteFile(outputPath+"/goof", []byte("goof"), 0777)
 	c.Assert(err, qt.IsNil)
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
@@ -139,7 +138,7 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(os.IsNotExist(err), qt.IsTrue)
 
 	// Build output was cleaned up
-	_, err = ioutil.ReadFile(outputPath + "/goof")
+	_, err = os.ReadFile(outputPath + "/goof")
 	c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")
 
 	// Verify output linting
@@ -160,7 +159,7 @@ func TestCompilerSmokePaths(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Create a file that should be removed prior to build
-	err = ioutil.WriteFile(outputPaths[0]+"/goof", []byte("goof"), 0777)
+	err = os.WriteFile(outputPaths[0]+"/goof", []byte("goof"), 0777)
 	c.Assert(err, qt.IsNil)
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
@@ -180,7 +179,7 @@ func TestCompilerSmokePaths(t *testing.T) {
 		assertOutputsEqual(c, refOutputPath, outputPath)
 
 		// Build output was cleaned up
-		_, err = ioutil.ReadFile(outputPath + "/goof")
+		_, err = os.ReadFile(outputPath + "/goof")
 		c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")
 	}
 

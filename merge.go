@@ -16,9 +16,9 @@ import (
 // this also would facilitate detecting and relocating such conflicts.
 //
 // TODO(next-release):
-// - This function is suitable for overlay merging scenarios only.
-// - Component merging should be removed. Use Collator for safe component
-//   merging.
+//   - This function is suitable for overlay merging scenarios only.
+//   - Component merging should be removed. Use Collator for safe component
+//     merging.
 func Merge(dst, src *openapi3.T, replace bool) {
 	mergeComponents(dst, src, replace)
 	mergeExtensions(dst, src, replace)

@@ -1,7 +1,7 @@
 package scaffold_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -18,7 +18,7 @@ func TestScaffold(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	err = s.Organize()
 	c.Assert(err, qt.IsNil)
-	readmeTmpl, err := ioutil.ReadFile(filepath.Join(dstDir, ".vervet", "templates", "README.tmpl"))
+	readmeTmpl, err := os.ReadFile(filepath.Join(dstDir, ".vervet", "templates", "README.tmpl"))
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(readmeTmpl), qt.Equals, `
 This is a generated scaffold for version {{ .Version }}~{{ .Stability }} of the

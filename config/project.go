@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"sort"
 
 	"github.com/ghodss/yaml"
@@ -65,7 +64,7 @@ func (p *Project) validate() error {
 // Load loads a Project configuration from its YAML representation.
 func Load(r io.Reader) (*Project, error) {
 	var p Project
-	buf, err := ioutil.ReadAll(r)
+	buf, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read project configuration: %w", err)
 	}
@@ -80,7 +79,7 @@ func Load(r io.Reader) (*Project, error) {
 // LoadGenerators loads Generators from their YAML representation.
 func LoadGenerators(r io.Reader) (Generators, error) {
 	var g Generators
-	buf, err := ioutil.ReadAll(r)
+	buf, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read generators: %w", err)
 	}

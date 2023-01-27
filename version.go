@@ -254,12 +254,9 @@ func NewVersionIndex(vs VersionSlice) (vi VersionIndex) {
 		if evIndex == -1 || !vi.versions[evIndex].date.Equal(vs[i].Date) {
 			vi.versions = append(vi.versions, effectiveVersion{
 				date:        vs[i].Date,
-				stabilities: [numStabilityLevels]time.Time{},
+				stabilities: currentStabilities,
 			})
 			evIndex++
-			for stab, date := range currentStabilities {
-				vi.versions[evIndex].stabilities[stab] = date
-			}
 		}
 		vi.versions[evIndex].stabilities[vs[i].Stability] = vs[i].Date
 		currentStabilities[vs[i].Stability] = vs[i].Date

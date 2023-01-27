@@ -2,7 +2,7 @@ package handler_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -23,7 +23,7 @@ func TestHealth(t *testing.T) {
 	req := httptest.NewRequest("GET", "/", nil)
 	h.ServeHTTP(w, req)
 	c.Assert(w.Code, qt.Equals, 200)
-	contents, err := ioutil.ReadAll(w.Result().Body)
+	contents, err := io.ReadAll(w.Result().Body)
 	c.Assert(err, qt.IsNil)
 	c.Assert(contents, qt.JSONEquals, map[string]interface{}{
 		"msg":      "success",
@@ -40,7 +40,7 @@ func TestOpenapi(t *testing.T) {
 		req := httptest.NewRequest("GET", path, nil)
 		h.ServeHTTP(w, req)
 		c.Assert(w.Code, qt.Equals, 200)
-		contents, err := ioutil.ReadAll(w.Result().Body)
+		contents, err := io.ReadAll(w.Result().Body)
 		c.Assert(err, qt.IsNil)
 		c.Assert(contents, qt.JSONEquals, []string{
 			"2021-06-04~experimental",
@@ -70,7 +70,7 @@ func TestMetrics(t *testing.T) {
 	req = httptest.NewRequest("GET", "/metrics", nil)
 	h.ServeHTTP(w, req)
 	c.Assert(w.Code, qt.Equals, 200)
-	contents, err := ioutil.ReadAll(w.Result().Body)
+	contents, err := io.ReadAll(w.Result().Body)
 	c.Assert(err, qt.IsNil)
 	// Metrics captured the /openapi request above
 	c.Assert(string(contents), qt.Contains, `vu_http_response_size_bytes_count{code="200",handler="/openapi/2021-10-20~beta",method="GET",service=""} 1`)
@@ -84,7 +84,7 @@ func TestOpenapiVersion(t *testing.T) {
 	req := httptest.NewRequest("GET", "/openapi/2022-01-16~beta", nil)
 	h.ServeHTTP(w, req)
 	c.Assert(w.Code, qt.Equals, 200)
-	contents, err := ioutil.ReadAll(w.Result().Body)
+	contents, err := io.ReadAll(w.Result().Body)
 	c.Assert(err, qt.IsNil)
 	c.Assert(contents, qt.DeepEquals, []byte("got 2022-01-16~beta"))
 }
@@ -97,7 +97,7 @@ func TestOpenapiVersionNotFound(t *testing.T) {
 	req := httptest.NewRequest("GET", "/openapi/2021-01-16~beta", nil)
 	h.ServeHTTP(w, req)
 	c.Assert(w.Code, qt.Equals, 404)
-	contents, err := ioutil.ReadAll(w.Result().Body)
+	contents, err := io.ReadAll(w.Result().Body)
 	c.Assert(err, qt.IsNil)
 	c.Assert(contents, qt.DeepEquals, []byte("Version not found\n"))
 }

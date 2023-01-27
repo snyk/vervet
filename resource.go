@@ -165,13 +165,13 @@ func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 // LoadResourceVersions returns a ResourceVersions slice parsed from a
 // directory structure of resource specs. This directory will be of the form:
 //
-//     resource/
-//     +- 2021-01-01
-//        +- spec.yaml
-//     +- 2021-06-21
-//        +- spec.yaml
-//     +- 2021-07-14
-//        +- spec.yaml
+//	resource/
+//	+- 2021-01-01
+//	   +- spec.yaml
+//	+- 2021-06-21
+//	   +- spec.yaml
+//	+- 2021-07-14
+//	   +- spec.yaml
 //
 // The resource version stability level is defined by the
 // ExtSnykApiStability extension value at the top-level of the OpenAPI

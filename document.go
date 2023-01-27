@@ -3,7 +3,6 @@ package vervet
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -71,7 +70,7 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 	}
 
 	var t openapi3.T
-	contents, err := ioutil.ReadFile(specFile)
+	contents, err := os.ReadFile(specFile)
 	if err != nil {
 		return nil, err
 	}
