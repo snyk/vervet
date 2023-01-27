@@ -3,7 +3,6 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,7 +31,7 @@ func TestVersionScope(t *testing.T) {
 		c.Run(fmt.Sprintf("template prefix %q", prefix), func(c *qt.C) {
 			setup(c)
 
-			configBuf, err := ioutil.ReadFile(".vervet.yaml")
+			configBuf, err := os.ReadFile(".vervet.yaml")
 			c.Assert(err, qt.IsNil)
 			proj, err := config.Load(bytes.NewBuffer(configBuf))
 			c.Assert(err, qt.IsNil)
@@ -74,7 +73,7 @@ version-readme:
 			}, {
 				"projects", "2021-08-20",
 			}} {
-				readme, err := ioutil.ReadFile(out + "/testdata/" + test.resource + "/" + test.version + "/README")
+				readme, err := os.ReadFile(out + "/testdata/" + test.resource + "/" + test.version + "/README")
 				c.Assert(err, qt.IsNil)
 				c.Assert(string(readme), qt.Equals, ``+
 					`This is a generated scaffold for version `+test.version+"~experimental of the\n"+
@@ -92,7 +91,7 @@ func TestResourceScope(t *testing.T) {
 		c.Run(fmt.Sprintf("template prefix %q", prefix), func(c *qt.C) {
 			setup(c)
 
-			configBuf, err := ioutil.ReadFile(".vervet.yaml")
+			configBuf, err := os.ReadFile(".vervet.yaml")
 			c.Assert(err, qt.IsNil)
 			proj, err := config.Load(bytes.NewBuffer(configBuf))
 			c.Assert(err, qt.IsNil)
@@ -124,7 +123,7 @@ resource-routes:
 				out + "/testdata/projects/routes.ts",
 			})
 
-			routes, err := ioutil.ReadFile(out + "/testdata/hello-world/routes.ts")
+			routes, err := os.ReadFile(out + "/testdata/hello-world/routes.ts")
 			c.Assert(err, qt.IsNil)
 			c.Assert(string(routes), qt.Equals, `
 import { versions } from '@snyk/rest-node-libs';
@@ -158,7 +157,7 @@ export const helloWorldGetOne = versions([
 // An environment test value of bad wolf has been provided
 // for this scaffold.`[1:])
 
-			routes, err = ioutil.ReadFile(out + "/testdata/projects/routes.ts")
+			routes, err = os.ReadFile(out + "/testdata/projects/routes.ts")
 			c.Assert(err, qt.IsNil)
 			c.Assert(string(routes), qt.Equals, `
 import { versions } from '@snyk/rest-node-libs';
@@ -187,13 +186,13 @@ func TestFunctions(t *testing.T) {
 	c := qt.New(t)
 	setup(c)
 
-	configBuf, err := ioutil.ReadFile(".vervet.yaml")
+	configBuf, err := os.ReadFile(".vervet.yaml")
 	c.Assert(err, qt.IsNil)
 	proj, err := config.Load(bytes.NewBuffer(configBuf))
 	c.Assert(err, qt.IsNil)
 
 	out := c.TempDir()
-	c.Assert(ioutil.WriteFile(out+"/tsfuncs.js", []byte(`
+	c.Assert(os.WriteFile(out+"/tsfuncs.js", []byte(`
 function tsType(oasType) {
 	switch (String(oasType)) {
 	case "string":
@@ -207,7 +206,7 @@ function tsType(oasType) {
 	return "any";
 }
 `[1:]), 0666), qt.IsNil)
-	c.Assert(ioutil.WriteFile(out+"/models.ts.tmpl", []byte(`
+	c.Assert(os.WriteFile(out+"/models.ts.tmpl", []byte(`
 {{- /*
 
 	Template interfaceProperties produces the contents of an interface.
@@ -319,7 +318,7 @@ version-models:
 		out + "/testdata/projects/2021-08-20/models.ts",
 	})
 
-	jsFile, err := ioutil.ReadFile(out + "/testdata/projects/2021-06-04/models.ts")
+	jsFile, err := os.ReadFile(out + "/testdata/projects/2021-06-04/models.ts")
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(jsFile), qt.Equals, `
 export type ActualVersion = string;
@@ -421,7 +420,7 @@ func TestDryRun(t *testing.T) {
 		c.Run(fmt.Sprintf("template prefix %q", prefix), func(c *qt.C) {
 			setup(c)
 
-			configBuf, err := ioutil.ReadFile(".vervet.yaml")
+			configBuf, err := os.ReadFile(".vervet.yaml")
 			c.Assert(err, qt.IsNil)
 			proj, err := config.Load(bytes.NewBuffer(configBuf))
 			c.Assert(err, qt.IsNil)

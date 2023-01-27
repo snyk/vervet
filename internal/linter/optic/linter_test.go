@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -72,7 +71,7 @@ func TestNewLocalFile(t *testing.T) {
 	// Verify captured output was substituted. Mainly a convenience that makes
 	// output host-relevant and cmd-clickable if possible.
 	c.Assert(tempFile.Sync(), qt.IsNil)
-	capturedOutput, err := ioutil.ReadFile(tempFile.Name())
+	capturedOutput, err := os.ReadFile(tempFile.Name())
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(capturedOutput), qt.Equals, "(does not exist):here.yaml (local file):eternity.yaml\n")
 
@@ -241,7 +240,7 @@ func TestGitScript(t *testing.T) {
 	c.Assert(os.Chdir(testRepo), qt.IsNil)
 
 	// Write a CI context file to test the Optic Cloud logic
-	c.Assert(ioutil.WriteFile("ci-context.json", []byte("{}"), 0666), qt.IsNil)
+	c.Assert(os.WriteFile("ci-context.json", []byte("{}"), 0666), qt.IsNil)
 
 	// Set environment variables necessary for Optic Cloud upload to enable
 	c.Setenv("GITHUB_TOKEN", "github-token")
@@ -295,7 +294,7 @@ func assertInputJSON(c *qt.C, pattern, s string, f func(*qt.C, comparison)) {
 	c.Assert(err, qt.IsNil)
 	matches := re.FindAllStringSubmatch(s, -1)
 	s = matches[0][1]
-	contents, err := ioutil.ReadFile(s)
+	contents, err := os.ReadFile(s)
 	c.Assert(err, qt.IsNil)
 	var input bulkCompareInput
 	err = json.Unmarshal(contents, &input)
@@ -348,9 +347,9 @@ func (r *mockRunner) run(cmd *exec.Cmd) error {
 }
 
 func copyFile(c *qt.C, dst, src string) {
-	contents, err := ioutil.ReadFile(src)
+	contents, err := os.ReadFile(src)
 	c.Assert(err, qt.IsNil)
-	err = ioutil.WriteFile(dst, contents, 0644)
+	err = os.WriteFile(dst, contents, 0644)
 	c.Assert(err, qt.IsNil)
 }
 

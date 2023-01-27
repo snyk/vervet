@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -104,7 +103,7 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 	if err != nil {
 		return nil, err
 	}
-	contentsTemplate, err := ioutil.ReadAll(templateFile)
+	contentsTemplate, err := io.ReadAll(templateFile)
 	if err != nil {
 		return nil, fmt.Errorf("%w: (generators.%s.contents)", err, conf.Name)
 	}
@@ -394,7 +393,7 @@ func (g *Generator) runFiles(scope interface{}) ([]string, error) {
 		if g.dryRun {
 			continue
 		}
-		err = ioutil.WriteFile(filename, []byte(contents), 0777)
+		err = os.WriteFile(filename, []byte(contents), 0777)
 		if err != nil {
 			return nil, fmt.Errorf("failed to write file %q: %w (generators.%s.files)", filename, err, g.name)
 		}

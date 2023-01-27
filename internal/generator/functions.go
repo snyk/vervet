@@ -3,7 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"path/filepath"
 	"strings"
@@ -95,7 +95,7 @@ func (g *Generator) loadFunctions(filename string) error {
 	if err != nil {
 		return err
 	}
-	src, err := ioutil.ReadAll(functionFile)
+	src, err := io.ReadAll(functionFile)
 	if err != nil {
 		return err
 	}

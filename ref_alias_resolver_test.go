@@ -3,7 +3,7 @@ package vervet_test
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -25,7 +25,7 @@ func TestLocalize(t *testing.T) {
 	yamlBuf, err := vervet.ToSpecYAML(doc)
 	c.Assert(err, qt.IsNil)
 	tmpDir := c.TempDir()
-	err = ioutil.WriteFile(tmpDir+"/spec.yaml", yamlBuf, 0644)
+	err = os.WriteFile(tmpDir+"/spec.yaml", yamlBuf, 0644)
 	c.Assert(err, qt.IsNil)
 
 	// This will fail to load if references have not been localized!

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -462,7 +461,7 @@ func TestValidator(t *testing.T) {
 			defer resp.Body.Close()
 			c.Assert(test.response.statusCode, qt.Equals, resp.StatusCode)
 
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			c.Assert(err, qt.IsNil)
 			c.Assert(test.response.body, qt.Equals, string(body))
 		})

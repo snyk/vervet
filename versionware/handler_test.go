@@ -2,7 +2,7 @@ package versionware_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -45,7 +45,7 @@ func ExampleHandler() {
 		panic(err)
 	}
 	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		panic(err)
 	}
@@ -106,7 +106,7 @@ func TestHandler(t *testing.T) {
 			c.Assert(err, qt.IsNil)
 			defer resp.Body.Close()
 			c.Assert(resp.StatusCode, qt.Equals, test.status)
-			contents, err := ioutil.ReadAll(resp.Body)
+			contents, err := io.ReadAll(resp.Body)
 			c.Assert(err, qt.IsNil)
 			c.Assert(string(contents), qt.Equals, test.contents)
 		})

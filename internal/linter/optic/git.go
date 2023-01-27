@@ -2,7 +2,6 @@ package optic
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,7 +88,7 @@ func (g *gitRepoSource) Prefetch(root string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	tempDir, err := ioutil.TempDir("", "")
+	tempDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return "", err
 	}

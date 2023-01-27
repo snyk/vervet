@@ -1,7 +1,7 @@
 package scaffold
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -42,7 +42,7 @@ var manifestTests = []struct {
 func TestManifestValidate(t *testing.T) {
 	c := qt.New(t)
 	fakeSrc := c.TempDir()
-	c.Assert(ioutil.WriteFile(filepath.Join(fakeSrc, "foo"), []byte("foo"), 0666), qt.IsNil)
+	c.Assert(os.WriteFile(filepath.Join(fakeSrc, "foo"), []byte("foo"), 0666), qt.IsNil)
 	for _, t := range manifestTests {
 		m := &Manifest{
 			Version:  t.version,

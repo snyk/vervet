@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -322,7 +321,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 				return buildErr(err)
 			}
 			versionSpecFiles = append(versionSpecFiles, jsonEmbedPath)
-			err = ioutil.WriteFile(jsonSpecPath, jsonBuf, 0644)
+			err = os.WriteFile(jsonSpecPath, jsonBuf, 0644)
 			if err != nil {
 				return buildErr(err)
 			}
@@ -341,7 +340,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 				return buildErr(err)
 			}
 			versionSpecFiles = append(versionSpecFiles, yamlEmbedPath)
-			err = ioutil.WriteFile(yamlSpecPath, yamlBuf, 0644)
+			err = os.WriteFile(yamlSpecPath, yamlBuf, 0644)
 			if err != nil {
 				return buildErr(err)
 			}
