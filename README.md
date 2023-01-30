@@ -233,3 +233,8 @@ output:
 - Run `go generate ./testdata` to update the contents of `testdata/output`
 - Verify that the compiled output is correct
 - Commit the changes to `testdata/output` in your proposed branch
+
+## Releasing a new version
+
+A new version of `vervet` will automatically be generated for Github and `npm` when new features
+are introduced, i.e. when commits are merged that are marked with `feat:`.
