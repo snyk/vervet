@@ -1,7 +1,6 @@
 package vervet
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -74,16 +73,16 @@ func (w *includeHeaders) applyOperation(op *openapi3.Operation) error {
 	}
 	for _, respRef := range op.Responses {
 		resp := respRef.Value
-		headersRefJson := resp.ExtensionProps.Extensions[ExtSnykIncludeHeaders]
-		if headersRefJson == nil {
+		headersContents, ok := resp.Extensions[ExtSnykIncludeHeaders].(map[string]interface{})
+		if !ok {
 			continue
 		}
-		inclRef := &includeHeadersRef{Value: openapi3.Headers{}}
-		err := json.Unmarshal(headersRefJson.(json.RawMessage), &inclRef)
-		if err != nil {
-			return err
+		ref, ok := headersContents["$ref"].(string)
+		if !ok {
+			continue
 		}
-		relPath, err := w.doc.LoadReference(w.doc.RelativePath(), inclRef.Ref, &inclRef.Value)
+		val := openapi3.Headers{}
+		relPath, err := w.doc.LoadReference(w.doc.RelativePath(), ref, &val)
 		if err != nil {
 			return fmt.Errorf("failed to load reference: %w", err)
 		}
@@ -91,7 +90,7 @@ func (w *includeHeaders) applyOperation(op *openapi3.Operation) error {
 		if resp.Headers == nil {
 			resp.Headers = openapi3.Headers{}
 		}
-		for headerKey, headerRef := range inclRef.Value {
+		for headerKey, headerRef := range val {
 			if _, ok := resp.Headers[headerKey]; ok {
 				continue // Response's declared headers take precedence over includes.
 			}
@@ -101,7 +100,7 @@ func (w *includeHeaders) applyOperation(op *openapi3.Operation) error {
 			resp.Headers[headerKey] = headerRef
 		}
 		// Remove the extension once it has been processed
-		delete(resp.ExtensionProps.Extensions, ExtSnykIncludeHeaders)
+		delete(resp.Extensions, ExtSnykIncludeHeaders)
 	}
 	return nil
 }

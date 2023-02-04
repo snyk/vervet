@@ -97,7 +97,7 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		if config.ServerURL != "" {
 			docs[i].Servers = []*openapi3.Server{{URL: config.ServerURL}}
 		}
-		versionStr, err := vervet.ExtensionString(docs[i].ExtensionProps, vervet.ExtSnykApiVersion)
+		versionStr, err := vervet.ExtensionString(docs[i].Extensions, vervet.ExtSnykApiVersion)
 		if err != nil {
 			return nil, err
 		}

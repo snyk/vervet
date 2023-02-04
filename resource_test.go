@@ -92,13 +92,13 @@ func TestIsExtensionNotFound(t *testing.T) {
 	resource, err := eps.At("2021-06-04~experimental")
 	c.Assert(err, qt.IsNil)
 
-	_, err = ExtensionString(resource.ExtensionProps, ExtSnykApiVersion)
+	_, err = ExtensionString(resource.Extensions, ExtSnykApiVersion)
 	c.Assert(IsExtensionNotFound(err), qt.IsTrue)
 
-	_, err = ExtensionString(resource.ExtensionProps, "some-bogus-value")
+	_, err = ExtensionString(resource.Extensions, "some-bogus-value")
 	c.Assert(IsExtensionNotFound(err), qt.IsTrue)
 
-	_, err = ExtensionString(resource.ExtensionProps, ExtSnykApiStability)
+	_, err = ExtensionString(resource.Extensions, ExtSnykApiStability)
 	c.Assert(IsExtensionNotFound(err), qt.IsFalse)
 }
 
