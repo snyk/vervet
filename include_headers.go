@@ -62,11 +62,6 @@ func (w *includeHeaders) apply() error {
 	return nil
 }
 
-type includeHeadersRef struct {
-	Ref   string           `json:"$ref"`
-	Value openapi3.Headers `json:"-"`
-}
-
 func (w *includeHeaders) applyOperation(op *openapi3.Operation) error {
 	if op == nil {
 		return nil // nothing to do
