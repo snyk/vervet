@@ -88,50 +88,32 @@ func initDestinationComponents(dst, src *openapi3.T) {
 }
 
 func mergeComponents(dst, src *openapi3.T, replace bool) {
+	if src.Components == nil {
+		return
+	}
+
+	if dst.Components == nil {
+		dst.Components = &openapi3.Components{}
+	}
+
 	initDestinationComponents(dst, src)
-	for k, v := range src.Components.Schemas {
-		if _, ok := dst.Components.Schemas[k]; !ok || replace {
-			dst.Components.Schemas[k] = v
-		}
-	}
-	for k, v := range src.Components.Parameters {
-		if _, ok := dst.Components.Parameters[k]; !ok || replace {
-			dst.Components.Parameters[k] = v
-		}
-	}
-	for k, v := range src.Components.Headers {
-		if _, ok := dst.Components.Headers[k]; !ok || replace {
-			dst.Components.Headers[k] = v
-		}
-	}
-	for k, v := range src.Components.RequestBodies {
-		if _, ok := dst.Components.RequestBodies[k]; !ok || replace {
-			dst.Components.RequestBodies[k] = v
-		}
-	}
-	for k, v := range src.Components.Responses {
-		if _, ok := dst.Components.Responses[k]; !ok || replace {
-			dst.Components.Responses[k] = v
-		}
-	}
-	for k, v := range src.Components.SecuritySchemes {
-		if _, ok := dst.Components.SecuritySchemes[k]; !ok || replace {
-			dst.Components.SecuritySchemes[k] = v
-		}
-	}
-	for k, v := range src.Components.Examples {
-		if _, ok := dst.Components.Examples[k]; !ok || replace {
-			dst.Components.Examples[k] = v
-		}
-	}
-	for k, v := range src.Components.Links {
-		if _, ok := dst.Components.Links[k]; !ok || replace {
-			dst.Components.Links[k] = v
-		}
-	}
-	for k, v := range src.Components.Callbacks {
-		if _, ok := dst.Components.Callbacks[k]; !ok || replace {
-			dst.Components.Callbacks[k] = v
+
+	mergeMap(dst.Components.Extensions, src.Components.Extensions, replace)
+	mergeMap(dst.Components.Schemas, src.Components.Schemas, replace)
+	mergeMap(dst.Components.Parameters, src.Components.Parameters, replace)
+	mergeMap(dst.Components.Headers, src.Components.Headers, replace)
+	mergeMap(dst.Components.RequestBodies, src.Components.RequestBodies, replace)
+	mergeMap(dst.Components.Responses, src.Components.Responses, replace)
+	mergeMap(dst.Components.SecuritySchemes, src.Components.SecuritySchemes, replace)
+	mergeMap(dst.Components.Examples, src.Components.Examples, replace)
+	mergeMap(dst.Components.Links, src.Components.Links, replace)
+	mergeMap(dst.Components.Callbacks, src.Components.Callbacks, replace)
+}
+
+func mergeMap[T any](dst, src map[string]T, replace bool) {
+	for k, v := range src {
+		if _, ok := dst[k]; !ok || replace {
+			dst[k] = v
 		}
 	}
 }

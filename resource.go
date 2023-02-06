@@ -231,7 +231,7 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 			for _, opName := range operationNames {
 				op := getOperationByName(pathItem, opName)
 				if op != nil {
-					op.ExtensionProps.Extensions[ExtSnykApiVersion] = rc.Version.String()
+					op.Extensions[ExtSnykApiVersion] = rc.Version.String()
 					opKey := operationKey{path, opName}
 					opReleases[opKey] = append(opReleases[opKey], rc.Version)
 				}
@@ -256,12 +256,12 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 				// Annotate operation with other release versions available for this path
 				releases := opReleases[operationKey{path, opName}]
 				index := opIndexes[operationKey{path, opName}]
-				op.ExtensionProps.Extensions[ExtSnykApiReleases] = releases.Strings()
+				op.Extensions[ExtSnykApiReleases] = releases.Strings()
 				// Annotate operation with deprecated-by and sunset information
 				if deprecatedBy, ok := index.Deprecates(rc.Version); ok {
-					op.ExtensionProps.Extensions[ExtSnykDeprecatedBy] = deprecatedBy.String()
+					op.Extensions[ExtSnykDeprecatedBy] = deprecatedBy.String()
 					if sunset, ok := rc.Version.Sunset(deprecatedBy); ok {
-						op.ExtensionProps.Extensions[ExtSnykSunsetEligible] = sunset.Format("2006-01-02")
+						op.Extensions[ExtSnykSunsetEligible] = sunset.Format("2006-01-02")
 					}
 				}
 			}
@@ -272,11 +272,11 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 }
 
 // ExtensionString returns the string value of an OpenAPI extension.
-func ExtensionString(extProps openapi3.ExtensionProps, key string) (string, error) {
-	switch m := extProps.Extensions[key].(type) {
+func ExtensionString(extensions map[string]interface{}, key string) (string, error) {
+	switch m := extensions[key].(type) {
 	case json.RawMessage:
 		var s string
-		err := json.Unmarshal(extProps.Extensions[key].(json.RawMessage), &s)
+		err := json.Unmarshal(m, &s)
 		return s, err
 	case string:
 		return m, nil
@@ -300,7 +300,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 		return nil, fmt.Errorf("failed to load spec from %q: %w", specPath, err)
 	}
 
-	stabilityStr, err := ExtensionString(doc.T.ExtensionProps, ExtSnykApiStability)
+	stabilityStr, err := ExtensionString(doc.T.Extensions, ExtSnykApiStability)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +330,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 
 	ep := &ResourceVersion{Name: name, Document: doc, Version: version}
 	for path := range doc.T.Paths {
-		doc.T.Paths[path].ExtensionProps.Extensions[ExtSnykApiResource] = name
+		doc.T.Paths[path].Extensions[ExtSnykApiResource] = name
 	}
 	return ep, nil
 }

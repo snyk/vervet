@@ -60,8 +60,8 @@ var (
 			return s != nil &&
 				s.Type == "object" &&
 				len(s.Properties) == 0 &&
-				s.AdditionalPropertiesAllowed != nil &&
-				*s.AdditionalPropertiesAllowed
+				s.AdditionalProperties.Has != nil &&
+				*s.AdditionalProperties.Has
 		},
 		"basename": filepath.Base,
 	}

@@ -97,10 +97,10 @@ func TestSpecs(t *testing.T) {
 			continue
 		}
 		c.Assert(err, qt.IsNil)
-		_, err = ExtensionString(spec.ExtensionProps, ExtSnykApiStability)
+		_, err = ExtensionString(spec.Extensions, ExtSnykApiStability)
 		c.Assert(err, qt.ErrorMatches, `extension "x-snyk-api-stability" not found`)
 		c.Assert(IsExtensionNotFound(err), qt.IsTrue)
-		version, err := ExtensionString(spec.ExtensionProps, ExtSnykApiVersion)
+		version, err := ExtensionString(spec.Extensions, ExtSnykApiVersion)
 		c.Assert(err, qt.IsNil)
 		c.Assert(version, qt.Equals, t.match)
 		for _, expected := range t.hasVersions {
@@ -108,7 +108,7 @@ func TestSpecs(t *testing.T) {
 			c.Assert(pathItem, qt.Not(qt.IsNil))
 			op := expected.opFunc(pathItem)
 			c.Assert(op, qt.Not(qt.IsNil))
-			versionStr, err := ExtensionString(op.ExtensionProps, ExtSnykApiVersion)
+			versionStr, err := ExtensionString(op.Extensions, ExtSnykApiVersion)
 			c.Assert(err, qt.IsNil)
 			c.Assert(versionStr, qt.Equals, expected.version)
 		}

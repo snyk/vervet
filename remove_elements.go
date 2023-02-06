@@ -73,28 +73,37 @@ func (ex *excluder) Struct(v reflect.Value) error {
 	if !v.CanInterface() {
 		return nil
 	}
+
 	switch v.Interface().(type) {
-	case openapi3.ExtensionProps:
-		ex.applyExtensionProps(v.Addr().Interface().(*openapi3.ExtensionProps))
 	case openapi3.Operation:
 		ex.applyOperation(v.Addr().Interface().(*openapi3.Operation))
 	}
+
 	return nil
 }
 
 // StructField implements reflectwalk.StructWalker
 func (ex *excluder) StructField(field reflect.StructField, v reflect.Value) error {
+	if field.Name != "Extensions" || !v.CanInterface() {
+		return nil
+	}
+
+	switch v.Interface().(type) {
+	case map[string]interface{}:
+		ex.applyExtensions(v.Addr().Interface().(*map[string]interface{}))
+	}
+
 	return nil
 }
 
-func (ex *excluder) applyExtensionProps(extProps *openapi3.ExtensionProps) {
-	exts := map[string]interface{}{}
-	for k, v := range extProps.Extensions {
+func (ex *excluder) applyExtensions(extensions *map[string]interface{}) {
+	exts := make(map[string]interface{}, len(*extensions))
+	for k, v := range *extensions {
 		if !ex.isExcludedExtension(k) {
 			exts[k] = v
 		}
 	}
-	extProps.Extensions = exts
+	*extensions = exts
 }
 
 func (ex *excluder) applyOperation(op *openapi3.Operation) {
