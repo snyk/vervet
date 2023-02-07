@@ -57,8 +57,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, dstOrig.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], qt.DeepEquals, dstOrig.Components.Extensions["x-extension"])
 	})
 	c.Run("component with replace", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
@@ -93,8 +91,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], openapiCmp, src.Components.Extensions["x-extension"])
 	})
 	c.Run("component with missing sections", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
@@ -129,8 +125,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], openapiCmp, src.Components.Extensions["x-extension"])
 	})
 }
 

@@ -73,6 +73,3 @@ components:
      value: foo-natured
     Baz:
      value: bazil
-  x-extension:
-    key0: value0
-    key1: value1

@@ -98,7 +98,6 @@ func mergeComponents(dst, src *openapi3.T, replace bool) {
 
 	initDestinationComponents(dst, src)
 
-	mergeMap(dst.Components.Extensions, src.Components.Extensions, replace)
 	mergeMap(dst.Components.Schemas, src.Components.Schemas, replace)
 	mergeMap(dst.Components.Parameters, src.Components.Parameters, replace)
 	mergeMap(dst.Components.Headers, src.Components.Headers, replace)
