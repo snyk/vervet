@@ -1,6 +1,4 @@
 components:
-  x-snyk-extension-1: "extension-11"
-  x-snyk-extension-2: "extension-2"
   schemas:
     Foo:
       type: object

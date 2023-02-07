@@ -30,10 +30,6 @@ func TestMergeComponents(t *testing.T) {
 		dst := mustLoadFile(c, "merge_test_dst.yaml")
 		vervet.Merge(dst, src, false)
 
-		c.Assert(dst.Components.Extensions["x-snyk-extension-0"], openapiCmp, dstOrig.Components.Extensions["x-snyk-extension-0"])
-		c.Assert(dst.Components.Extensions["x-snyk-extension-1"], openapiCmp, dstOrig.Components.Extensions["x-snyk-extension-1"])
-		c.Assert(dst.Components.Extensions["x-snyk-extension-2"], openapiCmp, src.Components.Extensions["x-snyk-extension-2"])
-
 		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, dstOrig.Components.Schemas["Foo"])
 		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
 		c.Assert(dst.Components.Schemas["Baz"], openapiCmp, dstOrig.Components.Schemas["Baz"])
@@ -61,8 +57,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, dstOrig.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], qt.DeepEquals, dstOrig.Components.Extensions["x-extension"])
 	})
 	c.Run("component with replace", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
@@ -70,10 +64,6 @@ func TestMergeComponents(t *testing.T) {
 		dst := mustLoadFile(c, "merge_test_dst.yaml")
 		vervet.Merge(dst, src, true)
 
-		c.Assert(dst.Components.Extensions["x-snyk-extension-0"], openapiCmp, dstOrig.Components.Extensions["x-snyk-extension-0"])
-		c.Assert(dst.Components.Extensions["x-snyk-extension-1"], openapiCmp, src.Components.Extensions["x-snyk-extension-1"])
-		c.Assert(dst.Components.Extensions["x-snyk-extension-2"], openapiCmp, src.Components.Extensions["x-snyk-extension-2"])
-
 		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, src.Components.Schemas["Foo"])
 		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
 		c.Assert(dst.Components.Schemas["Baz"], openapiCmp, dstOrig.Components.Schemas["Baz"])
@@ -101,8 +91,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], openapiCmp, src.Components.Extensions["x-extension"])
 	})
 	c.Run("component with missing sections", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
@@ -110,10 +98,6 @@ func TestMergeComponents(t *testing.T) {
 		dst := mustLoadFile(c, "merge_test_dst_missing_components.yaml")
 		vervet.Merge(dst, src, true)
 
-		c.Assert(dst.Components.Extensions["x-snyk-extension-0"], openapiCmp, dstOrig.Components.Extensions["x-snyk-extension-0"])
-		c.Assert(dst.Components.Extensions["x-snyk-extension-1"], openapiCmp, src.Components.Extensions["x-snyk-extension-1"])
-		c.Assert(dst.Components.Extensions["x-snyk-extension-2"], openapiCmp, src.Components.Extensions["x-snyk-extension-2"])
-
 		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, src.Components.Schemas["Foo"])
 		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
 		c.Assert(dst.Components.Schemas["Baz"], openapiCmp, dstOrig.Components.Schemas["Baz"])
@@ -141,8 +125,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], openapiCmp, src.Components.Extensions["x-extension"])
 	})
 }
 

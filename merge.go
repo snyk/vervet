@@ -58,9 +58,6 @@ func mergeTags(dst, src *openapi3.T, replace bool) {
 }
 
 func initDestinationComponents(dst, src *openapi3.T) {
-	if src.Components.Extensions != nil && dst.Components.Extensions == nil {
-		dst.Components.Extensions = make(map[string]interface{})
-	}
 	if src.Components.Schemas != nil && dst.Components.Schemas == nil {
 		dst.Components.Schemas = make(map[string]*openapi3.SchemaRef)
 	}
@@ -101,7 +98,6 @@ func mergeComponents(dst, src *openapi3.T, replace bool) {
 
 	initDestinationComponents(dst, src)
 
-	mergeMap(dst.Components.Extensions, src.Components.Extensions, replace)
 	mergeMap(dst.Components.Schemas, src.Components.Schemas, replace)
 	mergeMap(dst.Components.Parameters, src.Components.Parameters, replace)
 	mergeMap(dst.Components.Headers, src.Components.Headers, replace)
