@@ -1,4 +1,6 @@
 components:
+  x-snyk-extension-0: "extension-0"
+  x-snyk-extension-1: "extension-1"
   schemas:
     Foo:
       type: object
@@ -73,6 +75,3 @@ components:
      value: foo-natured
     Baz:
      value: bazil
-  x-extension:
-    key0: value0
-    key1: value1

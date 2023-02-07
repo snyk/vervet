@@ -1,4 +1,6 @@
 components:
+  x-snyk-extension-1: "extension-11"
+  x-snyk-extension-2: "extension-2"
   schemas:
     Foo:
       type: object
@@ -69,6 +71,3 @@ components:
      value: foo
     Bar:
      value: bar
-  x-extension:
-    key1: value11
-    key2: value2
