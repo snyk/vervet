@@ -7,7 +7,7 @@ require (
 	github.com/getkin/kin-openapi v0.114.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/gorilla/mux v1.8.0
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/snyk/vervet/v5 v5.1.1
 )
