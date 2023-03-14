@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog/log"
 	"github.com/snyk/vervet/v4"
 	"go.uber.org/multierr"
 
@@ -120,10 +121,12 @@ func (s *Scraper) Run(ctx context.Context) error {
 			timer := prometheus.NewTimer(metrics.scrapeDuration.WithLabelValues(svc.base))
 			defer timer.ObserveDuration()
 
+			log.Debug().Str("service", svc.name).Msg("started scrape")
 			err := s.scrape(ctx, scrapeTime, svc)
 			if err != nil {
 				metrics.scrapeError.WithLabelValues(svc.base).Inc()
 			}
+			log.Debug().Str("service", svc.name).Msg("finished scrape")
 			errCh <- err
 		}()
 	}
