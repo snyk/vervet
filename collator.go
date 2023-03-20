@@ -256,7 +256,9 @@ func (c *Collator) mergePaths(rv *ResourceVersion) error {
 	var errs error
 	for k, v := range rv.T.Paths {
 		route := routeForPath(k)
+		fmt.Printf("route: %+v\n", route)
 		if _, ok := c.seenRoutes[route]; ok {
+			fmt.Println("SEEN")
 			if c.useFirstRoute {
 				continue
 			} else {
