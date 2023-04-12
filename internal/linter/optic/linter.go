@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -270,7 +269,7 @@ func (o *Optic) hasException(key, path string) (bool, error) {
 	if !ok {
 		return false, nil
 	}
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return false, err
 	}
@@ -289,7 +288,7 @@ func (o *Optic) bulkCompareScript(ctx context.Context, comparisons []comparison)
 		Comparisons: comparisons,
 	}
 	o.runner.bulkInput(input)
-	inputFile, err := ioutil.TempFile("", "*-input.json")
+	inputFile, err := os.CreateTemp("", "*-input.json")
 	if err != nil {
 		return err
 	}
@@ -404,7 +403,7 @@ func (o *Optic) bulkCompareDocker(ctx context.Context, comparisons []comparison,
 		Comparisons: comparisons,
 	}
 	o.runner.bulkInput(input)
-	inputFile, err := ioutil.TempFile("", "*-input.json")
+	inputFile, err := os.CreateTemp("", "*-input.json")
 	if err != nil {
 		return err
 	}
@@ -537,7 +536,7 @@ func (o *Optic) loadStability(path string) (string, error) {
 			return "", err
 		}
 	}
-	contents, err := ioutil.ReadFile(contentsFile)
+	contents, err := os.ReadFile(contentsFile)
 	if err != nil {
 		return "", err
 	}

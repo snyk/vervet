@@ -2,7 +2,6 @@ package scaffold
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -64,7 +63,7 @@ func New(dst, src string, options ...Option) (*Scaffold, error) {
 	}
 
 	manifestPath := filepath.Join(src, "manifest.yaml")
-	contents, err := ioutil.ReadFile(manifestPath)
+	contents, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return nil, err
 	}

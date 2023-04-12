@@ -4,7 +4,7 @@ defaults: &defaults
   resource_class: small
   working_directory: ~/vervet
   docker:
-    - image: circleci/golang:1.17-node
+    - image: cimg/go:1.19-node
 
 test_vu_defaults: &test_vu_defaults
   resource_class: medium
@@ -66,7 +66,7 @@ jobs:
 
   lint:
     docker:
-      - image: golangci/golangci-lint:v1.43.0
+      - image: golangci/golangci-lint:v1.51.0
     steps:
       - checkout
       - attach_workspace:

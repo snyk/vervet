@@ -61,7 +61,7 @@ func LoadVersions(root fs.FS) ([]*openapi3.T, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, err := ExtensionString(t.ExtensionProps, ExtSnykApiVersion); IsExtensionNotFound(err) {
+		if _, err := ExtensionString(t.Extensions, ExtSnykApiVersion); IsExtensionNotFound(err) {
 			// Not a versioned OpenAPI spec, skip it
 			continue
 		} else if err != nil {

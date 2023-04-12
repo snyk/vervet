@@ -1,11 +1,9 @@
 package vervet
 
 import (
-	"encoding/json"
 	"reflect"
 	"strings"
 
-	"github.com/getkin/kin-openapi/jsoninfo"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/mitchellh/reflectwalk"
 )
@@ -20,24 +18,26 @@ type refAliasResolver struct {
 }
 
 // newRefAliasResolver returns a new refAliasResolver.
-func newRefAliasResolver(doc *openapi3.T) (*refAliasResolver, error) {
-	refAliases := map[string]string{}
-	for refAlias, extValue := range doc.Components.ExtensionProps.Extensions {
-		contents, ok := extValue.(json.RawMessage)
+func newRefAliasResolver(doc *openapi3.T) *refAliasResolver {
+	res := &refAliasResolver{doc: doc}
+	if doc.Components == nil {
+		return res
+	}
+
+	res.refAliases = make(map[string]string, len(doc.Components.Extensions))
+
+	for refAlias, extValue := range doc.Components.Extensions {
+		contents, ok := extValue.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		dec, err := jsoninfo.NewObjectDecoder(contents)
-		if err != nil {
-			return nil, err
-		}
-		var ref openapi3.Ref
-		if err := doc.Components.ExtensionProps.DecodeWith(dec, &ref); err == nil && ref.Ref != "" {
-			refAliases["#/components/"+refAlias] = ref.Ref
+		ref, ok := contents["$ref"].(string)
+		if ok && ref != "" {
+			res.refAliases["#/components/"+refAlias] = ref
 		}
 	}
 
-	return &refAliasResolver{doc: doc, refAliases: refAliases}, nil
+	return res
 }
 
 func (l *refAliasResolver) resolveRefAlias(ref string) string {

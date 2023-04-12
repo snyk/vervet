@@ -64,9 +64,9 @@ func (s resourceVersionsSlice) at(v Version) (*openapi3.T, error) {
 	if result == nil {
 		return nil, ErrNoMatchingVersion
 	}
-	if result.ExtensionProps.Extensions == nil {
-		result.ExtensionProps.Extensions = map[string]interface{}{}
+	if result.Extensions == nil {
+		result.Extensions = map[string]interface{}{}
 	}
-	result.ExtensionProps.Extensions[ExtSnykApiLifecycle] = v.LifecycleAt(time.Time{}).String()
+	result.Extensions[ExtSnykApiLifecycle] = v.LifecycleAt(time.Time{}).String()
 	return result, nil
 }

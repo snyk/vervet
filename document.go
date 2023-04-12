@@ -3,7 +3,6 @@ package vervet
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -71,7 +70,7 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 	}
 
 	var t openapi3.T
-	contents, err := ioutil.ReadFile(specFile)
+	contents, err := os.ReadFile(specFile)
 	if err != nil {
 		return nil, err
 	}
@@ -79,11 +78,7 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 	if err != nil {
 		return nil, err
 	}
-	resolver, err := newRefAliasResolver(&t)
-	if err != nil {
-		return nil, err
-	}
-	err = resolver.resolve()
+	err = newRefAliasResolver(&t).resolve()
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +89,11 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load %q: %w", specBase, err)
 	}
+
+	if t.Components == nil {
+		t.Components = &openapi3.Components{}
+	}
+
 	return &Document{
 		T:    &t,
 		path: specFile,
@@ -194,7 +194,7 @@ func (d *Document) LoadReference(relPath, refPath string, target interface{}) (_
 
 // Version returns the version of the document.
 func (d *Document) Version() (Version, error) {
-	vs, err := ExtensionString(d.ExtensionProps, ExtSnykApiVersion)
+	vs, err := ExtensionString(d.Extensions, ExtSnykApiVersion)
 	if err != nil {
 		return Version{}, err
 	}
@@ -203,7 +203,7 @@ func (d *Document) Version() (Version, error) {
 
 // Lifecycle returns the lifecycle of the document.
 func (d *Document) Lifecycle() (Lifecycle, error) {
-	ls, err := ExtensionString(d.ExtensionProps, ExtSnykApiLifecycle)
+	ls, err := ExtensionString(d.Extensions, ExtSnykApiLifecycle)
 	if err != nil {
 		if IsExtensionNotFound(err) {
 			// If it's not marked as deprecated or sunset, assume it's released.

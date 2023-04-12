@@ -26,17 +26,18 @@ type API struct {
 // directory structure:
 //
 // +-resource
-//   |
-//   +-2021-08-01
-//   | |
-//   | +-spec.yaml
-//   | +-<implementation code, etc. can go here>
-//   |
-//   +-2021-08-15
-//   | |
-//   | +-spec.yaml
-//   | +-<implementation code, etc. can go here>
-//   ...
+//
+//	|
+//	+-2021-08-01
+//	| |
+//	| +-spec.yaml
+//	| +-<implementation code, etc. can go here>
+//	|
+//	+-2021-08-15
+//	| |
+//	| +-spec.yaml
+//	| +-<implementation code, etc. can go here>
+//	...
 //
 // Each YYYY-mm-dd directory under a resource is a version.  The spec.yaml
 // in each version is a complete OpenAPI document describing the resource

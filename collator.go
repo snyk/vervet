@@ -133,8 +133,16 @@ func (c *Collator) mergeTags(rv *ResourceVersion) error {
 }
 
 func (c *Collator) mergeComponents(rv *ResourceVersion) error {
+	if rv.Components == nil {
+		return nil
+	}
+
+	if c.result.Components == nil {
+		c.result.Components = &openapi3.Components{}
+	}
+
 	initDestinationComponents(c.result, rv.T)
-	var errs error
+
 	inliner := NewInliner()
 	for k, v := range rv.T.Components.Schemas {
 		ref := "#/components/schemas/" + k
@@ -217,19 +225,19 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 			c.componentSources[ref] = rv.path
 		}
 	}
-	if errs == nil {
-		err := inliner.Inline(rv.T)
-		if err != nil {
-			errs = multierr.Append(errs, err)
-		}
-	}
-	return errs
+	return inliner.Inline(rv.T)
 }
 
 var cmpComponents = cmp.Options{
 	// openapi3.Schema has some unexported fields which are ignored for the
 	// purposes of content comparison.
-	cmpopts.IgnoreUnexported(openapi3.Schema{}),
+	cmpopts.IgnoreUnexported(
+		openapi3.HeaderRef{},
+		openapi3.ParameterRef{},
+		openapi3.ResponseRef{},
+		openapi3.Schema{},
+		openapi3.SchemaRef{},
+	),
 	// Refs themselves can mutate during relocation, so they are excluded from
 	// content comparison.
 	cmp.FilterPath(func(p cmp.Path) bool {

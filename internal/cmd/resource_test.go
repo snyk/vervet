@@ -1,7 +1,6 @@
 package cmd_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,7 +35,7 @@ func TestResourceFiles(t *testing.T) {
 		err = cmd.Vervet.Run([]string{"vervet", "resource", "files"})
 		c.Assert(err, qt.IsNil)
 	})
-	out, err := ioutil.ReadFile(tmpFile)
+	out, err := os.ReadFile(tmpFile)
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(out), qt.Equals, `
 resources/_examples/hello-world/2021-06-01/spec.yaml
@@ -60,7 +59,7 @@ func TestResourceInfo(t *testing.T) {
 		err = cmd.Vervet.Run([]string{"vervet", "resource", "info"})
 		c.Assert(err, qt.IsNil)
 	})
-	out, err := ioutil.ReadFile(tmpFile)
+	out, err := os.ReadFile(tmpFile)
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(out), qt.Equals, `
 +----------+-------------+-------------------------+--------------------------------------+--------+-------------------+
@@ -89,7 +88,7 @@ func TestResourceInfoResource(t *testing.T) {
 		err = cmd.Vervet.Run([]string{"vervet", "resource", "info", "testdata", "projects"})
 		c.Assert(err, qt.IsNil)
 	})
-	out, err := ioutil.ReadFile(tmpFile)
+	out, err := os.ReadFile(tmpFile)
 	c.Assert(err, qt.IsNil)
 	c.Assert(string(out), qt.Equals, `
 +----------+----------+-------------------------+--------------------------------------+--------+-------------------+

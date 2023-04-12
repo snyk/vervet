@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -22,7 +21,7 @@ import (
 const (
 	v20210820 = `
 openapi: 3.0.0
-x-snyk-api-version: 2021-08-20
+x-snyk-api-version: '2021-08-20'
 info:
   title: 'Validator'
   version: '0.0.0'
@@ -91,7 +90,7 @@ components:
 `
 	v20210916 = `
 openapi: 3.0.0
-x-snyk-api-version: 2021-09-16
+x-snyk-api-version: '2021-09-16'
 info:
   title: 'Validator'
   version: '0.0.0'
@@ -462,7 +461,7 @@ func TestValidator(t *testing.T) {
 			defer resp.Body.Close()
 			c.Assert(test.response.statusCode, qt.Equals, resp.StatusCode)
 
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			c.Assert(err, qt.IsNil)
 			c.Assert(test.response.body, qt.Equals, string(body))
 		})

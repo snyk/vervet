@@ -1,7 +1,3 @@
-GOMOD=go mod
-GOBUILD=go build
-GOTEST=go test
-
 .PHONY: fmt
 fmt:
 	go fmt ./...
@@ -20,7 +16,7 @@ lint-docker:
 
 .PHONY: tidy
 tidy:
-	$(GOMOD) tidy -v
+	go build tidy -v
 
 .PHONY: test
 test:

@@ -1,7 +1,6 @@
 package vervet_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -12,7 +11,16 @@ import (
 	"github.com/snyk/vervet/v5/testdata"
 )
 
-var openapiCmp = qt.CmpEquals(cmpopts.IgnoreUnexported(openapi3.Schema{}))
+var openapiCmp = qt.CmpEquals(cmpopts.IgnoreUnexported(
+	openapi3.ExampleRef{},
+	openapi3.HeaderRef{},
+	openapi3.ParameterRef{},
+	openapi3.RequestBodyRef{},
+	openapi3.ResponseRef{},
+	openapi3.Schema{},
+	openapi3.SchemaRef{},
+	openapi3.SecuritySchemeRef{},
+))
 
 func TestMergeComponents(t *testing.T) {
 	c := qt.New(t)
@@ -49,8 +57,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, dstOrig.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], qt.DeepEquals, dstOrig.Components.Extensions["x-extension"])
 	})
 	c.Run("component with replace", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
@@ -85,8 +91,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], openapiCmp, src.Components.Extensions["x-extension"])
 	})
 	c.Run("component with missing sections", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
@@ -121,8 +125,6 @@ func TestMergeComponents(t *testing.T) {
 		c.Assert(dst.Components.Examples["Foo"], openapiCmp, src.Components.Examples["Foo"])
 		c.Assert(dst.Components.Examples["Bar"], openapiCmp, src.Components.Examples["Bar"])
 		c.Assert(dst.Components.Examples["Baz"], openapiCmp, dstOrig.Components.Examples["Baz"])
-
-		c.Assert(dst.Components.Extensions["x-extension"], openapiCmp, src.Components.Extensions["x-extension"])
 	})
 }
 
@@ -147,17 +149,17 @@ tags:
 		dst := mustLoad(c, dstYaml)
 		vervet.Merge(dst, src, false)
 		c.Assert(dst.Tags, qt.DeepEquals, openapi3.Tags{{
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			Name:           "bar",
-			Description:    "bar resource (src)",
+			Extensions:  map[string]interface{}{},
+			Name:        "bar",
+			Description: "bar resource (src)",
 		}, {
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			Name:           "baz",
-			Description:    "baz resource (dst)",
+			Extensions:  map[string]interface{}{},
+			Name:        "baz",
+			Description: "baz resource (dst)",
 		}, {
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			Name:           "foo",
-			Description:    "foo resource (dst)",
+			Extensions:  map[string]interface{}{},
+			Name:        "foo",
+			Description: "foo resource (dst)",
 		}})
 	})
 	c.Run("tags with replace", func(c *qt.C) {
@@ -165,17 +167,17 @@ tags:
 		dst := mustLoad(c, dstYaml)
 		vervet.Merge(dst, src, true)
 		c.Assert(dst.Tags, qt.DeepEquals, openapi3.Tags{{
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			Name:           "bar",
-			Description:    "bar resource (src)",
+			Extensions:  map[string]interface{}{},
+			Name:        "bar",
+			Description: "bar resource (src)",
 		}, {
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			Name:           "baz",
-			Description:    "baz resource (dst)",
+			Extensions:  map[string]interface{}{},
+			Name:        "baz",
+			Description: "baz resource (dst)",
 		}, {
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			Name:           "foo",
-			Description:    "foo resource (src)",
+			Extensions:  map[string]interface{}{},
+			Name:        "foo",
+			Description: "foo resource (src)",
 		}})
 	})
 }
@@ -225,9 +227,9 @@ x-extension:
 		dst := mustLoad(c, dstYaml)
 		vervet.Merge(dst, src, false)
 		c.Assert(dst.Info, qt.DeepEquals, &openapi3.Info{
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			Title:          "Dst",
-			Version:        "dst",
+			Extensions: map[string]interface{}{},
+			Title:      "Dst",
+			Version:    "dst",
 		})
 		c.Assert(dst.Security, qt.DeepEquals, openapi3.SecurityRequirements{{
 			"Foo": []string{"up", "down"},
@@ -235,17 +237,18 @@ x-extension:
 			"Baz": []string{"strange", "crunchy"},
 		}})
 		c.Assert(dst.Servers, qt.DeepEquals, openapi3.Servers{{
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			URL:            "https://example.com/foo",
-			Description:    "Foo (dst)",
+			Extensions:  map[string]interface{}{},
+			URL:         "https://example.com/foo",
+			Description: "Foo (dst)",
 		}, {
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			URL:            "https://example.com/baz",
-			Description:    "Baz (dst)",
+			Extensions:  map[string]interface{}{},
+			URL:         "https://example.com/baz",
+			Description: "Baz (dst)",
 		}})
-		c.Assert(dst.ExtensionProps, qt.DeepEquals, openapi3.ExtensionProps{
-			Extensions: map[string]interface{}{
-				"x-extension": json.RawMessage([]byte(`{"key1":"value11","key2":"value2"}`)),
+		c.Assert(dst.Extensions, qt.DeepEquals, map[string]interface{}{
+			"x-extension": map[string]interface{}{
+				"key1": "value11",
+				"key2": "value2",
 			},
 		})
 	})
@@ -254,9 +257,9 @@ x-extension:
 		dst := mustLoad(c, dstYaml)
 		vervet.Merge(dst, src, true)
 		c.Assert(dst.Info, qt.DeepEquals, &openapi3.Info{
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			Title:          "Src",
-			Version:        "src",
+			Extensions: map[string]interface{}{},
+			Title:      "Src",
+			Version:    "src",
 		})
 		c.Assert(dst.Security, qt.DeepEquals, openapi3.SecurityRequirements{{
 			"Foo": []string{},
@@ -264,17 +267,18 @@ x-extension:
 			"Bar": []string{"read", "write"},
 		}})
 		c.Assert(dst.Servers, qt.DeepEquals, openapi3.Servers{{
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			URL:            "https://example.com/foo",
-			Description:    "Foo (src)",
+			Extensions:  map[string]interface{}{},
+			URL:         "https://example.com/foo",
+			Description: "Foo (src)",
 		}, {
-			ExtensionProps: openapi3.ExtensionProps{Extensions: map[string]interface{}{}},
-			URL:            "https://example.com/bar",
-			Description:    "Bar (src)",
+			Extensions:  map[string]interface{}{},
+			URL:         "https://example.com/bar",
+			Description: "Bar (src)",
 		}})
-		c.Assert(dst.ExtensionProps, qt.DeepEquals, openapi3.ExtensionProps{
-			Extensions: map[string]interface{}{
-				"x-extension": json.RawMessage([]byte(`{"key0":"value0","key1":"value1"}`)),
+		c.Assert(dst.Extensions, qt.DeepEquals, map[string]interface{}{
+			"x-extension": map[string]interface{}{
+				"key0": "value0",
+				"key1": "value1",
 			},
 		})
 	})

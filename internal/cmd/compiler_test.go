@@ -2,7 +2,7 @@ package cmd_test
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -76,7 +76,7 @@ func TestBuildInclude(t *testing.T) {
 		doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + "/spec.yaml")
 		c.Assert(err, qt.IsNil)
 
-		expected, err := ioutil.ReadFile(testdata.Path("output/" + test.version + "/spec.json"))
+		expected, err := os.ReadFile(testdata.Path("output/" + test.version + "/spec.json"))
 		c.Assert(err, qt.IsNil)
 
 		// Servers will differ between the fixture output and the above, since

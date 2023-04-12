@@ -132,11 +132,11 @@ func (sv *SpecVersions) resolveOperations() error {
 			currentPathItem := doc.Paths[opKey.path]
 			if currentPathItem == nil {
 				currentPathItem = &openapi3.PathItem{
-					ExtensionProps: opValue.pathItem.ExtensionProps,
-					Description:    opValue.pathItem.Description,
-					Summary:        opValue.pathItem.Summary,
-					Servers:        opValue.pathItem.Servers,
-					Parameters:     opValue.pathItem.Parameters,
+					Extensions:  opValue.pathItem.Extensions,
+					Description: opValue.pathItem.Description,
+					Summary:     opValue.pathItem.Summary,
+					Servers:     opValue.pathItem.Servers,
+					Parameters:  opValue.pathItem.Parameters,
 				}
 				doc.Paths[opKey.path] = currentPathItem
 			}
@@ -232,10 +232,10 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 			} else if err != nil {
 				return nil, err
 			}
-			if doc.ExtensionProps.Extensions == nil {
-				doc.ExtensionProps.Extensions = map[string]interface{}{}
+			if doc.Extensions == nil {
+				doc.Extensions = map[string]interface{}{}
 			}
-			doc.ExtensionProps.Extensions[ExtSnykApiVersion] = v.String()
+			doc.Extensions[ExtSnykApiVersion] = v.String()
 			documentVersions[v] = doc
 		}
 	}

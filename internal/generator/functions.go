@@ -3,7 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"path/filepath"
 	"strings"
@@ -60,8 +60,8 @@ var (
 			return s != nil &&
 				s.Type == "object" &&
 				len(s.Properties) == 0 &&
-				s.AdditionalPropertiesAllowed != nil &&
-				*s.AdditionalPropertiesAllowed
+				s.AdditionalProperties.Has != nil &&
+				*s.AdditionalProperties.Has
 		},
 		"basename": filepath.Base,
 	}
@@ -95,7 +95,7 @@ func (g *Generator) loadFunctions(filename string) error {
 	if err != nil {
 		return err
 	}
-	src, err := ioutil.ReadAll(functionFile)
+	src, err := io.ReadAll(functionFile)
 	if err != nil {
 		return err
 	}

@@ -154,8 +154,8 @@ func TestCollator_Collate(t *testing.T) {
 	c.Assert(specs[v20220401_ga].Paths.Find("/example"), qt.IsNotNil)
 
 	// No filtering, so extensions are all present
-	c.Assert(specs[v20220401_ga].Paths["/example"].Post.ExtensionProps.Extensions["x-other-internal"], qt.Not(qt.IsNil))
-	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Responses["204"].Value.ExtensionProps.Extensions["x-internal"], qt.Not(qt.IsNil))
+	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Extensions["x-other-internal"], qt.Not(qt.IsNil))
+	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Responses["204"].Value.Extensions["x-internal"], qt.Not(qt.IsNil))
 }
 
 func TestCollator_Collate_MigratingEndpoints(t *testing.T) {
@@ -225,8 +225,8 @@ func TestCollator_Collate_ExcludePatterns(t *testing.T) {
 	_, specs, err := collator.Collate()
 	c.Assert(err, qt.IsNil)
 
-	c.Assert(specs[v20220401_ga].Paths["/example"].Post.ExtensionProps.Extensions["x-other-internal"], qt.IsNil)
-	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Responses["204"].Value.ExtensionProps.Extensions["x-internal"], qt.IsNil)
+	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Extensions["x-other-internal"], qt.IsNil)
+	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Responses["204"].Value.Extensions["x-internal"], qt.IsNil)
 }
 
 func TestCollator_Collate_Conflict(t *testing.T) {
