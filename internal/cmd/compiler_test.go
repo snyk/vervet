@@ -46,6 +46,13 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestBuildConflict(t *testing.T) {
+	c := qt.New(t)
+	dstDir := c.TempDir()
+	err := cmd.Vervet.Run([]string{"vervet", "build", testdata.Path("conflict"), dstDir})
+	c.Assert(err, qt.ErrorMatches, `failed to load spec versions: conflict: .*`)
+}
+
 func TestBuildInclude(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.TempDir()
@@ -82,11 +89,4 @@ func TestBuildInclude(t *testing.T) {
 
 		c.Assert(expected, qt.JSONEquals, doc)
 	}
-}
-
-func TestBuildConflict(t *testing.T) {
-	c := qt.New(t)
-	dstDir := c.TempDir()
-	err := cmd.Vervet.Run([]string{"vervet", "build", testdata.Path("conflict"), dstDir})
-	c.Assert(err, qt.ErrorMatches, `failed to load spec versions: conflict: .*`)
 }
