@@ -100,7 +100,7 @@ func TestBuildMergingResources(t *testing.T) {
 	doc, err := vervet.NewDocumentFile(dstDir + "/2023-03-13~experimental/spec.yaml")
 	c.Assert(err, qt.IsNil)
 
-	expected, err := ioutil.ReadFile(testdata.Path("output/2023-03-13~experimental/spec.yaml"))
+	expected, err := os.ReadFile(testdata.Path("output/2023-03-13~experimental/spec.yaml"))
 	c.Assert(err, qt.IsNil)
 
 	// Servers will differ between the fixture output and the above, since
