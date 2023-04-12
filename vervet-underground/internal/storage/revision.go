@@ -85,18 +85,22 @@ func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (Content
 }
 
 // ContentRevisions provides a deterministically ordered slice of content
-// revisions. Revisions are ordered by timestamp, newest to oldest. In the
-// unlikely event of two revisions having the same timestamp, the digest is
-// used as a tie-breaker.
+// revisions. Revisions are ordered by vervet version then timestamp, newest to
+// oldest. In the unlikely event of two revisions having the same version and
+// timestamp, the digest is used as a tie-breaker.
 type ContentRevisions []ContentRevision
 
 // Less implements sort.Interface.
 func (r ContentRevisions) Less(i, j int) bool {
-	delta := r[i].Timestamp.Sub(r[j].Timestamp)
-	if delta == 0 {
-		return r[i].Digest > r[j].Digest
+	versionDelta := r[i].Version.Date.Sub(r[j].Version.Date)
+	if versionDelta != 0 {
+		return versionDelta > 0
 	}
-	return delta > 0
+	timestampDelta := r[i].Timestamp.Sub(r[j].Timestamp)
+	if timestampDelta != 0 {
+		return timestampDelta > 0
+	}
+	return r[i].Digest > r[j].Digest
 }
 
 // Len implements sort.Interface.

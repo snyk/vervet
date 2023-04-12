@@ -75,6 +75,37 @@ paths:
           description: Get OpenAPI at version
 `
 
+const serviceCSpec = `
+openapi: 3.0.0
+info:
+  title: ServiceC API
+  version: 0.0.0
+tags:
+  - name: example
+    description: service c example
+paths:
+  /test:
+    get:
+      operation: getTest
+      summary: Test endpoint
+      responses:
+        '200':
+          x-internal: its a secret to everybody
+          description: An empty response
+  /openapi:
+    get:
+      tags:
+        - example
+      responses:
+        '200':
+          description: List OpenAPI versions
+  /openapi/{version}:
+    get:
+      responses:
+        '200':
+          description: Get OpenAPI at version
+`
+
 func TestCollator_Collate(t *testing.T) {
 	c := qt.New(t)
 
@@ -125,6 +156,45 @@ func TestCollator_Collate(t *testing.T) {
 	// No filtering, so extensions are all present
 	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Extensions["x-other-internal"], qt.Not(qt.IsNil))
 	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Responses["204"].Value.Extensions["x-internal"], qt.Not(qt.IsNil))
+}
+
+func TestCollator_Collate_MigratingEndpoints(t *testing.T) {
+	c := qt.New(t)
+
+	v20220201_exp := vervet.Version{
+		Date:      time.Date(2022, 2, 1, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityExperimental,
+	}
+	v20230314_exp := vervet.Version{
+		Date:      time.Date(2023, 3, 14, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityExperimental,
+	}
+
+	collator, err := storage.NewCollator()
+	c.Assert(err, qt.IsNil)
+	collator.Add("service-a", storage.ContentRevision{
+		Version: v20220201_exp,
+		Blob:    []byte(serviceASpec),
+	})
+	collator.Add("service-c", storage.ContentRevision{
+		Version: v20230314_exp,
+		Blob:    []byte(serviceCSpec),
+	})
+
+	versions, specs, err := collator.Collate()
+	c.Assert(err, qt.IsNil)
+	c.Assert(len(versions), qt.Equals, 2)
+	c.Assert(versions[0], qt.Equals, v20220201_exp)
+	c.Assert(versions[1], qt.Equals, v20230314_exp)
+
+	c.Assert(specs[v20220201_exp].Paths.Find("/test"), qt.IsNotNil)
+	c.Assert(specs[v20230314_exp].Paths.Find("/test"), qt.IsNotNil)
+
+	c.Assert(specs[v20220201_exp].Paths["/test"].Get.Responses["204"], qt.IsNotNil)
+	c.Assert(specs[v20220201_exp].Paths["/test"].Get.Responses["200"], qt.IsNil)
+
+	c.Assert(specs[v20230314_exp].Paths["/test"].Get.Responses["200"], qt.IsNotNil)
+	c.Assert(specs[v20230314_exp].Paths["/test"].Get.Responses["204"], qt.IsNil)
 }
 
 func TestCollator_Collate_ExcludePatterns(t *testing.T) {

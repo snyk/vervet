@@ -172,3 +172,26 @@ func TestCollatePathConflict(t *testing.T) {
 	c.Assert(err, qt.ErrorMatches, `.*conflict in #/paths /examples/hello-world/{id2}: declared in both.*`)
 	c.Assert(err, qt.ErrorMatches, `.*conflict in #/paths /examples/hello-world: declared in both.*`)
 }
+
+func TestCollateMergingResources(t *testing.T) {
+	c := qt.New(t)
+	collator := vervet.NewCollator(vervet.UseFirstRoute(true))
+
+	newService, err := vervet.LoadResourceVersions(testdata.Path("competing-specs/special_projects"))
+	c.Assert(err, qt.IsNil)
+	specV1, err := newService.At("2023-03-13~experimental")
+	c.Assert(err, qt.IsNil)
+
+	originalService, err := vervet.LoadResourceVersions(testdata.Path("competing-specs/projects"))
+	c.Assert(err, qt.IsNil)
+	specV2, err := originalService.At("2021-08-20~experimental")
+	c.Assert(err, qt.IsNil)
+
+	err = collator.Collate(specV2)
+	c.Assert(err, qt.IsNil)
+	err = collator.Collate(specV1)
+	c.Assert(err, qt.IsNil)
+
+	result := collator.Result()
+	c.Assert(result.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Responses["204"], qt.IsNotNil)
+}
