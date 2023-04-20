@@ -125,6 +125,7 @@ func (s *Scraper) Run(ctx context.Context) error {
 			err := s.scrape(ctx, scrapeTime, svc)
 			if err != nil {
 				metrics.scrapeError.WithLabelValues(svc.base).Inc()
+				log.Error().Str("service", svc.name).Err(err).Msg("error scraping service")
 			}
 			log.Debug().Str("service", svc.name).Msg("finished scrape")
 			errCh <- err
