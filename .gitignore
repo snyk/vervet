@@ -8,5 +8,6 @@
 
 **/server
 config.json
+config.local.json
 config.*.test.json
 result

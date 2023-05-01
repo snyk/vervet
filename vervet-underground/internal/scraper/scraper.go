@@ -155,6 +155,12 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 	for i := range versions {
 		// TODO: we might run this concurrently per live service pod if/when
 		// we're more k8s aware, but we won't do that yet.
+
+		// Skip if it's a legacy api using the default legacy version.
+		if isLegacyVersion(versions[i]) {
+			continue
+		}
+
 		contents, isNew, err := s.getNewVersion(ctx, svc, versions[i])
 		if err != nil {
 			return errors.WithStack(err)
@@ -273,6 +279,12 @@ func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string
 		return true, nil
 	}
 	return s.storage.HasVersion(ctx, svc.name, version, digest)
+}
+
+// isLegacyVersion is used to identify legacy APIs which should be excluded.
+func isLegacyVersion(version string) bool {
+	// This default version predates vervet's creation date.
+	return version == "2021-01-01"
 }
 
 func (s *Scraper) Versions() vervet.VersionSlice {

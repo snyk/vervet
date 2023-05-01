@@ -39,8 +39,9 @@ var (
 		},
 	}
 	animals = &testService{
-		versions: []string{"2021-10-01", "2021-10-16"},
+		versions: []string{"2021-01-01", "2021-10-01", "2021-10-16"},
 		contents: map[string]string{
+			"2021-01-01": `{"paths":{"/legacy": {}}}`,
 			"2021-10-01": `{"paths":{"/geckos": {}}}`,
 			"2021-10-16": `{"paths":{"/geckos": {}, "/puppies": {}}}`,
 		},
@@ -133,6 +134,43 @@ func TestScraper(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
 		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version.String()])
+	}
+}
+
+func TestScraperWithLegacy(t *testing.T) {
+	c := qt.New(t)
+
+	_, animalsService := setupHttpServers(c)
+	tests := []struct {
+		name, version, digest string
+	}{
+		{"animals", "2021-01-01", "sha256:XX2f9c3iySLCw54rJ/CZs+ZK6IQy7GXNY4nSOyu2QG4="},
+	}
+
+	cfg := &config.ServerConfig{
+		Services: []config.ServiceConfig{
+			{
+				Name: "animals", URL: animalsService.URL,
+			},
+		},
+	}
+	st := mem.New()
+	sc, err := scraper.New(cfg, st, scraper.Clock(func() time.Time { return t0 }))
+	c.Assert(err, qt.IsNil)
+
+	// Cancel the scrape context after a timeout so we don't hang the test
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	c.Cleanup(cancel)
+
+	// Run the scrape
+	err = sc.Run(ctx)
+	c.Assert(err, qt.IsNil)
+
+	// Legacy (default) version should not be stored
+	for _, test := range tests {
+		ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
+		c.Assert(err, qt.IsNil)
+		c.Assert(ok, qt.IsFalse)
 	}
 }
 
