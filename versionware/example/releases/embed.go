@@ -3,6 +3,7 @@ package releases
 import "embed"
 
 // Embed compiled OpenAPI specs in Go projects.
+
 // Versions contains OpenAPI specs for each distinct release version.
 //
 //go:embed 2021-11-01~experimental/spec.json

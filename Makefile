@@ -59,5 +59,6 @@ ifndef CI
 endif
 
 .PHONY: format
-format: ## Format source code based on golangci
+format: ## Format source code with gofmt and golangci-lint
+	gofmt -s -w .
 	golangci-lint run --fix -v ./...
