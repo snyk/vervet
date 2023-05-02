@@ -397,7 +397,7 @@ import "embed"
 
 {{ range .VersionSpecFiles -}}
 //go:embed {{ . }}
-{{ end -}}
+{{ end }}
 // Versions contains OpenAPI specs for each distinct release version.
 var Versions embed.FS
 `[1:]))
