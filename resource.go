@@ -65,8 +65,8 @@ type extensionNotFoundError struct {
 }
 
 // Error implements error.
-func (rv *extensionNotFoundError) Error() string {
-	return fmt.Sprintf("extension \"%s\" not found", rv.extension)
+func (e *extensionNotFoundError) Error() string {
+	return fmt.Sprintf("extension \"%s\" not found", e.extension)
 }
 
 // Is returns whether an error matches this error instance.

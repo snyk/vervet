@@ -78,8 +78,9 @@ func (s Stability) String() string {
 		return "beta"
 	case StabilityGA:
 		return "ga"
+	default:
+		panic(fmt.Sprintf("invalid stability (%d)", int(s)))
 	}
-	panic(fmt.Sprintf("invalid stability (%d)", int(s)))
 }
 
 // ParseVersion parses a version string into a Version type, returning an error
@@ -199,8 +200,9 @@ func (v Version) Sunset(vr Version) (time.Time, bool) {
 		return vr.Date.Add(SunsetBeta), true
 	case StabilityGA:
 		return vr.Date.Add(SunsetGA), true
+	default:
+		return time.Time{}, false
 	}
-	return time.Time{}, false
 }
 
 // compareDateStability returns the comparison of both the date and stability
@@ -416,8 +418,9 @@ func (l Lifecycle) String() string {
 		return "deprecated"
 	case LifecycleSunset:
 		return "sunset"
+	default:
+		panic(fmt.Sprintf("invalid lifecycle (%d)", int(l)))
 	}
-	panic(fmt.Sprintf("invalid lifecycle (%d)", int(l)))
 }
 
 func (l Lifecycle) Valid() bool {
