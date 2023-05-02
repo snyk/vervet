@@ -358,7 +358,7 @@ func (vs VersionSlice) Less(i, j int) bool {
 // Swap implements sort.Interface.
 func (vs VersionSlice) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }
 
-// Strings returns a slice of string versions
+// Strings returns a slice of string versions.
 func (vs VersionSlice) Strings() []string {
 	s := make([]string, len(vs))
 	for i := range vs {

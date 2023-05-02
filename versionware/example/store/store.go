@@ -52,7 +52,7 @@ func (s *Store) SelectThing(id string) (Thing, bool) {
 }
 
 // ListThings lists all the things.
-// TODO: search, pagination or something
+// TODO: search, pagination or something.
 func (s *Store) ListThings() ([]string, []Thing) {
 	ids := make([]string, len(s.things))
 	things := make([]Thing, len(s.things))

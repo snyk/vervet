@@ -87,7 +87,7 @@ var CLIApp = cli.App{
 // Prompt is the default interactive prompt for vervet.
 type Prompt struct{}
 
-// Confirm implements VervetPrompt.Confirm
+// Confirm implements VervetPrompt.Confirm.
 func (p Prompt) Confirm(label string) (bool, error) {
 	prompt := promptui.Prompt{
 		Label:   fmt.Sprintf("%v (y/N)?", label),
@@ -107,7 +107,7 @@ func (p Prompt) Confirm(label string) (bool, error) {
 	return (result == "y"), nil
 }
 
-// Entry implements VervetPrompt.Entry
+// Entry implements VervetPrompt.Entry.
 func (p Prompt) Entry(label string) (string, error) {
 	prompt := promptui.Prompt{
 		Label: label,
@@ -125,7 +125,7 @@ func (p Prompt) Entry(label string) (string, error) {
 	return result, nil
 }
 
-// Select implements VervetPrompt.Select
+// Select implements VervetPrompt.Select.
 func (p Prompt) Select(label string, items []string) (string, error) {
 	prompt := promptui.Select{
 		Label: label,

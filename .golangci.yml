@@ -13,6 +13,12 @@ linters-settings:
     disabled-checks:
       - singleCaseSwitch
       - ifElseChain
+  forbidigo:
+    # Forbid the following identifiers (identifiers are written using regexp):
+    forbid:
+      - ^print.*$
+      - 'fmt\.Print.*'
+      - 'ginkgo\.It\("should'
 
 linters:
   enable:
@@ -21,4 +27,9 @@ linters:
     - contextcheck
     - gci
     - gocritic
+    - goconst
+    - godot
     - gofmt
+    - goimports
+    - gocyclo
+    # - gosec - Good to have linter but requires potential breaking changes

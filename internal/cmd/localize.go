@@ -8,7 +8,7 @@ import (
 	"github.com/snyk/vervet/v5"
 )
 
-// LocalizeCommand is the `vervet localize` subcommand
+// LocalizeCommand is the `vervet localize` subcommand.
 var LocalizeCommand = cli.Command{
 	Name:      "localize",
 	Aliases:   []string{"localise"},
@@ -17,7 +17,7 @@ var LocalizeCommand = cli.Command{
 	Action:    Localize,
 }
 
-// Localize references and validate a single OpenAPI spec file
+// Localize references and validate a single OpenAPI spec file.
 func Localize(ctx *cli.Context) error {
 	if ctx.Args().Len() < 1 {
 		return fmt.Errorf("missing spec.yaml file")

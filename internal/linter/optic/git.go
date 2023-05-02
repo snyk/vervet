@@ -78,7 +78,7 @@ func (s *gitRepoSource) Match(rcConfig *config.ResourceSet) ([]string, error) {
 	return matches, nil
 }
 
-// Prefetch implements FileSource
+// Prefetch implements FileSource.
 func (g *gitRepoSource) Prefetch(root string) (string, error) {
 	tree, err := g.commit.Tree()
 	if err != nil {

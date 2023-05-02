@@ -68,7 +68,7 @@ func (ex *excluder) apply() error {
 	return reflectwalk.Walk(ex.doc, ex)
 }
 
-// Struct implements reflectwalk.StructWalker
+// Struct implements reflectwalk.StructWalker.
 func (ex *excluder) Struct(v reflect.Value) error {
 	if !v.CanInterface() {
 		return nil
@@ -82,7 +82,7 @@ func (ex *excluder) Struct(v reflect.Value) error {
 	return nil
 }
 
-// StructField implements reflectwalk.StructWalker
+// StructField implements reflectwalk.StructWalker.
 func (ex *excluder) StructField(field reflect.StructField, v reflect.Value) error {
 	if field.Name != "Extensions" || !v.CanInterface() {
 		return nil

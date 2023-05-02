@@ -31,7 +31,7 @@ func (ix *RefIndex) HasRef(ref string) bool {
 	return ok
 }
 
-// Struct implements reflectwalk.StructWalker
+// Struct implements reflectwalk.StructWalker.
 func (ix *RefIndex) Struct(v reflect.Value) error {
 	if !v.CanInterface() {
 		return nil
@@ -60,7 +60,7 @@ func (ix *RefIndex) Struct(v reflect.Value) error {
 	return nil
 }
 
-// StructField implements reflectwalk.StructWalker
+// StructField implements reflectwalk.StructWalker.
 func (*RefIndex) StructField(field reflect.StructField, v reflect.Value) error {
 	return nil
 }

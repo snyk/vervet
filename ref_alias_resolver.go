@@ -56,13 +56,13 @@ func (l *refAliasResolver) resolve() error {
 	return reflectwalk.Walk(l.doc, l)
 }
 
-// Struct implements reflectwalk.StructWalker
+// Struct implements reflectwalk.StructWalker.
 func (l *refAliasResolver) Struct(v reflect.Value) error {
 	l.curRefType, l.curRefField = v, v.FieldByName("Ref")
 	return nil
 }
 
-// StructField implements reflectwalk.StructWalker
+// StructField implements reflectwalk.StructWalker.
 func (l *refAliasResolver) StructField(sf reflect.StructField, v reflect.Value) error {
 	if !l.curRefField.IsValid() {
 		return nil

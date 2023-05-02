@@ -9,7 +9,7 @@ import (
 	"github.com/snyk/vervet/v5"
 )
 
-// FilterCommand is the `vervet filter` subcommand
+// FilterCommand is the `vervet filter` subcommand.
 var FilterCommand = cli.Command{
 	Name:      "filter",
 	Usage:     "Filter an OpenAPI document",
@@ -74,7 +74,8 @@ func Filter(ctx *cli.Context) error {
 	return nil
 }
 
-func removeOrphanedComponents(t *openapi3.T) error {
+// TODO: refactor to reduce cyclomatic complexity.
+func removeOrphanedComponents(t *openapi3.T) error { //nolint:gocyclo // acked
 	ix, err := vervet.NewRefIndex(t)
 	if err != nil {
 		return err

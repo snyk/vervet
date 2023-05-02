@@ -7,7 +7,7 @@ import (
 	"github.com/mitchellh/reflectwalk"
 )
 
-// Inliner inlines the component
+// Inliner inlines the component.
 type Inliner struct {
 	refs map[string]struct{}
 }
@@ -28,7 +28,7 @@ func (in *Inliner) Inline(doc *openapi3.T) error {
 	return reflectwalk.Walk(doc, in)
 }
 
-// Struct implements reflectwalk.StructWalker
+// Struct implements reflectwalk.StructWalker.
 func (in *Inliner) Struct(v reflect.Value) error {
 	if !v.CanInterface() {
 		return nil
@@ -119,12 +119,12 @@ func (in *Inliner) Struct(v reflect.Value) error {
 	return nil
 }
 
-// StructField implements reflectwalk.StructWalker
+// StructField implements reflectwalk.StructWalker.
 func (in *Inliner) StructField(field reflect.StructField, v reflect.Value) error {
 	return nil
 }
 
-// RefRemover removes the ref from the component
+// RefRemover removes the ref from the component.
 type RefRemover struct {
 	target interface{}
 }
@@ -142,7 +142,7 @@ func (rr *RefRemover) RemoveRef() error {
 	return reflectwalk.Walk(rr.target, rr)
 }
 
-// Struct implements reflectwalk.StructWalker
+// Struct implements reflectwalk.StructWalker.
 func (rr *RefRemover) Struct(v reflect.Value) error {
 	if !v.CanInterface() {
 		return nil
@@ -180,7 +180,7 @@ func (rr *RefRemover) Struct(v reflect.Value) error {
 	return nil
 }
 
-// StructField implements reflectwalk.StructWalker
+// StructField implements reflectwalk.StructWalker.
 func (rr *RefRemover) StructField(field reflect.StructField, v reflect.Value) error {
 	return nil
 }
