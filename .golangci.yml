@@ -49,3 +49,11 @@ linters:
     - prealloc
     - promlinter
     - stylecheck
+    - staticcheck
+    - tenv
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace

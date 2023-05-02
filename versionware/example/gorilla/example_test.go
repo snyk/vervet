@@ -68,11 +68,11 @@ func Example() {
 	thingsRouter := apiRouter.PathPrefix("/things").Subrouter()
 	thingsRouter.Handle("/{id}", versionware.NewHandler([]versionware.VersionHandler{{
 		Version: release_2021_11_01.Version,
-		Handler: http.HandlerFunc(release_2021_11_01.GetThing(s)),
+		Handler: release_2021_11_01.GetThing(s),
 	}}...)).Methods("GET")
 	thingsRouter.Handle("", versionware.NewHandler([]versionware.VersionHandler{{
 		Version: release_2021_11_01.Version,
-		Handler: http.HandlerFunc(release_2021_11_01.CreateThing(s)),
+		Handler: release_2021_11_01.CreateThing(s),
 	}}...)).Methods("POST")
 	thingsRouter.Handle("", versionware.NewHandler([]versionware.VersionHandler{{
 		Version: release_2021_11_08.Version,

@@ -133,7 +133,7 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 }
 
 func (g *Generator) resolveFilename(filenameTemplate string) (string, error) {
-	t, err := template.New("").Funcs(g.functions).Parse(string(filenameTemplate))
+	t, err := template.New("").Funcs(g.functions).Parse(filenameTemplate)
 	if err != nil {
 		return "", err
 	}

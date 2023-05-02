@@ -48,6 +48,7 @@ func TestFilterInclude(t *testing.T) {
 }
 
 func XestFilterExclude(t *testing.T) {
+	t.Helper()
 	c := qt.New(t)
 	tmpOut := c.TempDir()
 
