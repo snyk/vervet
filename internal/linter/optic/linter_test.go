@@ -43,7 +43,11 @@ func TestNewLocalFile(t *testing.T) {
 	testProject := c.TempDir()
 	versionDir := testProject + "/hello/2021-06-01"
 	c.Assert(os.MkdirAll(versionDir, 0777), qt.IsNil)
-	copyFile(c, filepath.Join(versionDir, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
+	copyFile(
+		c,
+		filepath.Join(versionDir, "spec.yaml"),
+		testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"),
+	)
 	origWd, err := os.Getwd()
 	c.Assert(err, qt.IsNil)
 	c.Cleanup(func() { c.Assert(os.Chdir(origWd), qt.IsNil) })
@@ -103,7 +107,7 @@ func TestLocalException(t *testing.T) {
 	}, {
 		file:   "hello/2021-06-01/spec.yaml",
 		hash:   "nope",
-		result: `{"comparisons":[{"to":"/to/hello/2021-06-01/spec.yaml","context":{"changeDate":"2021-10-30","changeResource":"hello","changeVersion":{"date":"2021-06-01","stability":"experimental"}}}]}`,
+		result: `{"comparisons":[{"to":"/to/hello/2021-06-01/spec.yaml","context":{"changeDate":"2021-10-30","changeResource":"hello","changeVersion":{"date":"2021-06-01","stability":"experimental"}}}]}`, //nolint:lll // acked
 	}}
 
 	for i, test := range tests {
@@ -127,7 +131,11 @@ func TestLocalException(t *testing.T) {
 			// Set up a local example project
 			versionDir := testProject + "/hello/2021-06-01"
 			c.Assert(os.MkdirAll(versionDir, 0777), qt.IsNil)
-			copyFile(c, filepath.Join(versionDir, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
+			copyFile(
+				c,
+				filepath.Join(versionDir, "spec.yaml"),
+				testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"),
+			)
 			origWd, err := os.Getwd()
 			c.Assert(err, qt.IsNil)
 			c.Cleanup(func() { c.Assert(os.Chdir(origWd), qt.IsNil) })
@@ -359,7 +367,11 @@ func setupGitRepo(c *qt.C) (string, plumbing.Hash) {
 	c.Assert(err, qt.IsNil)
 	versionDir := testRepo + "/hello/2021-06-01"
 	c.Assert(os.MkdirAll(versionDir, 0777), qt.IsNil)
-	copyFile(c, filepath.Join(versionDir, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
+	copyFile(
+		c,
+		filepath.Join(versionDir, "spec.yaml"),
+		testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"),
+	)
 	worktree, err := repo.Worktree()
 	c.Assert(err, qt.IsNil)
 	_, err = worktree.Add("hello")
@@ -372,7 +384,11 @@ func setupGitRepo(c *qt.C) (string, plumbing.Hash) {
 		},
 	})
 	c.Assert(err, qt.IsNil)
-	copyFile(c, filepath.Join(versionDir, "spec.yaml"), testdata.Path("resources/_examples/hello-world/2021-06-13/spec.yaml"))
+	copyFile(
+		c,
+		filepath.Join(versionDir, "spec.yaml"),
+		testdata.Path("resources/_examples/hello-world/2021-06-13/spec.yaml"),
+	)
 	return testRepo, commitHash
 }
 

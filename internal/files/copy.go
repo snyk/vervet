@@ -45,11 +45,10 @@ func CopyFile(dst, src string, force bool) error {
 	defer srcf.Close()
 	flags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 	if !force {
-		flags = flags | os.O_EXCL
+		flags |= os.O_EXCL
 	}
 
-	dstDir := filepath.Dir(dst)
-	if dstDir != "." {
+	if dstDir := filepath.Dir(dst); dstDir != "." {
 		err = os.MkdirAll(dstDir, 0777) // leave it to umask
 		if err != nil {
 			return err

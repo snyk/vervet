@@ -46,7 +46,7 @@ func WithGeneratedComment(yamlBuf []byte) ([]byte, error) {
 // LoadVersions loads all Vervet-compiled and versioned API specs from a
 // filesystem root and returns them.
 func LoadVersions(root fs.FS) ([]*openapi3.T, error) {
-	var versions []*openapi3.T
+	versions := []*openapi3.T{}
 	specFiles, err := fs.Glob(root, "*/spec.json")
 	if err != nil {
 		return nil, err

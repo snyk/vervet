@@ -77,14 +77,14 @@ func (e *extensionNotFoundError) Is(err error) bool {
 
 // Validate returns whether the ResourceVersion is valid. The OpenAPI
 // specification must be valid, and must declare at least one path.
-func (e *ResourceVersion) Validate(ctx context.Context) error {
+func (rv *ResourceVersion) Validate(ctx context.Context) error {
 	// Validate the OpenAPI spec
-	err := e.Document.Validate(ctx)
+	err := rv.Document.Validate(ctx)
 	if err != nil {
 		return err
 	}
 	// Resource path checks. There should be at least one path per resource.
-	if len(e.Paths) < 1 {
+	if len(rv.Paths) < 1 {
 		return fmt.Errorf("spec contains no paths")
 	}
 	return nil
@@ -116,18 +116,18 @@ type ResourceVersions struct {
 }
 
 // Name returns the resource name for a collection of resource versions.
-func (e *ResourceVersions) Name() string {
-	for i := range e.versions {
-		return e.versions[i].Name
+func (rv *ResourceVersions) Name() string {
+	for i := range rv.versions {
+		return rv.versions[i].Name
 	}
 	return ""
 }
 
 // Versions returns each Version defined for this resource.
-func (e *ResourceVersions) Versions() VersionSlice {
-	result := make(VersionSlice, len(e.versions))
+func (rv *ResourceVersions) Versions() VersionSlice {
+	result := make(VersionSlice, len(rv.versions))
 	i := 0
-	for v := range e.versions {
+	for v := range rv.versions {
 		result[i] = v
 		i++
 	}
@@ -143,7 +143,7 @@ var ErrNoMatchingVersion = fmt.Errorf("no matching version")
 // resource returned will be the latest available version with a stability
 // equal to or greater than the requested version, or ErrNoMatchingVersion if
 // no matching version is available.
-func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
+func (rv *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 	if vs == "" {
 		vs = time.Now().UTC().Format("2006-01-02")
 	}
@@ -151,15 +151,15 @@ func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid version %q: %w", vs, err)
 	}
-	resolvedVersion, err := e.index.resolveForBuild(v)
+	resolvedVersion, err := rv.index.resolveForBuild(v)
 	if err != nil {
 		return nil, err
 	}
-	rv, ok := e.versions[resolvedVersion]
+	r, ok := rv.versions[resolvedVersion]
 	if !ok {
 		return nil, ErrNoMatchingVersion
 	}
-	return rv, nil
+	return r, nil
 }
 
 // LoadResourceVersions returns a ResourceVersions slice parsed from a
@@ -177,7 +177,8 @@ func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 // ExtSnykApiStability extension value at the top-level of the OpenAPI
 // document.
 func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
-	// Handles case where there is either a spec.yml or spec.yaml file but not edge case where there are both specs for the same API
+	// Handles case where there is either a spec.yml or spec.yaml file but
+	// not edge case where there are both specs for the same API
 	// It is assumed that duplicate specs would cause an error elsewhere in vervet
 	specs, err := doublestar.FilepathGlob(epPath + "/*/spec.{yaml,yml}")
 	if err != nil {
@@ -313,7 +314,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 	}
 
 	if len(doc.Paths) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil //acked
 	}
 
 	// Expand x-snyk-include-headers extensions
@@ -323,7 +324,8 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 	}
 
 	// Localize all references, so we emit a completely self-contained OpenAPI document.
-	err = Localize(doc)
+	// TODO: get context from upstream
+	err = Localize(context.Background(), doc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}
@@ -336,7 +338,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 }
 
 // Localize rewrites all references in an OpenAPI document to local references.
-func Localize(doc *Document) error {
-	doc.InternalizeRefs(context.Background(), nil)
+func Localize(ctx context.Context, doc *Document) error {
+	doc.InternalizeRefs(ctx, nil)
 	return doc.ResolveRefs()
 }

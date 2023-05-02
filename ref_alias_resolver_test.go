@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	qt "github.com/frankban/quicktest"
 
@@ -13,10 +14,12 @@ import (
 )
 
 func TestLocalize(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
 	c := qt.New(t)
 	doc, err := vervet.NewDocumentFile(testdata.Path("resources/_examples/hello-world/2021-06-01/spec.yaml"))
 	c.Assert(err, qt.IsNil)
-	err = vervet.Localize(doc)
+	err = vervet.Localize(ctx, doc)
 	c.Assert(err, qt.IsNil)
 	err = doc.Validate(context.TODO())
 	c.Assert(err, qt.IsNil)

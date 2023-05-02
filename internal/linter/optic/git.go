@@ -42,13 +42,13 @@ func newGitRepoSource(path string, treeish string) (*gitRepoSource, error) {
 }
 
 // Name implements FileSource.
-func (s *gitRepoSource) Name() string {
-	return "commit " + s.commit.Hash.String()
+func (g *gitRepoSource) Name() string {
+	return "commit " + g.commit.Hash.String()
 }
 
 // Match implements FileSource.
-func (s *gitRepoSource) Match(rcConfig *config.ResourceSet) ([]string, error) {
-	tree, err := s.repo.TreeObject(s.commit.TreeHash)
+func (g *gitRepoSource) Match(rcConfig *config.ResourceSet) ([]string, error) {
+	tree, err := g.repo.TreeObject(g.commit.TreeHash)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (s *gitRepoSource) Match(rcConfig *config.ResourceSet) ([]string, error) {
 	return matches, nil
 }
 
-// Prefetch implements FileSource
+// Prefetch implements FileSource.
 func (g *gitRepoSource) Prefetch(root string) (string, error) {
 	tree, err := g.commit.Tree()
 	if err != nil {

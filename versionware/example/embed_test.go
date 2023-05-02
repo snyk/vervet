@@ -15,7 +15,7 @@ func TestEmbedding(t *testing.T) {
 	specs, err := vervet.LoadVersions(releases.Versions)
 	c.Assert(err, qt.IsNil)
 	c.Assert(specs, qt.HasLen, 3)
-	var versions []string
+	versions := []string{}
 	for i := range specs {
 		version, err := vervet.ExtensionString(specs[i].Extensions, vervet.ExtSnykApiVersion)
 		c.Assert(err, qt.IsNil)

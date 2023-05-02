@@ -3,12 +3,63 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
+  skip-files:
+    - versionware/example/releases/embed.go
 
 linters-settings:
   gci:
     local-prefixes: github.com/snyk/vervet
+  gocritic:
+    disabled-checks:
+      - singleCaseSwitch
+      - ifElseChain
+  forbidigo:
+    # Forbid the following identifiers (identifiers are written using regexp):
+    forbid:
+      - ^print.*$
+      - 'fmt\.Print.*'
+      - 'ginkgo\.It\("should'
+  # ST1001: Dot imports that aren’t in external test packages are discouraged.
+  stylecheck:
+    checks: [ "all", "-ST1003"]
 
 linters:
   enable:
+    - asciicheck
+    - bidichk
+    - contextcheck
+    - dogsled
+    - durationcheck
+    - errname
+    # - errorlint - Good to have linter but potential to introduce breaking changes.
+    # - exhaustive - Causes too much noise at the moment.
+    - exportloopref
     - gci
+    - gocritic
+    - goconst
+    - godot
     - gofmt
+    - goimports
+    - gocyclo
+    # - gosec - Good to have linter but potential to introduce breaking changes.
+    # - forbidigo - Good to have linter but potential to introduce breaking changes.
+    - ifshort
+    - lll
+    - misspell
+    - nakedret
+    # - nestif - Good to have linter but potential to introduce breaking changes.
+    # - nilerr - Good to have linter but potential to introduce breaking changes.
+    - nilnil
+    # - noctx - Good to have linter but potential to introduce breaking changes.
+    - nolintlint
+    - prealloc
+    - promlinter
+    - stylecheck
+    - staticcheck
+    - tenv
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace

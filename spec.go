@@ -45,7 +45,7 @@ func LoadSpecVersionsFileset(epPaths []string) (*SpecVersions, error) {
 		}
 		resourceMap[resourcePath] = append(resourceMap[resourcePath], epPaths[i])
 	}
-	var resourceNames []string
+	resourceNames := []string{}
 	for k := range resourceMap {
 		resourceNames = append(resourceNames, k)
 	}
@@ -88,7 +88,7 @@ func (sv *SpecVersions) At(v Version) (*openapi3.T, error) {
 	return doc, nil
 }
 
-func (sv *SpecVersions) resolveOperations() error {
+func (sv *SpecVersions) resolveOperations() {
 	type operationKey struct {
 		path, operation string
 	}
@@ -154,7 +154,6 @@ func (sv *SpecVersions) resolveOperations() error {
 			currentActiveOps[opKey] = nextOpValue
 		}
 	}
-	return nil
 }
 
 var operationNames = []string{
@@ -249,10 +248,7 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 		index:     NewVersionIndex(versions),
 		documents: documentVersions,
 	}
-	err := sv.resolveOperations()
-	if err != nil {
-		return nil, err
-	}
+	sv.resolveOperations()
 	return sv, nil
 }
 

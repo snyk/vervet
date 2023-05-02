@@ -81,7 +81,10 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 		case "":
 			return nil, errors.New("invalid ServerURL: missing scheme")
 		default:
-			return nil, fmt.Errorf("invalid ServerURL: unsupported scheme %q (did you forget to specify the scheme://?)", serverURL.Scheme)
+			return nil, fmt.Errorf(
+				"invalid ServerURL: unsupported scheme %q (did you forget to specify the scheme://?)",
+				serverURL.Scheme,
+			)
 		}
 	}
 	if config.VersionError == nil {

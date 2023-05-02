@@ -123,8 +123,7 @@ func (s *Scaffold) Init() error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("init script failed: %w", err)
 	}
 	return nil

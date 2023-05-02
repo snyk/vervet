@@ -21,8 +21,7 @@ const (
 // extension property.
 func IncludeHeaders(doc *Document) error {
 	w := &includeHeaders{doc: doc}
-	err := w.apply()
-	if err != nil {
+	if err := w.apply(); err != nil {
 		return err
 	}
 	return doc.ResolveRefs()

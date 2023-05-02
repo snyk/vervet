@@ -19,7 +19,7 @@ type Project struct {
 
 // APINames returns the API names in deterministic ascending order.
 func (p *Project) APINames() []string {
-	var result []string
+	result := []string{}
 	for k := range p.APIs {
 		result = append(result, k)
 	}

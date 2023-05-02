@@ -20,7 +20,15 @@ func TestFilterInclude(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		defer stdout.Close()
 		c.Patch(&os.Stdout, stdout)
-		err = cmd.Vervet.Run([]string{"vervet", "filter", "-I", "/examples/hello-world/{id}", testdata.Path("output/2021-06-01~experimental/spec.json")})
+		err = cmd.Vervet.Run(
+			[]string{
+				"vervet",
+				"filter",
+				"-I",
+				"/examples/hello-world/{id}",
+				testdata.Path("output/2021-06-01~experimental/spec.json"),
+			},
+		)
 		c.Assert(err, qt.IsNil)
 	})
 
@@ -40,6 +48,7 @@ func TestFilterInclude(t *testing.T) {
 }
 
 func XestFilterExclude(t *testing.T) {
+	t.Helper()
 	c := qt.New(t)
 	tmpOut := c.TempDir()
 
@@ -53,7 +62,15 @@ func XestFilterExclude(t *testing.T) {
 			Stderr: os.Stderr,
 			Prompt: cmd.Prompt{},
 		})
-		err = app.Run([]string{"vervet", "filter", "-X", "/examples/hello-world/{id}", testdata.Path("output/2021-06-01~experimental/spec.json")})
+		err = app.Run(
+			[]string{
+				"vervet",
+				"filter",
+				"-X",
+				"/examples/hello-world/{id}",
+				testdata.Path("output/2021-06-01~experimental/spec.json"),
+			},
+		)
 		c.Assert(err, qt.IsNil)
 	})
 

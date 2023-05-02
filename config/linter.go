@@ -88,11 +88,11 @@ type OpticCILinter struct {
 	// Debug turns on debug logging.
 	Debug bool `json:"debug,omitempty"`
 
-	// DEPRECATED: CIContext is no longer used and should be removed in the
+	// Deprecated: CIContext is no longer used and should be removed in the
 	// next major release.
 	CIContext string `json:"-"`
 
-	// DEPRECATED: UploadResults is no longer used and should be removed in the
+	// Deprecated: UploadResults is no longer used and should be removed in the
 	// next major release. Uploading optic-ci comparison results to Optic
 	// Cloud is determined by the presence of environment variables.
 	UploadResults bool `json:"-"`

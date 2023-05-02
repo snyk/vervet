@@ -78,8 +78,9 @@ func (s Stability) String() string {
 		return "beta"
 	case StabilityGA:
 		return "ga"
+	default:
+		panic(fmt.Sprintf("invalid stability (%d)", int(s)))
 	}
-	panic(fmt.Sprintf("invalid stability (%d)", int(s)))
 }
 
 // ParseVersion parses a version string into a Version type, returning an error
@@ -199,8 +200,9 @@ func (v Version) Sunset(vr Version) (time.Time, bool) {
 		return vr.Date.Add(SunsetBeta), true
 	case StabilityGA:
 		return vr.Date.Add(SunsetGA), true
+	default:
+		return time.Time{}, false
 	}
-	return time.Time{}, false
 }
 
 // compareDateStability returns the comparison of both the date and stability
@@ -314,7 +316,8 @@ func (vi *VersionIndex) resolveForBuild(query Version) (Version, error) {
 	var matchDate time.Time
 	var matchStab Stability
 	for stab := query.Stability; stab < numStabilityLevels; stab++ {
-		if stabDate := vi.versions[i].stabilities[stab]; !stabDate.IsZero() && !stabDate.Before(matchDate) && !stabDate.After(query.Date) {
+		stabDate := vi.versions[i].stabilities[stab]
+		if !stabDate.IsZero() && !stabDate.Before(matchDate) && !stabDate.After(query.Date) {
 			matchDate, matchStab = stabDate, stab
 		}
 	}
@@ -358,7 +361,7 @@ func (vs VersionSlice) Less(i, j int) bool {
 // Swap implements sort.Interface.
 func (vs VersionSlice) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }
 
-// Strings returns a slice of string versions
+// Strings returns a slice of string versions.
 func (vs VersionSlice) Strings() []string {
 	s := make([]string, len(vs))
 	for i := range vs {
@@ -415,8 +418,9 @@ func (l Lifecycle) String() string {
 		return "deprecated"
 	case LifecycleSunset:
 		return "sunset"
+	default:
+		panic(fmt.Sprintf("invalid lifecycle (%d)", int(l)))
 	}
-	panic(fmt.Sprintf("invalid lifecycle (%d)", int(l)))
 }
 
 func (l Lifecycle) Valid() bool {

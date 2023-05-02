@@ -1,3 +1,8 @@
+GO_BIN=$(shell pwd)/.bin/go
+
+SHELL:=env PATH=$(GO_BIN):$(PATH) $(SHELL)
+
+GOCI_LINT_V?=v1.51.0
 
 .PHONY: all
 all: lint test build
@@ -45,3 +50,15 @@ test-coverage:
 .PHONY: clean
 clean:
 	$(RM) vervet
+
+.PHONY: install-tools
+install-tools: 
+ifndef CI
+	mkdir -p ${GO_BIN}
+	curl -sSfL 'https://raw.githubusercontent.com/golangci/golangci-lint/${GOCI_LINT_V}/install.sh' | sh -s -- -b ${GO_BIN} ${GOCI_LINT_V}
+endif
+
+.PHONY: format
+format: ## Format source code with gofmt and golangci-lint
+	gofmt -s -w .
+	golangci-lint run --fix -v ./...

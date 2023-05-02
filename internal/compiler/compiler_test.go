@@ -121,7 +121,12 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(restApi.resources[0].sourceFiles, qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
 	c.Assert(restApi.overlayIncludes, qt.HasLen, 1)
 	c.Assert(restApi.overlayIncludes[0].Paths, qt.HasLen, 2)
-	c.Assert(restApi.overlayInlines[0].Servers[0].URL, qt.Contains, "https://example.com/api/rest", qt.Commentf("environment variable interpolation"))
+	c.Assert(
+		restApi.overlayInlines[0].Servers[0].URL,
+		qt.Contains,
+		"https://example.com/api/rest",
+		qt.Commentf("environment variable interpolation"),
+	)
 	c.Assert(restApi.output, qt.Not(qt.IsNil))
 
 	// Build stage
@@ -144,9 +149,21 @@ func TestCompilerSmoke(t *testing.T) {
 	// Verify output linting
 	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs, qt.HasLen, 1)
 	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs, qt.HasLen, 1)
-	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs[0], qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
-	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs[0], qt.Contains, outputPath+"/2021-06-04~experimental/spec.yaml")
-	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs[0], qt.Contains, outputPath+"/2021-06-04~experimental/spec.json")
+	c.Assert(
+		compiler.linters["resource-rules"].(*mockLinter).runs[0],
+		qt.Contains,
+		"testdata/resources/projects/2021-06-04/spec.yaml",
+	)
+	c.Assert(
+		compiler.linters["compiled-rules"].(*mockLinter).runs[0],
+		qt.Contains,
+		outputPath+"/2021-06-04~experimental/spec.yaml",
+	)
+	c.Assert(
+		compiler.linters["compiled-rules"].(*mockLinter).runs[0],
+		qt.Contains,
+		outputPath+"/2021-06-04~experimental/spec.json",
+	)
 }
 
 func TestCompilerSmokePaths(t *testing.T) {
@@ -187,8 +204,16 @@ func TestCompilerSmokePaths(t *testing.T) {
 	// Only the first output path is linted, others are copies
 	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs, qt.HasLen, 1)
 	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs, qt.HasLen, 1)
-	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs[0], qt.Contains, outputPaths[0]+"/2021-06-04~experimental/spec.yaml")
-	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs[0], qt.Contains, outputPaths[0]+"/2021-06-04~experimental/spec.json")
+	c.Assert(
+		compiler.linters["compiled-rules"].(*mockLinter).runs[0],
+		qt.Contains,
+		outputPaths[0]+"/2021-06-04~experimental/spec.yaml",
+	)
+	c.Assert(
+		compiler.linters["compiled-rules"].(*mockLinter).runs[0],
+		qt.Contains,
+		outputPaths[0]+"/2021-06-04~experimental/spec.json",
+	)
 }
 
 func assertOutputsEqual(c *qt.C, refDir, testDir string) {

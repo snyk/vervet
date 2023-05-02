@@ -133,7 +133,7 @@ func New(conf *config.Generator, options ...Option) (*Generator, error) {
 }
 
 func (g *Generator) resolveFilename(filenameTemplate string) (string, error) {
-	t, err := template.New("").Funcs(g.functions).Parse(string(filenameTemplate))
+	t, err := template.New("").Funcs(g.functions).Parse(filenameTemplate)
 	if err != nil {
 		return "", err
 	}
@@ -192,9 +192,9 @@ func Here(here string) Option {
 }
 
 // Filesystem sets the filesytem that the generator checks for templates.
-func Filesystem(FS fs.FS) Option {
+func Filesystem(fileSystem fs.FS) Option {
 	return func(g *Generator) {
-		g.fs = FS
+		g.fs = fileSystem
 	}
 }
 
@@ -318,7 +318,7 @@ func (g *Generator) Scope() config.GeneratorScope {
 // execute the Generator. If generated artifacts already exist, a warning
 // is logged but the file is not overwritten, unless force is true.
 //
-// TODO: in Go 1.18, declare scope as an interface{ VersionScope | ResourceScope }
+// TODO: in Go 1.18, declare scope as an interface{ VersionScope | ResourceScope }.
 func (g *Generator) execute(scope interface{}) ([]string, error) {
 	if g.files != nil {
 		return g.runFiles(scope)
@@ -378,7 +378,7 @@ func (g *Generator) runFiles(scope interface{}) ([]string, error) {
 		// TODO: dump output for debugging?
 		return nil, fmt.Errorf("failed to load output as yaml: %w: (generators.%s.files)", err, g.name)
 	}
-	var generatedFiles []string
+	generatedFiles := []string{}
 	for filename, contents := range files {
 		generatedFiles = append(generatedFiles, filename)
 		dir := filepath.Dir(filename)

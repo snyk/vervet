@@ -53,7 +53,7 @@ func Example() {
 	// Load OpenAPI specs for all released API versions.
 	specs, err := vervet.LoadVersions(releases.Versions)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) //nolint:gocritic //acked
 	}
 
 	// Add request and response validation middleware to the API router
@@ -76,7 +76,7 @@ func Example() {
 	thingsRouter := chi.NewRouter()
 	thingsRouter.Get("/{id}", versionware.NewHandler([]versionware.VersionHandler{{
 		Version: release_2021_11_01.Version,
-		Handler: http.HandlerFunc(release_2021_11_01.GetThing(s)),
+		Handler: release_2021_11_01.GetThing(s),
 	}}...).ServeHTTP)
 	thingsRouter.Get("/", versionware.NewHandler([]versionware.VersionHandler{{
 		Version: release_2021_11_08.Version,
@@ -84,7 +84,7 @@ func Example() {
 	}}...).ServeHTTP)
 	thingsRouter.Post("/", versionware.NewHandler([]versionware.VersionHandler{{
 		Version: release_2021_11_01.Version,
-		Handler: http.HandlerFunc(release_2021_11_01.CreateThing(s)),
+		Handler: release_2021_11_01.CreateThing(s),
 	}}...).ServeHTTP)
 	thingsRouter.Delete("/{id}", versionware.NewHandler([]versionware.VersionHandler{{
 		Version: release_2021_11_20.Version,

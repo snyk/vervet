@@ -64,7 +64,7 @@ func markTestFile(filename string) error {
 // markInFile checks if the filemark is present, determining if the file has been
 // overwritten.
 func markInFile(filename string) (bool, error) {
-	content, err := os.ReadFile(vervetConfigFile)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return false, err
 	}

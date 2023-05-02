@@ -39,7 +39,7 @@ var ResourceCommand = cli.Command{
 }
 
 // ResourceShow is a command that lists all the versions of matching resources.
-// It takes optional arguments to filter the output: api resource
+// It takes optional arguments to filter the output: api resource.
 func ResourceShow(ctx *cli.Context) error {
 	projectDir, configFile, err := projectConfig(ctx)
 	if err != nil {
@@ -114,7 +114,7 @@ func ResourceShow(ctx *cli.Context) error {
 
 // ResourceFiles is a command that lists all versioned OpenAPI spec files of
 // matching resources.
-// It takes optional arguments to filter the output: api resource
+// It takes optional arguments to filter the output: api resource.
 func ResourceFiles(ctx *cli.Context) error {
 	projectDir, configFile, err := projectConfig(ctx)
 	if err != nil {
