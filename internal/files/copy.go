@@ -48,8 +48,7 @@ func CopyFile(dst, src string, force bool) error {
 		flags |= os.O_EXCL
 	}
 
-	dstDir := filepath.Dir(dst)
-	if dstDir != "." {
+	if dstDir := filepath.Dir(dst); dstDir != "." {
 		err = os.MkdirAll(dstDir, 0777) // leave it to umask
 		if err != nil {
 			return err
