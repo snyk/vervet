@@ -192,9 +192,9 @@ func Here(here string) Option {
 }
 
 // Filesystem sets the filesytem that the generator checks for templates.
-func Filesystem(FS fs.FS) Option {
+func Filesystem(fileSystem fs.FS) Option {
 	return func(g *Generator) {
-		g.fs = FS
+		g.fs = fileSystem
 	}
 }
 

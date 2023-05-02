@@ -45,7 +45,7 @@ func CopyFile(dst, src string, force bool) error {
 	defer srcf.Close()
 	flags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 	if !force {
-		flags = flags | os.O_EXCL
+		flags |= os.O_EXCL
 	}
 
 	dstDir := filepath.Dir(dst)

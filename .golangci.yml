@@ -9,6 +9,10 @@ run:
 linters-settings:
   gci:
     local-prefixes: github.com/snyk/vervet
+  gocritic:
+    disabled-checks:
+      - singleCaseSwitch
+      - ifElseChain
 
 linters:
   enable:
@@ -16,4 +20,5 @@ linters:
     - bidichk
     - contextcheck
     - gci
+    - gocritic
     - gofmt

@@ -53,7 +53,7 @@ func Example() {
 	// Load OpenAPI specs for all released API versions.
 	specs, err := vervet.LoadVersions(releases.Versions)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) //nolint:gocritic //acked
 	}
 
 	// Add request and response validation middleware to the API router
