@@ -12,5 +12,8 @@ linters-settings:
 
 linters:
   enable:
+    - asciicheck
+    - bidichk
+    - contextcheck
     - gci
     - gofmt

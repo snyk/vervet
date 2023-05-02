@@ -323,7 +323,8 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 	}
 
 	// Localize all references, so we emit a completely self-contained OpenAPI document.
-	err = Localize(doc)
+	// TODO: get context from upstream
+	err = Localize(context.Background(), doc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to localize refs: %w", err)
 	}
@@ -336,7 +337,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 }
 
 // Localize rewrites all references in an OpenAPI document to local references.
-func Localize(doc *Document) error {
-	doc.InternalizeRefs(context.Background(), nil)
+func Localize(ctx context.Context, doc *Document) error {
+	doc.InternalizeRefs(ctx, nil)
 	return doc.ResolveRefs()
 }

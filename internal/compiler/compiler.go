@@ -142,7 +142,7 @@ func New(ctx context.Context, proj *config.Project, lint bool, options ...Compil
 					return nil, fmt.Errorf("failed to load overlay %q: %w (apis.%s.overlays[%d])",
 						overlayConfig.Include, err, apiName, overlayIndex)
 				}
-				err = vervet.Localize(doc)
+				err = vervet.Localize(ctx, doc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to localize references in %q: %w (apis.%s.overlays[%d]",
 						overlayConfig.Include, err, apiName, overlayIndex)
@@ -275,7 +275,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	log.Printf("compiling API %s to output versions", apiName)
 	var versionSpecFiles []string
 	for rcIndex, rc := range api.resources {
-		specVersions, err := vervet.LoadSpecVersionsFileset(rc.sourceFiles)
+		specVersions, err := vervet.LoadSpecVersionsFileset(rc.sourceFiles) //nolint:contextcheck //acked
 		if err != nil {
 			return fmt.Errorf("failed to load spec versions: %+v (apis.%s.resources[%d])",
 				err, apiName, rcIndex)

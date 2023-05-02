@@ -36,7 +36,7 @@ func Filter(ctx *cli.Context) error {
 	}
 
 	// Localize all references, so we emit a completely self-contained OpenAPI document.
-	err = vervet.Localize(doc)
+	err = vervet.Localize(ctx.Context, doc)
 	if err != nil {
 		return fmt.Errorf("failed to localize refs: %w", err)
 	}
