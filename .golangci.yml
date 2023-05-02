@@ -47,3 +47,5 @@ linters:
     # - noctx - Good to have linter but potential to introduce breaking changes.
     - nolintlint
     - prealloc
+    - promlinter
+    - stylecheck

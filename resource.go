@@ -65,26 +65,32 @@ type extensionNotFoundError struct {
 }
 
 // Error implements error.
-func (e *extensionNotFoundError) Error() string {
-	return fmt.Sprintf("extension \"%s\" not found", e.extension)
+func (rv *extensionNotFoundError) Error() string {
+	return fmt.Sprintf("extension \"%s\" not found", rv.extension)
 }
 
 // Is returns whether an error matches this error instance.
+<<<<<<< HEAD
 func (e *extensionNotFoundError) Is(err error) bool {
 	_, ok := err.(*extensionNotFoundError)
 	return ok
+=======
+func (rv *extensionNotFoundError) Is(err error) bool {
+	notFoundErr := &extensionNotFoundError{}
+	return errors.As(err, &notFoundErr)
+>>>>>>> d0cbf26 (chore: add promlinter and stylecheck)
 }
 
 // Validate returns whether the ResourceVersion is valid. The OpenAPI
 // specification must be valid, and must declare at least one path.
-func (e *ResourceVersion) Validate(ctx context.Context) error {
+func (rv *ResourceVersion) Validate(ctx context.Context) error {
 	// Validate the OpenAPI spec
-	err := e.Document.Validate(ctx)
+	err := rv.Document.Validate(ctx)
 	if err != nil {
 		return err
 	}
 	// Resource path checks. There should be at least one path per resource.
-	if len(e.Paths) < 1 {
+	if len(rv.Paths) < 1 {
 		return fmt.Errorf("spec contains no paths")
 	}
 	return nil
@@ -116,18 +122,18 @@ type ResourceVersions struct {
 }
 
 // Name returns the resource name for a collection of resource versions.
-func (e *ResourceVersions) Name() string {
-	for i := range e.versions {
-		return e.versions[i].Name
+func (rv *ResourceVersions) Name() string {
+	for i := range rv.versions {
+		return rv.versions[i].Name
 	}
 	return ""
 }
 
 // Versions returns each Version defined for this resource.
-func (e *ResourceVersions) Versions() VersionSlice {
-	result := make(VersionSlice, len(e.versions))
+func (rv *ResourceVersions) Versions() VersionSlice {
+	result := make(VersionSlice, len(rv.versions))
 	i := 0
-	for v := range e.versions {
+	for v := range rv.versions {
 		result[i] = v
 		i++
 	}
@@ -143,7 +149,7 @@ var ErrNoMatchingVersion = fmt.Errorf("no matching version")
 // resource returned will be the latest available version with a stability
 // equal to or greater than the requested version, or ErrNoMatchingVersion if
 // no matching version is available.
-func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
+func (rv *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 	if vs == "" {
 		vs = time.Now().UTC().Format("2006-01-02")
 	}
@@ -151,15 +157,15 @@ func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid version %q: %w", vs, err)
 	}
-	resolvedVersion, err := e.index.resolveForBuild(v)
+	resolvedVersion, err := rv.index.resolveForBuild(v)
 	if err != nil {
 		return nil, err
 	}
-	rv, ok := e.versions[resolvedVersion]
+	r, ok := rv.versions[resolvedVersion]
 	if !ok {
 		return nil, ErrNoMatchingVersion
 	}
-	return rv, nil
+	return r, nil
 }
 
 // LoadResourceVersions returns a ResourceVersions slice parsed from a
