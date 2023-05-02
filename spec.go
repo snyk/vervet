@@ -249,8 +249,7 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 		index:     NewVersionIndex(versions),
 		documents: documentVersions,
 	}
-	err := sv.resolveOperations()
-	if err != nil {
+	if err := sv.resolveOperations(); err != nil {
 		return nil, err
 	}
 	return sv, nil

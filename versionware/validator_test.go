@@ -494,7 +494,11 @@ func TestValidatorConfig(t *testing.T) {
 
 	// Invalid server URL
 	_, err = versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "localhost:8080"}, docs...)
-	c.Assert(err, qt.ErrorMatches, `invalid ServerURL: unsupported scheme "localhost" \(did you forget to specify the scheme://\?\)`)
+	c.Assert(
+		err,
+		qt.ErrorMatches,
+		`invalid ServerURL: unsupported scheme "localhost" \(did you forget to specify the scheme://\?\)`,
+	)
 
 	// Valid
 	_, err = versionware.NewValidator(&versionware.ValidatorConfig{ServerURL: "http://localhost:8080"}, docs...)

@@ -56,7 +56,16 @@ func TestBuildConflict(t *testing.T) {
 func TestBuildInclude(t *testing.T) {
 	c := qt.New(t)
 	dstDir := c.TempDir()
-	err := cmd.Vervet.Run([]string{"vervet", "build", "-I", testdata.Path("resources/include.yaml"), testdata.Path("resources"), dstDir})
+	err := cmd.Vervet.Run(
+		[]string{
+			"vervet",
+			"build",
+			"-I",
+			testdata.Path("resources/include.yaml"),
+			testdata.Path("resources"),
+			dstDir,
+		},
+	)
 	c.Assert(err, qt.IsNil)
 
 	tests := []struct {

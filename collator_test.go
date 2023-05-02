@@ -21,6 +21,7 @@ func TestRefRemover(t *testing.T) {
 	err = in.RemoveRef()
 	c.Assert(err, qt.IsNil)
 	c.Assert(err, qt.IsNil)
+	//nolint:lll // acked
 	c.Assert("{\"additionalProperties\":false,\"example\":{\"errors\":[{\"detail\":\"Permission denied for this "+
 		"resource\",\"status\":\"403\"}],\"jsonapi\":{\"version\":\"1.0\"}},\"properties\":{\"errors\":{\"example\":"+
 		"[{\"detail\":\"Permission denied for this resource\",\"status\":\"403\"}],\"items\":{\"additionalProperties\""+
@@ -60,8 +61,24 @@ func TestCollator(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	result := collator.Result()
-	c.Assert(result.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Content["application/vnd.api+json"].Schema.Value.Properties["jsonapi"].Ref, qt.Equals, "#/components/schemas/JsonApi")
-	schemaRef := result.Paths["/examples/hello-world/{id}"].Get.Responses["200"].Value.Content["application/vnd.api+json"].Schema.Value.Properties["jsonapi"]
+	c.Assert(
+		result.Paths["/orgs/{orgId}/projects"].
+			Get.Responses["200"].
+			Value.
+			Content["application/vnd.api+json"].
+			Schema.Value.Properties["jsonapi"].Ref,
+		qt.Equals,
+		"#/components/schemas/JsonApi",
+	)
+	schemaRef := result.
+		Paths["/examples/hello-world/{id}"].
+		Get.
+		Responses["200"].
+		Value.
+		Content["application/vnd.api+json"].
+		Schema.
+		Value.
+		Properties["jsonapi"]
 	c.Assert(schemaRef.Ref, qt.Equals, "")
 	c.Assert("{\"additionalProperties\":false,\"example\":{\"version\":\"1.0\"},\"properties\":{\"version\":"+
 		"{\"description\":\"Version of the JSON API specification this server supports.\",\"example\":\"1.0\","+
@@ -73,6 +90,7 @@ func TestCollator(t *testing.T) {
 	c.Assert(projectParameterRef.Ref, qt.Equals, "#/components/parameters/Version")
 	exampleParameterRef := result.Paths["/examples/hello-world/{id}"].Get.Parameters[0]
 	c.Assert(exampleParameterRef.Ref, qt.Equals, "")
+	//nolint:lll // acked
 	c.Assert("{\"description\":\"The requested version of the endpoint to process the request\",\"example\""+
 		":\"2021-06-04\",\"in\":\"query\",\"name\":\"version\",\"required\":true,\"schema\":{\"description\":"+
 		"\"Requested API version\",\"pattern\":\"^(wip|work-in-progress|experimental|beta|((([0-9]{4})-([0-1][0-9]))"+

@@ -110,7 +110,10 @@ func (c *Collator) mergeTags(rv *ResourceVersion) error {
 	for _, t := range rv.T.Tags {
 		if current, ok := m[t.Name]; ok && !tagsEqual(current, t) && c.strictTags {
 			// If there is a conflict and we're collating with strict tags, indicate an error.
-			errs = multierr.Append(errs, fmt.Errorf("conflict in #/tags %s: %s and %s differ", t.Name, rv.path, c.tagSources[t.Name]))
+			errs = multierr.Append(
+				errs,
+				fmt.Errorf("conflict in #/tags %s: %s and %s differ", t.Name, rv.path, c.tagSources[t.Name]),
+			)
 		} else {
 			// Otherwise last tag with this key wins.
 			m[t.Name] = t
@@ -268,7 +271,10 @@ func (c *Collator) mergePaths(rv *ResourceVersion) error {
 			if c.useFirstRoute {
 				continue
 			} else {
-				errs = multierr.Append(errs, fmt.Errorf("conflict in #/paths %s: declared in both %s and %s", k, rv.path, c.pathSources[k]))
+				errs = multierr.Append(
+					errs,
+					fmt.Errorf("conflict in #/paths %s: declared in both %s and %s", k, rv.path, c.pathSources[k]),
+				)
 			}
 		} else {
 			c.seenRoutes[route] = struct{}{}

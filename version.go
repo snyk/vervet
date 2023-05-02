@@ -314,7 +314,8 @@ func (vi *VersionIndex) resolveForBuild(query Version) (Version, error) {
 	var matchDate time.Time
 	var matchStab Stability
 	for stab := query.Stability; stab < numStabilityLevels; stab++ {
-		if stabDate := vi.versions[i].stabilities[stab]; !stabDate.IsZero() && !stabDate.Before(matchDate) && !stabDate.After(query.Date) {
+		stabDate := vi.versions[i].stabilities[stab]
+		if !stabDate.IsZero() && !stabDate.Before(matchDate) && !stabDate.After(query.Date) {
 			matchDate, matchStab = stabDate, stab
 		}
 	}

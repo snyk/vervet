@@ -177,7 +177,8 @@ func (e *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 // ExtSnykApiStability extension value at the top-level of the OpenAPI
 // document.
 func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
-	// Handles case where there is either a spec.yml or spec.yaml file but not edge case where there are both specs for the same API
+	// Handles case where there is either a spec.yml or spec.yaml file but
+	// not edge case where there are both specs for the same API
 	// It is assumed that duplicate specs would cause an error elsewhere in vervet
 	specs, err := doublestar.FilepathGlob(epPath + "/*/spec.{yaml,yml}")
 	if err != nil {

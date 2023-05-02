@@ -32,4 +32,7 @@ linters:
     - gofmt
     - goimports
     - gocyclo
-    # - gosec - Good to have linter but requires potential breaking changes
+    # - gosec - Good to have linter but potential to introduce breaking changes.
+    # - forbidigo - Good to have linter but potential to introduce breaking changes.
+    - ifshort
+    - lll
