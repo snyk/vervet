@@ -70,15 +70,9 @@ func (rv *extensionNotFoundError) Error() string {
 }
 
 // Is returns whether an error matches this error instance.
-<<<<<<< HEAD
 func (e *extensionNotFoundError) Is(err error) bool {
 	_, ok := err.(*extensionNotFoundError)
 	return ok
-=======
-func (rv *extensionNotFoundError) Is(err error) bool {
-	notFoundErr := &extensionNotFoundError{}
-	return errors.As(err, &notFoundErr)
->>>>>>> d0cbf26 (chore: add promlinter and stylecheck)
 }
 
 // Validate returns whether the ResourceVersion is valid. The OpenAPI
