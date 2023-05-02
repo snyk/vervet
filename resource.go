@@ -314,7 +314,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 	}
 
 	if len(doc.Paths) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil //acked
 	}
 
 	// Expand x-snyk-include-headers extensions

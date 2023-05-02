@@ -47,7 +47,7 @@ func mergeTags(dst, src *openapi3.T, replace bool) {
 		}
 	}
 	dst.Tags = openapi3.Tags{}
-	var tagNames []string
+	tagNames := []string{}
 	for tagName := range m {
 		tagNames = append(tagNames, tagName)
 	}

@@ -378,7 +378,7 @@ func (g *Generator) runFiles(scope interface{}) ([]string, error) {
 		// TODO: dump output for debugging?
 		return nil, fmt.Errorf("failed to load output as yaml: %w: (generators.%s.files)", err, g.name)
 	}
-	var generatedFiles []string
+	generatedFiles := []string{}
 	for filename, contents := range files {
 		generatedFiles = append(generatedFiles, filename)
 		dir := filepath.Dir(filename)

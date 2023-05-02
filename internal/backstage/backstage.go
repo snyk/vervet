@@ -88,7 +88,7 @@ type CatalogInfo struct {
 func (c *CatalogInfo) Save(w io.Writer) error {
 	enc := yaml.NewEncoder(w)
 	enc.SetIndent(2)
-	var docs []*yaml.Node
+	docs := []*yaml.Node{}
 	if c.service != nil {
 		docs = append(docs, c.service)
 	}
@@ -209,7 +209,7 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string) error {
 		c.VervetAPIs = append(c.VervetAPIs, api)
 		apiUniqueNames[api.Metadata.Name] = struct{}{}
 	}
-	var apiNames []string
+	apiNames := []string{}
 	for name := range apiUniqueNames {
 		apiNames = append(apiNames, name)
 	}

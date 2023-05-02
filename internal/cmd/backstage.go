@@ -111,7 +111,7 @@ func checkUncommittedChanges(path string) error {
 		log.Println("failed to execute git:", err)
 	}
 	if len(out) > 0 {
-		return fmt.Errorf("%s has uncommited changes", path)
+		return fmt.Errorf("%s has uncommitted changes", path)
 	}
 	return nil
 }
@@ -161,7 +161,7 @@ func processCatalog(ctx *cli.Context, w io.Writer) error {
 	// range over maps does not specify order and is not guaranteed to be the
 	// same from one iteration to the next, stability is important when
 	// generating catalog-info to produce reproducible results
-	var apiNames []string
+	apiNames := []string{}
 	for k := range proj.APIs {
 		apiNames = append(apiNames, k)
 	}

@@ -19,6 +19,9 @@ linters-settings:
       - ^print.*$
       - 'fmt\.Print.*'
       - 'ginkgo\.It\("should'
+  # ST1001: Dot imports that aren’t in external test packages are discouraged.
+  stylecheck:
+    checks: [ "all", "-ST1003"]
 
 linters:
   enable:
@@ -36,3 +39,11 @@ linters:
     # - forbidigo - Good to have linter but potential to introduce breaking changes.
     - ifshort
     - lll
+    - misspell
+    - nakedret
+    # - nestif - Good to have linter but potential to introduce breaking changes.
+    # - nilerr - Good to have linter but potential to introduce breaking changes.
+    - nilnil
+    # - noctx - Good to have linter but potential to introduce breaking changes.
+    - nolintlint
+    - prealloc

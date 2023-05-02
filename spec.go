@@ -45,7 +45,7 @@ func LoadSpecVersionsFileset(epPaths []string) (*SpecVersions, error) {
 		}
 		resourceMap[resourcePath] = append(resourceMap[resourcePath], epPaths[i])
 	}
-	var resourceNames []string
+	resourceNames := []string{}
 	for k := range resourceMap {
 		resourceNames = append(resourceNames, k)
 	}

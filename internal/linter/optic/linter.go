@@ -131,7 +131,7 @@ func (o *Optic) Match(rcConfig *config.ResourceSet) ([]string, error) {
 	for i := range toFiles {
 		filesMap[toFiles[i]] = struct{}{}
 	}
-	var result []string
+	result := []string{}
 	for k := range filesMap {
 		result = append(result, k)
 	}

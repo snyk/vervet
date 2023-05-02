@@ -124,7 +124,7 @@ func (c *Collator) mergeTags(rv *ResourceVersion) error {
 		return errs
 	}
 	c.result.Tags = openapi3.Tags{}
-	var tagNames []string
+	tagNames := []string{}
 	for tagName := range m {
 		tagNames = append(tagNames, tagName)
 	}
