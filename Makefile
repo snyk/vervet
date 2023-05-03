@@ -62,3 +62,7 @@ endif
 format: ## Format source code with gofmt and golangci-lint
 	gofmt -s -w .
 	golangci-lint run --fix -v ./...
+
+.PHONY: tidy
+tidy:
+	go mod tidy -v
