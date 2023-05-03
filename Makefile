@@ -31,7 +31,7 @@ lint:
 
 .PHONY: lint-docker
 lint-docker:
-	docker run --rm -v $(shell pwd):/vervet -w /vervet golangci/golangci-lint:v1.43 golangci-lint run -v ./...
+	docker run --rm -v $(shell pwd):/vervet -w /vervet golangci/golangci-lint:${GOCI_LINT_V} golangci-lint run -v ./...
 
 #----------------------------------------------------------------------------------
 #  Ignores the test cache and forces a full test suite execution

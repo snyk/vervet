@@ -1,5 +1,5 @@
 # Build
-FROM golang:1.17 as builder
+FROM golang:1.20 as builder
 ADD . /src
 WORKDIR /src
 RUN go mod download

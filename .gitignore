@@ -13,3 +13,4 @@ config.*.test.json
 result
 
 .bin/
+./vervet-undergroud/.bin/
