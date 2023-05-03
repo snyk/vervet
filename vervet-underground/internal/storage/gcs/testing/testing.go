@@ -122,5 +122,5 @@ func findOpenPort(c *qt.C) string {
 	ln, err := net.Listen("tcp", "localhost:0")
 	c.Assert(err, qt.IsNil)
 	defer ln.Close()
-	return strconv.Itoa(ln.Addr().(*net.TCPAddr).Port)
+	return strconv.Itoa(ln.Addr().(*net.TCPAddr).Port) //nolint:forcetypeassert // acked
 }

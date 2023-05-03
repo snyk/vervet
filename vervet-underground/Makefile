@@ -1,3 +1,9 @@
+GO_BIN=$(shell pwd)/.bin/go
+
+SHELL:=env PATH=$(GO_BIN):$(PATH) $(SHELL)
+
+GOCI_LINT_V?=v1.51.0
+
 .PHONY: fmt
 fmt:
 	go fmt ./...
@@ -12,11 +18,11 @@ lint:
 
 .PHONY: lint-docker
 lint-docker:
-	docker run --rm -v $(shell pwd):/vervet-underground -w /vervet-underground golangci/golangci-lint:v1.43.0 golangci-lint run --fix -v ./...
+	docker run --rm -v $(shell pwd):/vervet-underground -w /vervet-underground golangci/golangci-lint:${GOCI_LINT_V} golangci-lint run --fix -v ./...
 
 .PHONY: tidy
 tidy:
-	go build tidy -v
+	go mod tidy -v
 
 .PHONY: test
 test:
@@ -45,3 +51,15 @@ test-coverage:
 .PHONY: start
 start:
 	go run server.go
+
+.PHONY: install-tools
+install-tools: 
+ifndef CI
+	mkdir -p ${GO_BIN}
+	curl -sSfL 'https://raw.githubusercontent.com/golangci/golangci-lint/${GOCI_LINT_V}/install.sh' | sh -s -- -b ${GO_BIN} ${GOCI_LINT_V}
+endif
+
+.PHONY: format
+format: ## Format source code with gofmt and golangci-lint
+	gofmt -s -w .
+	golangci-lint run --fix -v ./...

@@ -15,7 +15,7 @@ vu_metadata: &vu_metadata
     resource_class: small
     working_directory: ~/vervet/vervet-underground
     docker:
-      - image: cimg/go:1.17-node
+      - image: cimg/go:1.20-node
 
 orbs:
   go: circleci/go@1.7.1
@@ -56,7 +56,7 @@ jobs:
       - run:
           name: Install Go
           command: |-
-            sudo rm -rf /usr/local/go && curl -sSL -o /tmp/go.tar.gz "https://go.dev/dl/go1.18.4.linux-amd64.tar.gz" && sudo tar -xz -f /tmp/go.tar.gz -C /usr/local
+            sudo rm -rf /usr/local/go && curl -sSL -o /tmp/go.tar.gz "https://go.dev/dl/go1.20.3.linux-amd64.tar.gz" && sudo tar -xz -f /tmp/go.tar.gz -C /usr/local
             sudo ln -s /usr/local/go/bin/go /usr/local/bin/go
       - attach_workspace:
           at: ~/vervet
@@ -76,7 +76,7 @@ jobs:
 
   lint-vu:
     docker:
-      - image: golangci/golangci-lint:v1.43.0
+      - image: golangci/golangci-lint:v1.51.0
     steps:
       - checkout
       - attach_workspace:
