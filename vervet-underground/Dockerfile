@@ -8,11 +8,8 @@ FROM golang:${GO_VERSION}-bullseye as builder
 ARG APP
 WORKDIR /go/src/${APP}
 
-# Our base image is AMD64 only, so we need to compile for that. Because we use
-# CGO (for boringcrypto), we either need to cross-compile or run the builder in
-# an AMD64-emulated environment. That emulated environment gets slow (build
-# times >3mins), so we opted for cross-compilation instead.
-RUN apt update && apt install -y gcc-x86-64-linux-gnu
+# Add go module files
+COPY go.mod go.sum ./
 
 # Download and cache dependencies in a dedicated layer.
 RUN go mod download
@@ -37,6 +34,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # Advised to move from distroless to the secure base image - https://docs.google.com/document/d/1I-vxsuHlmBlM8JHSDpvOmVMGeQQcbPgb8jH1ELEE9wo/edit#heading=h.1xke9mez8zov
 FROM --platform=amd64 gcr.io/snyk-main/ubuntu-20:1.0.1_202304051233
 
+COPY config.*.json /srv/app
 COPY --from=builder /go/bin/app /srv/app/
 
 USER snyk
