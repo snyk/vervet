@@ -132,6 +132,12 @@ workflows:
           name: Lint
       - lint-vu:
           name: Lint VU
+      - build-vu:
+          name: Build app
+          context: snyk-docker-build
+          requires:
+            - Test VU
+            - Lint VU
 
   release:
     jobs:
