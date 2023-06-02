@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  go: circleci/go@1.7.1
+
 defaults: &defaults
   resource_class: small
   working_directory: ~/vervet
@@ -16,9 +19,8 @@ vu_metadata: &vu_metadata
     working_directory: ~/vervet/vervet-underground
     docker:
       - image: cimg/go:1.20-node
-
-orbs:
-  go: circleci/go@1.7.1
+    environment:
+      DOCKER_BUILDKIT: 1
 
 commands:
   gcr_auth:
@@ -35,7 +37,7 @@ jobs:
     steps:
       - run:
           name: Install spectral
-          command: sudo npm install -g @stoplight/spectral@6.0.0-alpha3
+          command: sudo npm install -g @stoplight/spectral@6.5.0
       - checkout
       - attach_workspace:
           at: ~/vervet
@@ -89,9 +91,13 @@ jobs:
     steps:
       - checkout:
           path: ~/vervet
+      - gcr_auth
       - run:
           name: build go vervet-undergound
           command: make build
+      - run:
+          name: Build Docker image # so we can test the build process during PR
+          command: docker build -t gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1} .
 
   publish-vu:
     <<: *vu_metadata
