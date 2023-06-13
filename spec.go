@@ -130,6 +130,12 @@ func (sv *SpecVersions) resolveOperations() {
 		// carried forward and remain active.
 		for opKey, opValue := range currentActiveOps {
 			currentPathItem := doc.Paths[opKey.path]
+
+			// skip adding sunset operations to current document
+			if opValue.operation.Extensions[ExtSnykApiLifecycle] == "sunset" {
+				continue
+			}
+
 			if currentPathItem == nil {
 				currentPathItem = &openapi3.PathItem{
 					Extensions:  opValue.pathItem.Extensions,
