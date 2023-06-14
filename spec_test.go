@@ -23,6 +23,8 @@ func TestSpecs(t *testing.T) {
 		MustParseVersion("2021-06-13~beta"),
 		MustParseVersion("2021-08-20~experimental"),
 		MustParseVersion("2021-08-20~beta"),
+		MustParseVersion("2023-06-01~experimental"),
+		MustParseVersion("2023-06-01~beta"),
 	})
 
 	type expectResourceVersion struct {

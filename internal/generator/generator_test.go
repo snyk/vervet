@@ -64,6 +64,7 @@ version-readme:
 				out + "/testdata/hello-world/2021-06-13/README",
 				out + "/testdata/projects/2021-06-04/README",
 				out + "/testdata/projects/2021-08-20/README",
+				out + "/testdata/users/2023-06-01/README",
 			})
 
 			for _, test := range []struct {
@@ -121,6 +122,7 @@ resource-routes:
 			c.Assert(files, qt.ContentEquals, []string{
 				out + "/testdata/hello-world/routes.ts",
 				out + "/testdata/projects/routes.ts",
+				out + "/testdata/users/routes.ts",
 			})
 
 			routes, err := os.ReadFile(out + "/testdata/hello-world/routes.ts")
@@ -316,6 +318,7 @@ version-models:
 		out + "/testdata/hello-world/2021-06-13/models.ts",
 		out + "/testdata/projects/2021-06-04/models.ts",
 		out + "/testdata/projects/2021-08-20/models.ts",
+		out + "/testdata/users/2023-06-01/models.ts",
 	})
 
 	jsFile, err := os.ReadFile(out + "/testdata/projects/2021-06-04/models.ts")
@@ -449,6 +452,7 @@ version-readme:
 				out + "/testdata/hello-world/2021-06-13/README",
 				out + "/testdata/projects/2021-06-04/README",
 				out + "/testdata/projects/2021-08-20/README",
+				out + "/testdata/users/2023-06-01/README",
 			})
 
 			actualFiles, err := filepath.Glob(out + "/*/*/*/README")
