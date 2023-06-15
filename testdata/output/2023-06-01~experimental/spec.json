@@ -1059,9 +1059,12 @@
           "Projects"
         ],
         "x-snyk-api-releases": [
-          "2021-08-20~experimental"
+          "2021-08-20~experimental",
+          "2023-06-03~experimental"
         ],
-        "x-snyk-api-version": "2021-08-20~experimental"
+        "x-snyk-api-version": "2021-08-20~experimental",
+        "x-snyk-deprecated-by": "2023-06-03~experimental",
+        "x-snyk-sunset-eligible": "2023-06-04"
       },
       "x-snyk-api-resource": "projects"
     },
@@ -1101,9 +1104,12 @@
           "Users"
         ],
         "x-snyk-api-releases": [
-          "2023-06-01~experimental"
+          "2023-06-01~experimental",
+          "2023-06-02~experimental"
         ],
-        "x-snyk-api-version": "2023-06-01~experimental"
+        "x-snyk-api-version": "2023-06-01~experimental",
+        "x-snyk-deprecated-by": "2023-06-02~experimental",
+        "x-snyk-sunset-eligible": "2023-06-03"
       },
       "x-snyk-api-resource": "users"
     }

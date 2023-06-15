@@ -60,7 +60,7 @@ func TestVersionRangesProjects(t *testing.T) {
 	c := qt.New(t)
 	eps, err := LoadResourceVersions(testdata.Path("resources/projects"))
 	c.Assert(err, qt.IsNil)
-	c.Assert(eps.Versions(), qt.HasLen, 2)
+	c.Assert(eps.Versions(), qt.HasLen, 3)
 	tests := []struct {
 		query, match, err string
 	}{{

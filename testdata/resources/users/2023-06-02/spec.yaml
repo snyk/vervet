@@ -1,0 +1,32 @@
+openapi: 3.0.3
+x-snyk-api-stability: experimental
+x-snyk-api-lifecycle: sunset
+info:
+  title: Registry
+  version: 3.0.0
+servers:
+  - url: /api/v3
+    description: Snyk Registry
+tags:
+  - name: Users
+    description: Users
+  - name: Something
+    description: Something
+paths:
+  /users:
+    get:
+      x-snyk-api-lifecycle: sunset
+      tags: ["Users"]
+      description: get users.
+      operationId: getUsers
+      responses:
+        '400': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/400.yaml#/400' }
+        '401': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/401.yaml#/401' }
+        '404': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/404.yaml#/404' }
+        '500': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/500.yaml#/500' }
+        '200':
+          description: 'we got some users'
+          headers:
+            snyk-version-requested: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionRequestedResponseHeader' }
+            snyk-version-served: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionServedResponseHeader' }
+            snyk-request-id: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/RequestIdResponseHeader' }

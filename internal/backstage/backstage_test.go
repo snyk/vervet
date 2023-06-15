@@ -131,6 +131,10 @@ func TestLoadVersionsNoApis(t *testing.T) {
     - Registry_2021-08-20_experimental
     - Registry_2023-06-01_beta
     - Registry_2023-06-01_experimental
+    - Registry_2023-06-02_beta
+    - Registry_2023-06-02_experimental
+    - Registry_2023-06-03_beta
+    - Registry_2023-06-03_experimental
 ---
 `[1:]+string(vervetAPIs))
 }
@@ -163,6 +167,10 @@ func TestLoadVersionsSomeApis(t *testing.T) {
     - Registry_2021-08-20_experimental
     - Registry_2023-06-01_beta
     - Registry_2023-06-01_experimental
+    - Registry_2023-06-02_beta
+    - Registry_2023-06-02_experimental
+    - Registry_2023-06-03_beta
+    - Registry_2023-06-03_experimental
     - someOtherApi
 ---
 `[1:]+string(vervetAPIs))
