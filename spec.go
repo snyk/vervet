@@ -132,7 +132,8 @@ func (sv *SpecVersions) resolveOperations() {
 			currentPathItem := doc.Paths[opKey.path]
 
 			// skip adding sunset operations to current document
-			if opValue.operation.Extensions[ExtSnykApiLifecycle] == "sunset" {
+			lc, ok := opValue.operation.Extensions[ExtSnykApiLifecycle].(string)
+			if lc, err := ParseLifecycle(lc); ok && err != nil && lc == LifecycleSunset {
 				continue
 			}
 

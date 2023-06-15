@@ -33,11 +33,6 @@ func TestResource(t *testing.T) {
 	}
 }
 
-//func TestResourceVersionsAtSunset(t *testing.T) {
-//	c := qt.New(t)
-//	eps, err := LoadResourceVersions(testdata.Path("resources/users"))
-//}
-
 func TestVersionRangesHelloWorld(t *testing.T) {
 	c := qt.New(t)
 	eps, err := LoadResourceVersions(testdata.Path("resources/_examples/hello-world"))

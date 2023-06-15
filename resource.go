@@ -160,8 +160,9 @@ func (rv *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 		return nil, ErrNoMatchingVersion
 	}
 
-	// skip resolving versions that have been marked as sunset
-	if r.Document.Extensions[ExtSnykApiLifecycle] == "sunset" && resolvedVersion.DeprecatedBy(v) {
+	// skip resolving versions for resources that have been marked as sunset in a previous version
+	if lifecycle, err := r.Document.Lifecycle(); err == nil && lifecycle == LifecycleSunset &&
+		resolvedVersion.DeprecatedBy(v) {
 		return nil, ErrNoMatchingVersion
 	}
 
