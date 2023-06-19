@@ -1,0 +1,21 @@
+openapi: 3.0.3
+x-snyk-api-stability: experimental
+x-snyk-api-lifecycle: sunset
+info:
+  title: Test
+  version: 3.0.0
+paths:
+  /foo:
+    get:
+      x-snyk-api-lifecycle: sunset
+      description: foo
+      operationId: getFoo
+      responses:
+        "200":
+          description: got foo
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                required: ["jsonapi", "data", "links"]
+                additionalProperties: false

@@ -1067,6 +1067,50 @@
         "x-snyk-sunset-eligible": "2023-06-04"
       },
       "x-snyk-api-resource": "projects"
+    },
+    "/users": {
+      "get": {
+        "description": "get users.",
+        "operationId": "getUsers",
+        "responses": {
+          "200": {
+            "description": "we got some users",
+            "headers": {
+              "snyk-request-id": {
+                "$ref": "#/components/headers/RequestIdResponseHeader"
+              },
+              "snyk-version-requested": {
+                "$ref": "#/components/headers/VersionRequestedResponseHeader"
+              },
+              "snyk-version-served": {
+                "$ref": "#/components/headers/VersionServedResponseHeader"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-snyk-api-lifecycle": "sunset",
+        "x-snyk-api-releases": [
+          "2023-06-01~experimental",
+          "2023-06-02~experimental"
+        ],
+        "x-snyk-api-version": "2023-06-02~experimental"
+      },
+      "x-snyk-api-resource": "users"
     }
   },
   "servers": [
@@ -1083,8 +1127,12 @@
     {
       "description": "Something",
       "name": "Something"
+    },
+    {
+      "description": "Users",
+      "name": "Users"
     }
   ],
-  "x-snyk-api-lifecycle": "sunset",
-  "x-snyk-api-version": "2021-08-20~experimental"
+  "x-snyk-api-lifecycle": "deprecated",
+  "x-snyk-api-version": "2023-06-02~experimental"
 }

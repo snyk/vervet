@@ -60,7 +60,7 @@ func TestVersionRangesProjects(t *testing.T) {
 	c := qt.New(t)
 	eps, err := LoadResourceVersions(testdata.Path("resources/projects"))
 	c.Assert(err, qt.IsNil)
-	c.Assert(eps.Versions(), qt.HasLen, 2)
+	c.Assert(eps.Versions(), qt.HasLen, 3)
 	tests := []struct {
 		query, match, err string
 	}{{
@@ -109,4 +109,36 @@ func TestLoadResourceVersionsWithDuplicateSpecs(t *testing.T) {
 	c.Assert(resourceVersions, qt.IsNil)
 	c.Assert(err, qt.IsNotNil)
 	c.Assert(err, qt.ErrorMatches, "duplicate spec found in "+dirPath+"/2022-08-31")
+}
+
+func TestResourceVersionsAtSunset(t *testing.T) {
+	c := qt.New(t)
+	eps, err := LoadResourceVersions(testdata.Path("sunset-specs"))
+	c.Assert(err, qt.IsNil)
+	c.Assert(eps.Versions(), qt.HasLen, 2)
+	tests := []struct {
+		query, match, err string
+	}{{
+		query: "2023-01-01~experimental",
+		match: "2023-01-01~experimental",
+	}, {
+		query: "2023-01-10~experimental",
+		match: "2023-01-01~experimental",
+	}, {
+		query: "2023-02-01~experimental",
+		match: "2023-02-01~experimental",
+	}, {
+		query: "2023-03-01~experimental",
+		err:   "no matching version",
+	}}
+	for i, t := range tests {
+		c.Logf("test#%d: %#v", i, t)
+		e, err := eps.At(t.query)
+		if t.err != "" {
+			c.Assert(err, qt.ErrorMatches, t.err)
+		} else {
+			c.Assert(err, qt.IsNil)
+			c.Assert(e.Version.String(), qt.Equals, t.match)
+		}
+	}
 }

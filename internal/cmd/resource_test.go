@@ -43,6 +43,9 @@ resources/_examples/hello-world/2021-06-07/spec.yaml
 resources/_examples/hello-world/2021-06-13/spec.yaml
 resources/projects/2021-06-04/spec.yaml
 resources/projects/2021-08-20/spec.yaml
+resources/projects/2023-06-03/spec.yaml
+resources/users/2023-06-01/spec.yaml
+resources/users/2023-06-02/spec.yaml
 `[1:])
 }
 
@@ -71,6 +74,9 @@ func TestResourceInfo(t *testing.T) {
 | testdata | hello-world | 2021-06-13~beta         | /examples/hello-world                | POST   | helloWorldCreate  |
 | testdata | hello-world | 2021-06-13~beta         | /examples/hello-world/{id}           | GET    | helloWorldGetOne  |
 | testdata | projects    | 2021-08-20~experimental | /orgs/{org_id}/projects/{project_id} | DELETE | deleteOrgsProject |
+| testdata | users       | 2023-06-01~experimental | /users                               | GET    | getUsers          |
+| testdata | users       | 2023-06-02~experimental | /users                               | GET    | getUsers          |
+| testdata | projects    | 2023-06-03~experimental | /orgs/{org_id}/projects/{project_id} | DELETE | deleteOrgsProject |
 +----------+-------------+-------------------------+--------------------------------------+--------+-------------------+
 `[1:])
 }
@@ -96,6 +102,7 @@ func TestResourceInfoResource(t *testing.T) {
 +----------+----------+-------------------------+--------------------------------------+--------+-------------------+
 | testdata | projects | 2021-06-04~experimental | /orgs/{orgId}/projects               | GET    | getOrgsProjects   |
 | testdata | projects | 2021-08-20~experimental | /orgs/{org_id}/projects/{project_id} | DELETE | deleteOrgsProject |
+| testdata | projects | 2023-06-03~experimental | /orgs/{org_id}/projects/{project_id} | DELETE | deleteOrgsProject |
 +----------+----------+-------------------------+--------------------------------------+--------+-------------------+
 `[1:])
 }

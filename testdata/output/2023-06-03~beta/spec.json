@@ -64,29 +64,6 @@
       }
     },
     "parameters": {
-      "EndingBefore": {
-        "description": "Return the page of results immediately before this cursor",
-        "example": "v1.eyJpZCI6IjExMDAifQo=",
-        "in": "query",
-        "name": "ending_before",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "Limit": {
-        "description": "Number of results to return per page",
-        "example": 10,
-        "in": "query",
-        "name": "limit",
-        "schema": {
-          "default": 10,
-          "format": "int32",
-          "maximum": 100,
-          "minimum": 10,
-          "multipleOf": 10,
-          "type": "integer"
-        }
-      },
       "Pagination": {
         "description": "The parameters used to paginate through a list of results from the API.",
         "in": "query",
@@ -106,15 +83,6 @@
             }
           },
           "type": "object"
-        }
-      },
-      "StartingAfter": {
-        "description": "Return the page of results immediately after this cursor",
-        "example": "v1.eyJpZCI6IjEwMDAifQo=",
-        "in": "query",
-        "name": "starting_after",
-        "schema": {
-          "type": "string"
         }
       },
       "Version": {
@@ -489,68 +457,6 @@
         },
         "type": "object"
       },
-      "Project": {
-        "additionalProperties": false,
-        "properties": {
-          "attributes": {
-            "additionalProperties": false,
-            "properties": {
-              "created": {
-                "description": "The date that the project was created on",
-                "example": "2021-05-29T09:50:54.014Z",
-                "type": "string"
-              },
-              "hostname": {
-                "description": "The hostname for a CLI project, null if not set",
-                "nullable": true,
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              },
-              "origin": {
-                "description": "The origin the project was added from",
-                "example": "github",
-                "type": "string"
-              },
-              "status": {
-                "description": "Describes if a project is currently monitored or it is de-activated",
-                "example": "active",
-                "type": "string"
-              },
-              "type": {
-                "description": "The package manager of the project",
-                "example": "maven",
-                "type": "string"
-              }
-            },
-            "required": [
-              "name",
-              "created",
-              "origin",
-              "type",
-              "status"
-            ],
-            "type": "object"
-          },
-          "id": {
-            "description": "The ID.",
-            "example": "331ede0a-de94-456f-b788-166caeca58bf",
-            "type": "string"
-          },
-          "type": {
-            "description": "Content type.",
-            "example": "projects",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "id",
-          "attributes"
-        ],
-        "type": "object"
-      },
       "QueryVersion": {
         "description": "Requested API version",
         "pattern": "^(wip|work-in-progress|experimental|beta|((([0-9]{4})-([0-1][0-9]))-((3[01])|(0[1-9])|([12][0-9]))(~(wip|work-in-progress|experimental|beta))?))$",
@@ -848,225 +754,6 @@
           }
         }
       }
-    },
-    "/orgs/{orgId}/projects": {
-      "get": {
-        "description": "Get a list of an organization's projects.",
-        "operationId": "getOrgsProjects",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/Version"
-          },
-          {
-            "$ref": "#/components/parameters/StartingAfter"
-          },
-          {
-            "$ref": "#/components/parameters/EndingBefore"
-          },
-          {
-            "$ref": "#/components/parameters/Limit"
-          },
-          {
-            "description": "The id of the org to return a list of projects",
-            "in": "path",
-            "name": "orgId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "The options for filtering the result set",
-            "in": "query",
-            "name": "filters",
-            "schema": {
-              "additionalProperties": false,
-              "properties": {
-                "attributes.criticality": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "attributes.environment": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "attributes.lifecycle": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "origin": {
-                  "type": "string"
-                },
-                "status": {
-                  "enum": [
-                    "active",
-                    "inactive"
-                  ],
-                  "type": "string"
-                },
-                "tags.includes": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "type": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/vnd.api+json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "data": {
-                      "items": {
-                        "$ref": "#/components/schemas/Project"
-                      },
-                      "type": "array"
-                    },
-                    "jsonapi": {
-                      "$ref": "#/components/schemas/JsonApi"
-                    },
-                    "links": {
-                      "$ref": "#/components/schemas/Links"
-                    }
-                  },
-                  "required": [
-                    "jsonapi",
-                    "data",
-                    "links"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "A list of projects is returned for the targeted org",
-            "headers": {
-              "snyk-request-id": {
-                "$ref": "#/components/headers/RequestIdResponseHeader"
-              },
-              "snyk-version-requested": {
-                "$ref": "#/components/headers/VersionRequestedResponseHeader"
-              },
-              "snyk-version-served": {
-                "$ref": "#/components/headers/VersionServedResponseHeader"
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        },
-        "tags": [
-          "Projects"
-        ],
-        "x-snyk-api-releases": [
-          "2021-06-04~experimental"
-        ],
-        "x-snyk-api-version": "2021-06-04~experimental"
-      },
-      "x-snyk-api-resource": "projects"
-    },
-    "/orgs/{org_id}/projects/{project_id}": {
-      "delete": {
-        "description": "Delete an organization's project.",
-        "operationId": "deleteOrgsProject",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/Version"
-          },
-          {
-            "description": "The id of the org containing the project",
-            "in": "path",
-            "name": "org_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "The id of the project",
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "It's a secret to everybody",
-            "in": "header",
-            "name": "x-private-matter",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Project was deleted",
-            "headers": {
-              "snyk-request-id": {
-                "$ref": "#/components/headers/RequestIdResponseHeader"
-              },
-              "snyk-version-requested": {
-                "$ref": "#/components/headers/VersionRequestedResponseHeader"
-              },
-              "snyk-version-served": {
-                "$ref": "#/components/headers/VersionServedResponseHeader"
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          },
-          "500": {
-            "$ref": "#/components/responses/500"
-          }
-        },
-        "tags": [
-          "Projects"
-        ],
-        "x-snyk-api-releases": [
-          "2021-08-20~experimental",
-          "2023-06-03~experimental"
-        ],
-        "x-snyk-api-version": "2021-08-20~experimental",
-        "x-snyk-deprecated-by": "2023-06-03~experimental",
-        "x-snyk-sunset-eligible": "2023-06-04"
-      },
-      "x-snyk-api-resource": "projects"
     }
   },
   "servers": [
@@ -1077,14 +764,10 @@
   ],
   "tags": [
     {
-      "description": "Projects",
-      "name": "Projects"
-    },
-    {
       "description": "Something",
       "name": "Something"
     }
   ],
-  "x-snyk-api-lifecycle": "sunset",
-  "x-snyk-api-version": "2021-08-20~experimental"
+  "x-snyk-api-lifecycle": "released",
+  "x-snyk-api-version": "2023-06-03~beta"
 }
