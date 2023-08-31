@@ -1,5 +1,9 @@
 version: 2.1
 
+orbs:
+  go: circleci/go@1.7.1
+  publish: snyk/publish@1
+
 defaults: &defaults
   resource_class: small
   working_directory: ~/vervet
@@ -17,8 +21,11 @@ vu_metadata: &vu_metadata
     docker:
       - image: cimg/go:1.17-node
 
-orbs:
-  go: circleci/go@1.7.1
+only_main_branch_filter: &only_main_branch_filter
+  filters:
+    branches:
+      only:
+        - main
 
 commands:
   gcr_auth:
@@ -93,18 +100,19 @@ jobs:
           name: build go vervet-undergound
           command: make build
 
-  publish-vu:
+  build-vu-image:
     <<: *vu_metadata
     steps:
       - checkout:
           path: ~/vervet
       - gcr_auth
       - run:
-          name: Build
-          command: docker build -t gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1} .
-      - run:
-          name: Push
-          command: docker push gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1}
+          name: Build Docker Image
+          command: >-
+            docker build
+            -t vervet-underground:${CIRCLE_WORKFLOW_ID}
+            -t gcr.io/snyk-main/vervet-underground:${CIRCLE_SHA1} .
+      - publish/save-image
 
   release:
     <<: *defaults
@@ -137,31 +145,38 @@ workflows:
     jobs:
       - test:
           name: Test
-          filters:
-            branches:
-              only: 'main'
+          <<: *only_main_branch_filter
+
       - build-vu:
           name: Build app
           context: snyk-docker-build
-          filters:
-            branches:
-              only:
-                - main
+          <<: *only_main_branch_filter
+
       - release:
           name: Release
           context: nodejs-app-release
           requires:
             - Test
-          filters:
-            branches:
-              only:
-                - main
-      - publish-vu:
-          name: Build and publish image
-          context: snyk-docker-build
+          <<: *only_main_branch_filter
+
+      - build-vu-image:
+          name: Build Docker Image
+          context:
+            - snyk-docker-build
+          <<: *only_main_branch_filter
+
+      - publish/publish:
+          name: Publish Docker Image
+          fedramp: "no"
+          snyk_organization: platform-extensibility
+          snyk_token_variable: MONITOR_SNYK_TOKEN
+          snyk_project_tags: >-
+            component=pkg:github/snyk/vervet-underground@main,
+            component=pkg:github/snyk/vervet@main
+          context:
+            - snyk-docker-build
+            - infra-publish-orb
+            - team-extensibility
+            - snyk-bot-slack
           requires:
-            - Build app
-          filters:
-            branches:
-              only:
-                - main
+            - Build Docker Image
