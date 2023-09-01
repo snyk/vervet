@@ -746,5 +746,5 @@ tags:
   name: Projects
 - description: Something
   name: Something
-x-snyk-api-lifecycle: deprecated
+x-snyk-api-lifecycle: sunset
 x-snyk-api-version: 2023-06-03~experimental

@@ -1,3 +1,4 @@
+APP:=vervet-underground
 GO_BIN=$(shell pwd)/.bin/go
 
 SHELL:=env PATH=$(GO_BIN):$(PATH) $(SHELL)
@@ -19,6 +20,12 @@ lint:
 .PHONY: lint-docker
 lint-docker:
 	docker run --rm -v $(shell pwd):/vervet-underground -w /vervet-underground golangci/golangci-lint:${GOCI_LINT_V} golangci-lint run --fix -v ./...
+
+.PHONY: build-docker
+build-docker:
+	docker build \
+		-t ${APP}:${CIRCLE_WORKFLOW_ID} \
+		-t gcr.io/snyk-main/${APP}:${CIRCLE_SHA1} .
 
 .PHONY: tidy
 tidy:
