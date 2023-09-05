@@ -204,9 +204,7 @@ workflows:
           fedramp: "no"
           snyk_organization: platform-extensibility
           snyk_token_variable: MONITOR_SNYK_TOKEN
-          snyk_project_tags: >-
-            component=pkg:github/snyk/vervet-underground@main,
-            component=pkg:github/snyk/vervet@main
+          snyk_project_tags: component=pkg:github/snyk/vervet-underground@main,component=pkg:github/snyk/vervet@main
           context:
             - snyk-docker-build
             - infra-publish-orb
