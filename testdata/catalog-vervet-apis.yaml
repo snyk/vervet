@@ -192,15 +192,15 @@ metadata:
     api.snyk.io/generated-by: vervet
   labels:
     api.snyk.io/version-date: "2023-06-01"
-    api.snyk.io/version-lifecycle: deprecated
+    api.snyk.io/version-lifecycle: sunset
     api.snyk.io/version-stability: experimental
   tags:
     - 2023-06
     - experimental
-    - deprecated
+    - sunset
 spec:
   type: openapi
-  lifecycle: deprecated
+  lifecycle: sunset
   owner: someone-else
   definition:
     $text: output/2023-06-01~experimental/spec.json
@@ -238,15 +238,15 @@ metadata:
     api.snyk.io/generated-by: vervet
   labels:
     api.snyk.io/version-date: "2023-06-02"
-    api.snyk.io/version-lifecycle: deprecated
+    api.snyk.io/version-lifecycle: sunset
     api.snyk.io/version-stability: experimental
   tags:
     - 2023-06
     - experimental
-    - deprecated
+    - sunset
 spec:
   type: openapi
-  lifecycle: deprecated
+  lifecycle: sunset
   owner: someone-else
   definition:
     $text: output/2023-06-02~experimental/spec.json
@@ -284,15 +284,15 @@ metadata:
     api.snyk.io/generated-by: vervet
   labels:
     api.snyk.io/version-date: "2023-06-03"
-    api.snyk.io/version-lifecycle: deprecated
+    api.snyk.io/version-lifecycle: sunset
     api.snyk.io/version-stability: experimental
   tags:
     - 2023-06
     - experimental
-    - deprecated
+    - sunset
 spec:
   type: openapi
-  lifecycle: deprecated
+  lifecycle: sunset
   owner: someone-else
   definition:
     $text: output/2023-06-03~experimental/spec.json
