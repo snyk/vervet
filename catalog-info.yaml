@@ -10,6 +10,6 @@ metadata:
     snyk.io/visibility: public
   name: vervet
 spec:
-  lifecycle: production
-  owner: '@snyk/elk'
-  type: library
+  lifecycle: "-"
+  owner: extensibility
+  type: undefined
