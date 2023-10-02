@@ -1,15 +1,22 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
+
 metadata:
+  name: vervet
+  description: Vervet vets the versions, builds, checks and routes your versioned API. A helpful monkey friend.
   annotations:
     backstage.io/techdocs-ref: dir:.
     circleci.com/project-slug: github/snyk/vervet
     github.com/project-slug: snyk/vervet
-  description: Vervet vets the versions, builds, checks and routes your versioned API. A helpful monkey friend.
+    github.com/team-slug: snyk/extensibility
+    snyk.io/jira-prefix: EXT
   labels:
     snyk.io/visibility: public
-  name: vervet
+  links:
+    - icon: message
+      title: Team Asks Channel
+      url: https://snyk.slack.com/channels/ask-foundation
 spec:
-  lifecycle: production
-  owner: '@snyk/elk'
-  type: library
+  type: internal-tooling
+  lifecycle: "-"
+  owner: extensibility
