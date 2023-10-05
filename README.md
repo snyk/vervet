@@ -238,3 +238,15 @@ output:
 
 A new version of `vervet` will automatically be generated for Github and `npm` when new features
 are introduced, i.e. when commits are merged that are marked with `feat:`.
+
+## Deprecating a version
+After removing the endpoint version code and specs, you may see this issue:
+```
+ENOENT: no such file or directory, open '.../spec.yaml'
+```
+To solve this:
+1. Temporarily ignore the endpoint version code in `.vervet.yaml`
+2. Remove the endpoint versions from `catalog-info.yaml`
+3. Remove the old OpenAPI specs.
+
+[Example PR](https://github.com/snyk/registry/pull/33489/files)
