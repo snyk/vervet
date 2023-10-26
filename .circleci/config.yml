@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  go: circleci/go@1.7.1
+  go: circleci/go@1.9.0
   publish: snyk/publish@1
   snyk: snyk/snyk@1
 
@@ -9,18 +9,19 @@ defaults: &defaults
   resource_class: small
   working_directory: ~/vervet
   docker:
-    - image: cimg/go:1.20-node
+    - image: cimg/go:1.21-node
 
 test_vu_defaults: &test_vu_defaults
   resource_class: medium
+  working_directory: ~/vervet/vervet-underground
   machine:
-    image: ubuntu-2004:202201-02
+    image: ubuntu-2004:2023.10.1
 
 vu_defaults: &vu_defaults
   resource_class: small
   working_directory: ~/vervet/vervet-underground
   docker:
-    - image: cimg/go:1.20-node
+    - image: cimg/go:1.21-node
   environment:
     DOCKER_BUILDKIT: 1
 
@@ -48,7 +49,6 @@ commands:
   setup_build_remote_docker:
     steps:
       - setup_remote_docker:
-          version: 20.10.14
           docker_layer_caching: false
 
 jobs:
@@ -59,8 +59,6 @@ jobs:
           name: Install spectral
           command: sudo npm install -g @stoplight/spectral@6.5.0
       - checkout
-      - attach_workspace:
-          at: ~/vervet
       - go/mod-download-cached
       - run:
           name: Verify testdata/output up to date
@@ -71,17 +69,11 @@ jobs:
 
   test-vu:
     <<: *test_vu_defaults
-    working_directory: ~/vervet/vervet-underground
     steps:
       - checkout:
           path: ~/vervet
-      - run:
-          name: Install Go
-          command: |-
-            sudo rm -rf /usr/local/go && curl -sSL -o /tmp/go.tar.gz "https://go.dev/dl/go1.20.3.linux-amd64.tar.gz" && sudo tar -xz -f /tmp/go.tar.gz -C /usr/local
-            sudo ln -s /usr/local/go/bin/go /usr/local/bin/go
-      - attach_workspace:
-          at: ~/vervet
+      - go/install:
+          version: 1.21.3
       - go/mod-download-cached
       - run:
           command: make test
@@ -91,8 +83,6 @@ jobs:
       - image: golangci/golangci-lint:v1.51.0
     steps:
       - checkout
-      - attach_workspace:
-          at: ~/vervet
       - run:
           command: golangci-lint run -v ./...
 
@@ -101,8 +91,6 @@ jobs:
       - image: golangci/golangci-lint:v1.51.0
     steps:
       - checkout
-      - attach_workspace:
-          at: ~/vervet
       - run:
           command: cd vervet-underground && golangci-lint run -v ./...
 
@@ -137,8 +125,6 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - attach_workspace:
-          at: ~/vervet
       - run: |-
           go install github.com/caarlos0/svu@latest
           export VERSION=$(svu next)
