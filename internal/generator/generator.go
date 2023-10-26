@@ -317,8 +317,6 @@ func (g *Generator) Scope() config.GeneratorScope {
 
 // execute the Generator. If generated artifacts already exist, a warning
 // is logged but the file is not overwritten, unless force is true.
-//
-// TODO: in Go 1.18, declare scope as an interface{ VersionScope | ResourceScope }.
 func (g *Generator) execute(scope interface{}) ([]string, error) {
 	if g.files != nil {
 		return g.runFiles(scope)
