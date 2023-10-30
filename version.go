@@ -238,7 +238,8 @@ type VersionSlice []Version
 // VersionIndex provides a search over versions, resolving which version is in
 // effect for a given date and stability level.
 type VersionIndex struct {
-	versions []effectiveVersion
+	effectiveVersions []effectiveVersion
+	versions          VersionSlice
 }
 
 type effectiveVersion struct {
@@ -250,38 +251,46 @@ type effectiveVersion struct {
 // VersionSlice will be sorted.
 func NewVersionIndex(vs VersionSlice) (vi VersionIndex) {
 	sort.Sort(vs)
+	vi.versions = make(VersionSlice, len(vs))
+	copy(vi.versions, vs)
+
 	evIndex := -1
 	currentStabilities := [numStabilityLevels]time.Time{}
-	for i := range vs {
-		if evIndex == -1 || !vi.versions[evIndex].date.Equal(vs[i].Date) {
-			vi.versions = append(vi.versions, effectiveVersion{
-				date:        vs[i].Date,
+	for i := range vi.versions {
+		if evIndex == -1 || !vi.effectiveVersions[evIndex].date.Equal(vi.versions[i].Date) {
+			vi.effectiveVersions = append(vi.effectiveVersions, effectiveVersion{
+				date:        vi.versions[i].Date,
 				stabilities: currentStabilities,
 			})
 			evIndex++
 		}
-		vi.versions[evIndex].stabilities[vs[i].Stability] = vs[i].Date
-		currentStabilities[vs[i].Stability] = vs[i].Date
+		vi.effectiveVersions[evIndex].stabilities[vi.versions[i].Stability] = vi.versions[i].Date
+		currentStabilities[vi.versions[i].Stability] = vi.versions[i].Date
 	}
 	return vi
 }
 
-// resolveIndex performs a binary search on the stability versions in effect on
-// the query date.
-func (vi *VersionIndex) resolveIndex(query time.Time) (int, error) {
-	if len(vi.versions) == 0 || vi.versions[0].date.After(query) {
-		return -1, ErrNoMatchingVersion
+// Deprecates returns the version that deprecates the given version in the
+// slice.
+func (vi *VersionIndex) Deprecates(q Version) (Version, bool) {
+	match, err := vi.resolveIndex(q.Date)
+	if err == ErrNoMatchingVersion {
+		return Version{}, false
 	}
-	lower, curr, upper := 0, len(vi.versions)/2, len(vi.versions)
-	for lower < upper-1 {
-		if vi.versions[curr].date.After(query) {
-			upper = curr
-		} else {
-			lower = curr
+	if err != nil {
+		panic(err)
+	}
+	for i := match + 1; i < len(vi.effectiveVersions); i++ {
+		for stab := q.Stability; stab < numStabilityLevels; stab++ {
+			if stabDate := vi.effectiveVersions[i].stabilities[stab]; stabDate.After(q.Date) {
+				return Version{
+					Date:      vi.effectiveVersions[i].date,
+					Stability: stab,
+				}, true
+			}
 		}
-		curr = lower + (upper-lower)/2
 	}
-	return lower, nil
+	return Version{}, false
 }
 
 // Resolve returns the released version effective on the query version date at
@@ -295,11 +304,36 @@ func (vi *VersionIndex) Resolve(query Version) (Version, error) {
 		return Version{}, err
 	}
 	for stab := query.Stability; stab < numStabilityLevels; stab++ {
-		if stabDate := vi.versions[i].stabilities[stab]; !stabDate.IsZero() {
+		if stabDate := vi.effectiveVersions[i].stabilities[stab]; !stabDate.IsZero() {
 			return Version{Date: stabDate, Stability: stab}, nil
 		}
 	}
 	return Version{}, ErrNoMatchingVersion
+}
+
+// Versions returns each Version defined.
+func (vi *VersionIndex) Versions() VersionSlice {
+	vs := make(VersionSlice, len(vi.versions))
+	copy(vs, vi.versions)
+	return vs
+}
+
+// resolveIndex performs a binary search on the stability versions in effect on
+// the query date.
+func (vi *VersionIndex) resolveIndex(query time.Time) (int, error) {
+	if len(vi.effectiveVersions) == 0 || vi.effectiveVersions[0].date.After(query) {
+		return -1, ErrNoMatchingVersion
+	}
+	lower, curr, upper := 0, len(vi.effectiveVersions)/2, len(vi.effectiveVersions)
+	for lower < upper-1 {
+		if vi.effectiveVersions[curr].date.After(query) {
+			upper = curr
+		} else {
+			lower = curr
+		}
+		curr = lower + (upper-lower)/2
+	}
+	return lower, nil
 }
 
 // resolveForBuild returns the most stable version effective on the query
@@ -316,7 +350,7 @@ func (vi *VersionIndex) resolveForBuild(query Version) (Version, error) {
 	var matchDate time.Time
 	var matchStab Stability
 	for stab := query.Stability; stab < numStabilityLevels; stab++ {
-		stabDate := vi.versions[i].stabilities[stab]
+		stabDate := vi.effectiveVersions[i].stabilities[stab]
 		if !stabDate.IsZero() && !stabDate.Before(matchDate) && !stabDate.After(query.Date) {
 			matchDate, matchStab = stabDate, stab
 		}
@@ -325,29 +359,6 @@ func (vi *VersionIndex) resolveForBuild(query Version) (Version, error) {
 		return Version{}, ErrNoMatchingVersion
 	}
 	return Version{Date: matchDate, Stability: matchStab}, nil
-}
-
-// Deprecates returns the version that deprecates the given version in the
-// slice.
-func (vi *VersionIndex) Deprecates(q Version) (Version, bool) {
-	match, err := vi.resolveIndex(q.Date)
-	if err == ErrNoMatchingVersion {
-		return Version{}, false
-	}
-	if err != nil {
-		panic(err)
-	}
-	for i := match + 1; i < len(vi.versions); i++ {
-		for stab := q.Stability; stab < numStabilityLevels; stab++ {
-			if stabDate := vi.versions[i].stabilities[stab]; stabDate.After(q.Date) {
-				return Version{
-					Date:      vi.versions[i].date,
-					Stability: stab,
-				}, true
-			}
-		}
-	}
-	return Version{}, false
 }
 
 // Len implements sort.Interface.

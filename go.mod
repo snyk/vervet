@@ -17,6 +17,7 @@ require (
 	github.com/urfave/cli/v2 v2.25.7
 	github.com/vmware-labs/yaml-jsonpath v0.3.2
 	go.uber.org/multierr v1.11.0
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	gopkg.in/yaml.v3 v3.0.1
 )
 
