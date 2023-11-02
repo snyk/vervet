@@ -10,6 +10,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/getkin/kin-openapi/openapi3"
+	"golang.org/x/exp/maps"
 )
 
 // SpecGlobPattern defines the expected directory structure for the versioned
@@ -19,7 +20,6 @@ const SpecGlobPattern = "**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/spec.yaml
 
 // SpecVersions stores a collection of versioned OpenAPI specs.
 type SpecVersions struct {
-	versions  VersionSlice
 	index     VersionIndex
 	documents map[Version]*openapi3.T
 }
@@ -68,7 +68,7 @@ func LoadSpecVersionsFileset(epPaths []string) (*SpecVersions, error) {
 // Versions returns the distinct API versions in this collection of OpenAPI
 // documents.
 func (sv *SpecVersions) Versions() VersionSlice {
-	return sv.versions
+	return sv.index.Versions()
 }
 
 // At returns the OpenAPI document that matches the given version. If the
@@ -104,7 +104,7 @@ func (sv *SpecVersions) resolveOperations() {
 	}
 	type operationVersionMap map[operationKey]operationVersion
 	activeOpsByStability := map[Stability]operationVersionMap{}
-	for _, v := range sv.versions {
+	for _, v := range sv.index.versions {
 		doc := sv.documents[v]
 		currentActiveOps, ok := activeOpsByStability[v.Stability]
 		if !ok {
@@ -245,14 +245,8 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 			documentVersions[v] = doc
 		}
 	}
-	versions = VersionSlice{}
-	for v := range documentVersions {
-		versions = append(versions, v)
-	}
-	sort.Sort(versions)
 	sv := &SpecVersions{
-		versions:  versions,
-		index:     NewVersionIndex(versions),
+		index:     NewVersionIndex(maps.Keys(documentVersions)),
 		documents: documentVersions,
 	}
 	sv.resolveOperations()
