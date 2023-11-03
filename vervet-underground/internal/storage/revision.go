@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 )
 
 // ContentRevision is the exact contents and metadata of a service's version at scraping timestamp.
@@ -26,29 +26,34 @@ type ContentRevision struct {
 
 // ServiceRevisions tracks a collection of ContentRevisions and API uniqueVersions for a single service.
 type ServiceRevisions struct {
-	// Revisions is a map of version to a collection of revisions.  During collation, content revision with the latest scraping timestamp is used.
-	Revisions map[vervet.Version]ContentRevisions
-	// Versions is a collection of API uniqueVersions that this service serves.
-	Versions vervet.VersionSlice
+	// revisions is a map of version to a collection of revisions.  During collation, content revision with the latest scraping timestamp is used.
+	revisions map[vervet.Version]ContentRevisions
+	// versions is a collection of API uniqueVersions that this service serves.
+	versions vervet.VersionSlice
+	// versionIndex is an index of API uniqueVersion that this service serves.
+	versionIndex vervet.VersionIndex
+	// generateNewIndex tracks the need to regenerate the versionIndex, because a new version
+	// got added to the versions.
+	generateNewIndex bool
 }
 
 // NewServiceRevisions returns a new instance of ServiceRevisions.
 func NewServiceRevisions() *ServiceRevisions {
 	return &ServiceRevisions{
-		Revisions: make(map[vervet.Version]ContentRevisions),
-		Versions:  make(vervet.VersionSlice, 0),
+		revisions:        make(map[vervet.Version]ContentRevisions),
+		generateNewIndex: true,
 	}
 }
 
 // Add registers a new ContentRevision for the service.
 func (s *ServiceRevisions) Add(revision ContentRevision) {
 	version := revision.Version
-	if _, ok := s.Revisions[version]; !ok {
-		s.Versions = append(s.Versions, version)
-		sort.Sort(s.Versions)
+	if _, ok := s.revisions[version]; !ok {
+		s.versions = append(s.versions, version)
+		s.generateNewIndex = true
 	}
-	s.Revisions[version] = append(s.Revisions[version], revision)
-	sort.Sort(s.Revisions[version])
+	s.revisions[version] = append(s.revisions[version], revision)
+	sort.Sort(s.revisions[version])
 }
 
 // ResolveLatestRevision returns the latest revision that matches the given
@@ -58,9 +63,13 @@ func (s *ServiceRevisions) Add(revision ContentRevision) {
 // timestamp is returned.
 func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (ContentRevision, error) {
 	var revision ContentRevision
-	revisions, ok := s.Revisions[version]
+	revisions, ok := s.revisions[version]
 	if !ok {
-		resolvedVersion, err := s.Versions.Resolve(version)
+		if s.generateNewIndex {
+			s.versionIndex = vervet.NewVersionIndex(s.versions)
+			s.generateNewIndex = false
+		}
+		resolvedVersion, err := s.versionIndex.Resolve(version)
 		if err != nil {
 			return revision, err
 		}
@@ -71,7 +80,7 @@ func (s ServiceRevisions) ResolveLatestRevision(version vervet.Version) (Content
 		// override this with the stability we're looking up.
 		resolvedVersion.Stability = version.Stability
 
-		revisions, ok = s.Revisions[resolvedVersion]
+		revisions, ok = s.revisions[resolvedVersion]
 		if !ok {
 			return revision, fmt.Errorf("no revision found for resolved version: %s", resolvedVersion)
 		}

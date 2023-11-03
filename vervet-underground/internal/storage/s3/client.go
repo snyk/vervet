@@ -21,7 +21,7 @@ import (
 	"github.com/aws/smithy-go"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 	"go.uber.org/multierr"
 
 	"vervet-underground/internal/storage"
@@ -49,7 +49,7 @@ type Storage struct {
 	newCollator func() (*storage.Collator, error)
 
 	mu               sync.RWMutex
-	collatedVersions vervet.VersionSlice
+	collatedVersions vervet.VersionIndex
 }
 
 func New(ctx context.Context, awsCfg *Config, options ...Option) (storage.Storage, error) {
@@ -98,10 +98,9 @@ func New(ctx context.Context, awsCfg *Config, options ...Option) (storage.Storag
 		o.UsePathStyle = true
 	})
 	st := &Storage{
-		client:           s3Client,
-		config:           *awsCfg,
-		collatedVersions: vervet.VersionSlice{},
-		newCollator:      func() (*storage.Collator, error) { return storage.NewCollator() },
+		client:      s3Client,
+		config:      *awsCfg,
+		newCollator: func() (*storage.Collator, error) { return storage.NewCollator() },
 	}
 	for _, option := range options {
 		option(st)
@@ -188,12 +187,11 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 }
 
 // Versions implements scraper.Storage.
-func (s *Storage) Versions() vervet.VersionSlice {
+func (s *Storage) VersionIndex() vervet.VersionIndex {
 	s.mu.RLock()
-	result := make(vervet.VersionSlice, len(s.collatedVersions))
-	copy(result, s.collatedVersions)
-	s.mu.RUnlock()
-	return result
+	defer s.mu.RUnlock()
+
+	return s.collatedVersions
 }
 
 // Version implements scraper.Storage.
@@ -271,7 +269,7 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 	}
 
 	s.mu.Lock()
-	s.collatedVersions = versions
+	s.collatedVersions = vervet.NewVersionIndex(versions)
 	s.mu.Unlock()
 
 	n, err := s.putCollatedSpecs(ctx, specs)

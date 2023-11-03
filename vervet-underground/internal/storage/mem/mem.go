@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 
 	"vervet-underground/internal/storage"
 )
@@ -35,7 +35,7 @@ type Storage struct {
 	serviceVersions                   versionedResourceMap
 	serviceVersionMappedRevisionSpecs serviceVersionMappedRevisionSpecs
 
-	collatedVersions       vervet.VersionSlice
+	collatedVersions       vervet.VersionIndex
 	collatedVersionedSpecs storage.CollatedVersionMappedSpecs
 
 	newCollator func() (*storage.Collator, error)
@@ -47,7 +47,6 @@ func New(options ...Option) storage.Storage {
 		serviceVersions:                   versionedResourceMap{},
 		serviceVersionMappedRevisionSpecs: serviceVersionMappedRevisionSpecs{},
 
-		collatedVersions:       vervet.VersionSlice{},
 		collatedVersionedSpecs: storage.CollatedVersionMappedSpecs{},
 
 		newCollator: func() (*storage.Collator, error) { return storage.NewCollator() },
@@ -151,24 +150,23 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 	return nil
 }
 
-// Versions implements scraper.Storage.
-func (s *Storage) Versions() vervet.VersionSlice {
+// VersionIndex implements scraper.Storage.
+func (s *Storage) VersionIndex() vervet.VersionIndex {
 	s.mu.RLock()
-	result := make(vervet.VersionSlice, len(s.collatedVersions))
-	copy(result, s.collatedVersions)
-	s.mu.RUnlock()
-	return result
+	defer s.mu.RUnlock()
+
+	return s.collatedVersions
 }
 
 // Version implements scraper.Storage.
 func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	parsedVersion, err := vervet.ParseVersion(version)
 	if err != nil {
 		return nil, err
 	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	spec, ok := s.collatedVersionedSpecs[parsedVersion]
 	if !ok {
@@ -203,7 +201,7 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.collatedVersions = versions
+	s.collatedVersions = vervet.NewVersionIndex(versions)
 	s.collatedVersionedSpecs = specs
 
 	return err

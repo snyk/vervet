@@ -8,7 +8,7 @@ import (
 	"time"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/handler"
@@ -135,15 +135,15 @@ func (s *mockStorage) NotifyVersion(ctx context.Context, name string, version st
 	return nil
 }
 
-func (s *mockStorage) Versions() vervet.VersionSlice {
-	return vervet.VersionSlice{
+func (s *mockStorage) VersionIndex() vervet.VersionIndex {
+	return vervet.NewVersionIndex(vervet.VersionSlice{
 		vervet.MustParseVersion("2021-06-04~experimental"),
 		vervet.MustParseVersion("2021-10-20~experimental"),
 		vervet.MustParseVersion("2021-10-20~beta"),
 		vervet.MustParseVersion("2022-01-16~experimental"),
 		vervet.MustParseVersion("2022-01-16~beta"),
 		vervet.MustParseVersion("2022-01-16~ga"),
-	}
+	})
 }
 
 func (s *mockStorage) Version(ctx context.Context, version string) ([]byte, error) {

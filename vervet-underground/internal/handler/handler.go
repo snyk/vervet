@@ -15,8 +15,8 @@ import (
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	prommiddleware "github.com/slok/go-http-metrics/middleware"
 	prommiddlewarestd "github.com/slok/go-http-metrics/middleware/std"
-	"github.com/snyk/vervet/v4"
-	"github.com/snyk/vervet/v4/versionware"
+	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v5/versionware"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"
@@ -69,7 +69,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) openapiVersions(w http.ResponseWriter, r *http.Request) {
-	content, err := json.Marshal(h.sc.Versions().Strings())
+	versionIndex := h.sc.VersionIndex()
+	content, err := json.Marshal(versionIndex.Versions().Strings())
 	if err != nil {
 		logError(err)
 		http.Error(w, "Failure to process request", http.StatusBadRequest)
@@ -104,8 +105,8 @@ func (h *Handler) openapiVersion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	availableVersions := h.sc.Versions()
-	resolvedVersion, err := availableVersions.Resolve(version)
+	versionIndex := h.sc.VersionIndex()
+	resolvedVersion, err := versionIndex.Resolve(version)
 	if errors.Is(err, vervet.ErrNoMatchingVersion) {
 		http.Error(w, "Version not found", http.StatusNotFound)
 		return
