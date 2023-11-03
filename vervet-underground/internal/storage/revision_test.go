@@ -5,7 +5,7 @@ import (
 	"time"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 
 	"vervet-underground/internal/storage"
 )

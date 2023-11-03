@@ -8,7 +8,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 )
 
 // Storage defines the storage functionality needed in order to store service
@@ -34,8 +34,8 @@ type Storage interface {
 	// digest headers in their responses.
 	NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error
 
-	// Versions fetches the Storage Versions compiled by VU
-	Versions() vervet.VersionSlice
+	// VersionIndex fetches the Storage Versions index compiled by VU
+	VersionIndex() vervet.VersionIndex
 
 	// Version fetches the Storage Version spec compiled by VU
 	Version(ctx context.Context, version string) ([]byte, error)

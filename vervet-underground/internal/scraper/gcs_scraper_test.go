@@ -66,8 +66,9 @@ func TestGCSScraper(t *testing.T) {
 		c.Assert(ok, qt.IsTrue)
 	}
 
-	c.Assert(len(st.Versions()), qt.Equals, 4)
-	for _, version := range st.Versions() {
+	vi := st.VersionIndex()
+	c.Assert(len(vi.Versions()), qt.Equals, 4)
+	for _, version := range vi.Versions() {
 		specData, err := st.Version(ctx, version.String())
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()
@@ -128,8 +129,9 @@ func TestGCSScraperCollation(t *testing.T) {
 		c.Assert(ok, qt.IsTrue)
 	}
 
-	c.Assert(len(st.Versions()), qt.Equals, 4)
-	for _, version := range st.Versions() {
+	vi := st.VersionIndex()
+	c.Assert(len(vi.Versions()), qt.Equals, 4)
+	for _, version := range vi.Versions() {
 		specData, err := st.Version(ctx, version.String())
 		c.Assert(err, qt.IsNil)
 		l := openapi3.NewLoader()

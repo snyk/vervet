@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 	"go.uber.org/multierr"
 
 	"vervet-underground/config"
@@ -287,8 +287,8 @@ func isLegacyVersion(version string) bool {
 	return version == "2021-01-01"
 }
 
-func (s *Scraper) Versions() vervet.VersionSlice {
-	return s.storage.Versions()
+func (s *Scraper) VersionIndex() vervet.VersionIndex {
+	return s.storage.VersionIndex()
 }
 
 func (s *Scraper) Version(ctx context.Context, version string) ([]byte, error) {
