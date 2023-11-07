@@ -17,7 +17,7 @@
             stdenv lib python2 runCommand writeTextFile writeShellScript;
           inherit pkgs;
           libtool = pkgs.darwin.cctools;
-          nodejs = pkgs.nodejs-14_x;
+          nodejs = pkgs.nodejs;
         };
       in rec {
         packages = flake-utils.lib.flattenTree {
