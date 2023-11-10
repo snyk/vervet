@@ -2,7 +2,7 @@ GO_BIN=$(shell pwd)/.bin/go
 
 SHELL:=env PATH=$(GO_BIN):$(PATH) $(SHELL)
 
-GOCI_LINT_V?=v1.51.0
+GOCI_LINT_V?=v1.54.2
 
 .PHONY: all
 all: lint test build

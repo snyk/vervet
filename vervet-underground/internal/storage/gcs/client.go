@@ -13,7 +13,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 	"go.uber.org/multierr"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -45,7 +45,7 @@ type Storage struct {
 	newCollator func() (*vustorage.Collator, error)
 
 	mu               sync.RWMutex
-	collatedVersions vervet.VersionSlice
+	collatedVersions vervet.VersionIndex
 }
 
 // New instantiates a gcs.Storage client to handle storing and retrieving
@@ -72,10 +72,9 @@ func New(ctx context.Context, gcsConfig *Config, options ...Option) (vustorage.S
 	}
 
 	st := &Storage{
-		c:                client,
-		config:           *gcsConfig,
-		collatedVersions: vervet.VersionSlice{},
-		newCollator:      func() (*vustorage.Collator, error) { return vustorage.NewCollator() },
+		c:           client,
+		config:      *gcsConfig,
+		newCollator: func() (*vustorage.Collator, error) { return vustorage.NewCollator() },
 	}
 	for _, option := range options {
 		option(st)
@@ -167,7 +166,7 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 	}
 
 	s.mu.Lock()
-	s.collatedVersions = versions
+	s.collatedVersions = vervet.NewVersionIndex(versions)
 	s.mu.Unlock()
 
 	n, err := s.putCollatedSpecs(ctx, specs)
@@ -232,12 +231,11 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 }
 
 // Versions lists all available Collated Versions.
-func (s *Storage) Versions() vervet.VersionSlice {
+func (s *Storage) VersionIndex() vervet.VersionIndex {
 	s.mu.RLock()
-	result := make(vervet.VersionSlice, len(s.collatedVersions))
-	copy(result, s.collatedVersions)
-	s.mu.RUnlock()
-	return result
+	defer s.mu.RUnlock()
+
+	return s.collatedVersions
 }
 
 // Version implements scraper.Storage.

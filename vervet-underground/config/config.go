@@ -4,7 +4,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/snyk/vervet/v4"
+	"github.com/snyk/vervet/v5"
 	"github.com/spf13/viper"
 )
 

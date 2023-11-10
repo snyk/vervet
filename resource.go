@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"sort"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/getkin/kin-openapi/openapi3"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -125,14 +125,7 @@ func (rv *ResourceVersions) Name() string {
 
 // Versions returns each Version defined for this resource.
 func (rv *ResourceVersions) Versions() VersionSlice {
-	result := make(VersionSlice, len(rv.versions))
-	i := 0
-	for v := range rv.versions {
-		result[i] = v
-		i++
-	}
-	sort.Sort(result)
-	return result
+	return rv.index.Versions()
 }
 
 // ErrNoMatchingVersion indicates the requested version cannot be satisfied by
@@ -275,7 +268,7 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 			}
 		}
 	}
-	resourceVersions.index = NewVersionIndex((resourceVersions.Versions()))
+	resourceVersions.index = NewVersionIndex(maps.Keys(resourceVersions.versions))
 	return &resourceVersions, nil
 }
 
