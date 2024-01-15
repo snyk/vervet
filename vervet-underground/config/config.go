@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/snyk/vervet/v5"
 	"github.com/spf13/viper"
@@ -94,10 +95,20 @@ func setDefaults() {
 	viper.SetDefault("storage.type", StorageTypeMemory)
 }
 
+// loadEnv sets up the config store to load values from environment variables,
+// these will take precedent over values defined in config files.
+func loadEnv() {
+	viper.SetEnvPrefix("SNYK")
+	// Set nested values, eg SNYK_STORAGE_S3_REGION=
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+}
+
 // Load returns a ServerConfig instance loaded from the given paths to a JSON
 // config file.
 func Load(configPaths ...string) (*ServerConfig, error) {
 	setDefaults()
+	loadEnv()
 
 	for i, c := range configPaths {
 		if i == 0 {
