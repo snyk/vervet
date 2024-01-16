@@ -5,7 +5,14 @@ let
     buildNodePackage = nodeEnv.buildNodePackage;
   };
 in pkgs.mkShell {
-  nativeBuildInputs = with pkgs.buildPackages; [ go_1_21 envsubst spectral ];
+  nativeBuildInputs = with pkgs.buildPackages; [
+    go_1_21
+    gopls
+    gotools
+    golangci-lint
+    envsubst
+    spectral
+  ];
   shellHook = ''
     export GOPATH="$HOME/.cache/gopaths/$(sha256sum <<<$(pwd) | awk '{print $1}')"
   '';
