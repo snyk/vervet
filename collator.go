@@ -262,10 +262,10 @@ func tagsEqual(x, y interface{}) bool {
 
 func (c *Collator) mergePaths(rv *ResourceVersion) error {
 	if rv.T.Paths != nil && c.result.Paths == nil {
-		c.result.Paths = make(openapi3.Paths)
+		c.result.Paths = openapi3.NewPaths()
 	}
 	var errs error
-	for k, v := range rv.T.Paths {
+	for k, v := range rv.T.Paths.Map() {
 		route := routeForPath(k)
 		if _, ok := c.seenRoutes[route]; ok {
 			if c.useFirstRoute {
@@ -278,7 +278,7 @@ func (c *Collator) mergePaths(rv *ResourceVersion) error {
 			}
 		} else {
 			c.seenRoutes[route] = struct{}{}
-			c.result.Paths[k] = v
+			c.result.Paths.Set(k, v)
 			c.pathSources[k] = rv.path
 		}
 	}

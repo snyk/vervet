@@ -32,7 +32,7 @@ type includeHeaders struct {
 }
 
 func (w *includeHeaders) apply() error {
-	for _, pathItem := range w.doc.Paths {
+	for _, pathItem := range w.doc.Paths.Map() {
 		if err := w.applyOperation(pathItem.Connect); err != nil {
 			return err
 		}
@@ -65,7 +65,7 @@ func (w *includeHeaders) applyOperation(op *openapi3.Operation) error {
 	if op == nil {
 		return nil // nothing to do
 	}
-	for _, respRef := range op.Responses {
+	for _, respRef := range op.Responses.Map() {
 		resp := respRef.Value
 		headersContents, ok := resp.Extensions[ExtSnykIncludeHeaders].(map[string]interface{})
 		if !ok {

@@ -139,7 +139,7 @@ func TestSpecs(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		c.Assert(version, qt.Equals, t.match)
 		for _, expected := range t.hasVersions {
-			pathItem := spec.Paths[expected.path]
+			pathItem := spec.Paths.Find(expected.path)
 
 			if !expected.shouldExist {
 				c.Assert(pathItem, qt.IsNil)

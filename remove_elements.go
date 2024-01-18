@@ -49,13 +49,16 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 	}
 	// Remove excluded paths
 	excludedPaths := map[string]struct{}{}
-	for path := range doc.Paths {
+	for path := range doc.Paths.Map() {
 		if ex.isExcludedPath(path) {
 			excludedPaths[path] = struct{}{}
 		}
 	}
 	for path := range excludedPaths {
-		delete(doc.Paths, path)
+		// Dangerous, relies on the fact Map returns a reference to the
+		// underlying map. There doesn't seem to be a safe way to delete a
+		// PathItem from a Paths object.
+		delete(doc.Paths.Map(), path)
 	}
 	// Remove excluded elements
 	if err := ex.apply(); err != nil {
@@ -115,7 +118,7 @@ func (ex *excluder) applyOperation(op *openapi3.Operation) {
 	}
 	op.Parameters = params
 
-	for _, resp := range op.Responses {
+	for _, resp := range op.Responses.Map() {
 		if resp.Value == nil {
 			continue
 		}

@@ -43,7 +43,7 @@ func MapResourceOperations(resourceVersions *vervet.ResourceVersions) (Operation
 		if err != nil {
 			return nil, err
 		}
-		for path, pathItem := range r.Document.Paths {
+		for path, pathItem := range r.Document.Paths.Map() {
 			ops := MapPathOperations(pathItem)
 			for method, op := range ops {
 				opVersion := OperationVersion{

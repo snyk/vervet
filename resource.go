@@ -84,7 +84,7 @@ func (rv *ResourceVersion) Validate(ctx context.Context) error {
 		return err
 	}
 	// Resource path checks. There should be at least one path per resource.
-	if len(rv.Paths) < 1 {
+	if rv.Paths.Len() < 1 {
 		return fmt.Errorf("spec contains no paths")
 	}
 	return nil
@@ -228,7 +228,7 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 			return nil, err
 		}
 		// Map release versions per operation
-		for path, pathItem := range rc.Paths {
+		for path, pathItem := range rc.Paths.Map() {
 			for _, opName := range operationNames {
 				op := getOperationByName(pathItem, opName)
 				if op != nil {
@@ -248,7 +248,7 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 	// Annotate each path in each resource version with the other change
 	// versions affecting the path. This supports navigation across versions.
 	for _, rc := range resourceVersions.versions {
-		for path, pathItem := range rc.Paths {
+		for path, pathItem := range rc.Paths.Map() {
 			for _, opName := range operationNames {
 				op := getOperationByName(pathItem, opName)
 				if op == nil {
@@ -313,7 +313,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 		return nil, fmt.Errorf("invalid version %q", versionStr)
 	}
 
-	if len(doc.Paths) == 0 {
+	if doc.Paths.Len() == 0 {
 		return nil, nil //nolint:nilnil //acked
 	}
 
@@ -331,8 +331,8 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 	}
 
 	ep := &ResourceVersion{Name: name, Document: doc, Version: version}
-	for path := range doc.T.Paths {
-		doc.T.Paths[path].Extensions[ExtSnykApiResource] = name
+	for _, path := range doc.T.Paths.Map() {
+		path.Extensions[ExtSnykApiResource] = name
 	}
 	return ep, nil
 }
