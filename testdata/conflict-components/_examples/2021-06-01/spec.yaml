@@ -20,6 +20,7 @@ paths:
           required: true
           schema:
             type: string
+        - $ref: '#/components/parameters/Conflict'
       responses:
         '400': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/400.yaml#/400' }
         '401': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/401.yaml#/401' }
@@ -43,6 +44,14 @@ paths:
                 additionalProperties: false
 
 components:
+  parameters:
+    Conflict:
+      name: conflict
+      in: query
+      required: true
+      description: Initial conflict description
+      schema:
+        type: string
   schemas:
     HelloWorld:
       type: object

@@ -96,6 +96,10 @@ func TestCollator(t *testing.T) {
 		"\"Requested API version\",\"pattern\":\"^(wip|work-in-progress|experimental|beta|((([0-9]{4})-([0-1][0-9]))"+
 		"-((3[01])|(0[1-9])|([12][0-9]))(~(wip|work-in-progress|experimental|beta))?))$\",\"type\":\"string\"}}\n", qt.JSONEquals, exampleParameterRef.Value)
 
+	projectConflictRef := result.Paths["/orgs/{orgId}/projects"].Get.Parameters[6]
+	exampleConflictRef := result.Paths["/examples/hello-world/{id}"].Get.Parameters[3]
+	c.Assert(projectConflictRef.Ref, qt.Not(qt.Equals), exampleConflictRef.Ref)
+
 	projectResp400Ref := result.Paths["/orgs/{orgId}/projects"].Get.Responses["400"]
 	c.Assert(projectResp400Ref.Ref, qt.Equals, "#/components/responses/400")
 	exampleResp400Ref := result.Paths["/examples/hello-world/{id}"].Get.Responses["400"]
