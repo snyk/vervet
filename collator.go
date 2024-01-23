@@ -244,11 +244,7 @@ var cmpComponents = cmp.Options{
 	// Refs themselves can mutate during relocation, so they are excluded from
 	// content comparison.
 	cmp.FilterPath(func(p cmp.Path) bool {
-		switch p.Last().String() {
-		case ".Ref", ".Description", ".Example", ".Summary":
-			return true
-		}
-		return false
+		return p.Last().String() == ".Ref"
 	}, cmp.Ignore()),
 }
 
