@@ -189,9 +189,9 @@ In this case, a template is being applied per `operationId` in the `spec.yaml` g
 
 Finally, a note on scoping. Generators can be scoped to either a `version` or a `resource`.
 
-`scope: version` generator templates execute with [VersionScope](https://pkg.go.dev/github.com/snyk/vervet/v5/internal/generator#VersionScope). This maps 1:1 with a single resource version OpenAPI specification.
+`scope: version` generator templates execute with [VersionScope](https://pkg.go.dev/github.com/snyk/vervet/v6/internal/generator#VersionScope). This maps 1:1 with a single resource version OpenAPI specification.
 
-`scope: resource` generator templates execute with [ResourceScope](https://pkg.go.dev/github.com/snyk/vervet/v5/internal/generator#ResourceScope). This is a collection of resource versions, useful for building resource routers.
+`scope: resource` generator templates execute with [ResourceScope](https://pkg.go.dev/github.com/snyk/vervet/v6/internal/generator#ResourceScope). This is a collection of resource versions, useful for building resource routers.
 
 ## Installation
 
@@ -211,7 +211,7 @@ NPM packaging adapted from https://github.com/manifoldco/torus-cli.
 
 Go >= 1.16 required.
 
-    go install github.com/snyk/vervet/v5/cmd/vervet@latest
+    go install github.com/snyk/vervet/v6/cmd/vervet@latest
 
 Building from source locally:
 

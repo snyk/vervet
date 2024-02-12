@@ -21,7 +21,7 @@ import (
 	"github.com/aws/smithy-go"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v6"
 	"go.uber.org/multierr"
 
 	"vervet-underground/internal/storage"
