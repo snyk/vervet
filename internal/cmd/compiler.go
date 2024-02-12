@@ -24,8 +24,8 @@ var BuildCommand = cli.Command{
 		},
 		&cli.BoolFlag{
 			Name:  "lint",
-			Usage: "Enable linting during build",
-			Value: true,
+			Usage: "DEPRECATED; Enable linting during build",
+			Value: false,
 		},
 		&cli.StringFlag{
 			Name:    "include",
@@ -52,7 +52,7 @@ func Build(ctx *cli.Context) error {
 // LintCommand is the `vervet lint` subcommand.
 var LintCommand = cli.Command{
 	Name:      "lint",
-	Usage:     "Lint  versioned resources",
+	Usage:     "DEPRECATED; Lint  versioned resources",
 	ArgsUsage: "[input resources root] [output api root]",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
