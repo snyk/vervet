@@ -77,7 +77,6 @@ var CLIApp = cli.App{
 		&BuildCommand,
 		&FilterCommand,
 		&GenerateCommand,
-		&LintCommand,
 		&LocalizeCommand,
 		&ResourceCommand,
 		&ResolveCommand,

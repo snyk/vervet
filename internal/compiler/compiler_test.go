@@ -11,10 +11,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v5/config"
-	"github.com/snyk/vervet/v5/internal/files"
-	"github.com/snyk/vervet/v5/internal/linter"
-	"github.com/snyk/vervet/v5/testdata"
+	"github.com/snyk/vervet/v6/config"
+	"github.com/snyk/vervet/v6/testdata"
 )
 
 func setup(c *qt.C) {
@@ -30,20 +28,10 @@ func setup(c *qt.C) {
 }
 
 var configTemplate = template.Must(template.New("vervet.yaml").Parse(`
-linters:
-  resource-rules:
-    spectral:
-      rules:
-        - 'node_modules/@snyk/sweater-comb/resource.yaml'
-  compiled-rules:
-    spectral:
-      rules:
-        - 'node_modules/@snyk/sweater-comb/compiled.yaml'
 apis:
   rest-api:
     resources:
-      - linter: resource-rules
-        path: 'testdata/resources'
+      - path: 'testdata/resources'
         excludes:
           - 'testdata/resources/schemas/**'
     overlays:
@@ -54,24 +42,13 @@ apis:
               description: Test REST API
     output:
       path: {{ . }}
-      linter: compiled-rules
 `[1:]))
 
 var configTemplateWithPaths = template.Must(template.New("vervet.yaml").Parse(`
-linters:
-  resource-rules:
-    spectral:
-      rules:
-        - 'node_modules/@snyk/sweater-comb/resource.yaml'
-  compiled-rules:
-    spectral:
-      rules:
-        - 'node_modules/@snyk/sweater-comb/compiled.yaml'
 apis:
   rest-api:
     resources:
-      - linter: resource-rules
-        path: 'testdata/resources'
+      - path: 'testdata/resources'
         excludes:
           - 'testdata/resources/schemas/**'
     overlays:
@@ -85,7 +62,6 @@ apis:
 {{- range . }}
         - {{ . }}
 {{- end }}
-      linter: compiled-rules
 `[1:]))
 
 // Sanity-check the compiler at lifecycle stages in a simple scenario. This
@@ -107,14 +83,11 @@ func TestCompilerSmoke(t *testing.T) {
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
 	c.Assert(err, qt.IsNil)
-	compiler, err := New(ctx, proj, true, LinterFactory(func(context.Context, *config.Linter) (linter.Linter, error) {
-		return &mockLinter{}, nil
-	}))
+	compiler, err := New(ctx, proj)
 	c.Assert(err, qt.IsNil)
 
 	// Assert constructor set things up as expected
 	c.Assert(compiler.apis, qt.HasLen, 1)
-	c.Assert(compiler.linters, qt.HasLen, 2)
 	restApi := compiler.apis["rest-api"]
 	c.Assert(restApi, qt.Not(qt.IsNil))
 	c.Assert(restApi.resources, qt.HasLen, 1)
@@ -145,25 +118,6 @@ func TestCompilerSmoke(t *testing.T) {
 	// Build output was cleaned up
 	_, err = os.ReadFile(outputPath + "/goof")
 	c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")
-
-	// Verify output linting
-	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs, qt.HasLen, 1)
-	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs, qt.HasLen, 1)
-	c.Assert(
-		compiler.linters["resource-rules"].(*mockLinter).runs[0],
-		qt.Contains,
-		"testdata/resources/projects/2021-06-04/spec.yaml",
-	)
-	c.Assert(
-		compiler.linters["compiled-rules"].(*mockLinter).runs[0],
-		qt.Contains,
-		outputPath+"/2021-06-04~experimental/spec.yaml",
-	)
-	c.Assert(
-		compiler.linters["compiled-rules"].(*mockLinter).runs[0],
-		qt.Contains,
-		outputPath+"/2021-06-04~experimental/spec.json",
-	)
 }
 
 func TestCompilerSmokePaths(t *testing.T) {
@@ -181,9 +135,7 @@ func TestCompilerSmokePaths(t *testing.T) {
 
 	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
 	c.Assert(err, qt.IsNil)
-	compiler, err := New(ctx, proj, true, LinterFactory(func(context.Context, *config.Linter) (linter.Linter, error) {
-		return &mockLinter{}, nil
-	}))
+	compiler, err := New(ctx, proj)
 	c.Assert(err, qt.IsNil)
 
 	// Build stage
@@ -199,21 +151,6 @@ func TestCompilerSmokePaths(t *testing.T) {
 		_, err = os.ReadFile(outputPath + "/goof")
 		c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")
 	}
-
-	// Verify resource and compiled rules
-	// Only the first output path is linted, others are copies
-	c.Assert(compiler.linters["resource-rules"].(*mockLinter).runs, qt.HasLen, 1)
-	c.Assert(compiler.linters["compiled-rules"].(*mockLinter).runs, qt.HasLen, 1)
-	c.Assert(
-		compiler.linters["compiled-rules"].(*mockLinter).runs[0],
-		qt.Contains,
-		outputPaths[0]+"/2021-06-04~experimental/spec.yaml",
-	)
-	c.Assert(
-		compiler.linters["compiled-rules"].(*mockLinter).runs[0],
-		qt.Contains,
-		outputPaths[0]+"/2021-06-04~experimental/spec.json",
-	)
 }
 
 func assertOutputsEqual(c *qt.C, refDir, testDir string) {
@@ -234,26 +171,4 @@ func assertOutputsEqual(c *qt.C, refDir, testDir string) {
 		return nil
 	})
 	c.Assert(err, qt.IsNil)
-}
-
-type mockLinter struct {
-	runs     [][]string
-	override *config.Linter
-	err      error
-}
-
-func (l *mockLinter) Match(rcConfig *config.ResourceSet) ([]string, error) {
-	return files.LocalFSSource{}.Match(rcConfig)
-}
-
-func (l *mockLinter) Run(ctx context.Context, root string, paths ...string) error {
-	l.runs = append(l.runs, paths)
-	return l.err
-}
-
-func (l *mockLinter) WithOverride(ctx context.Context, cfg *config.Linter) (linter.Linter, error) {
-	nl := &mockLinter{
-		override: cfg,
-	}
-	return nl, nil
 }

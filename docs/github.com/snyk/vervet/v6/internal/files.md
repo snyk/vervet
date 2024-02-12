@@ -1,7 +1,7 @@
 # files
 
 ```go
-import "github.com/snyk/vervet/v5/internal/files"
+import "github.com/snyk/vervet/v6/internal/files"
 ```
 
 ## Index

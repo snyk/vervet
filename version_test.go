@@ -7,7 +7,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	. "github.com/snyk/vervet/v5"
+	. "github.com/snyk/vervet/v6"
 )
 
 func TestParseVersion(t *testing.T) {

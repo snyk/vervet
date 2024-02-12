@@ -43,11 +43,9 @@ type API struct {
 // in each version is a complete OpenAPI document describing the resource
 // at that version.
 type ResourceSet struct {
-	Description     string             `json:"description"`
-	Linter          string             `json:"linter"`
-	LinterOverrides map[string]Linters `json:"linter-overrides"`
-	Path            string             `json:"path"`
-	Excludes        []string           `json:"excludes"`
+	Description string   `json:"description"`
+	Path        string   `json:"path"`
+	Excludes    []string `json:"excludes"`
 }
 
 func (r *ResourceSet) validate() error {
@@ -71,9 +69,8 @@ type Overlay struct {
 // Output defines where the aggregate versioned OpenAPI specs should be created
 // during compilation.
 type Output struct {
-	Path   string   `json:"path,omitempty"`
-	Paths  []string `json:"paths,omitempty"`
-	Linter string   `json:"linter"`
+	Path  string   `json:"path,omitempty"`
+	Paths []string `json:"paths,omitempty"`
 }
 
 // EffectivePaths returns a slice of effective configured output paths, whether
@@ -89,49 +86,21 @@ func (a APIs) init(p *Project) error {
 	if len(a) == 0 {
 		return fmt.Errorf("no apis defined")
 	}
-	// Referenced linters and generators all exist
+	// Referenced generators all exist
 	for name, api := range a {
 		api.Name = name
 		if len(api.Resources) == 0 {
 			return fmt.Errorf("no resources defined (apis.%s.resources)", api.Name)
 		}
 		for rcIndex, resource := range api.Resources {
-			if resource.Linter != "" {
-				if _, ok := p.Linters[resource.Linter]; !ok {
-					return fmt.Errorf("linter %q not found (apis.%s.resources[%d].linter)",
-						resource.Linter, api.Name, rcIndex)
-				}
-			}
 			if err := resource.validate(); err != nil {
 				return fmt.Errorf("%w (apis.%s.resources[%d])", err, api.Name, rcIndex)
-			}
-			for rcName, versionMap := range resource.LinterOverrides {
-				for version, linter := range versionMap {
-					err := linter.validate()
-					if err != nil {
-						return fmt.Errorf("%w (apis.%s.resources[%d].linter-overrides.%s.%s)",
-							err, api.Name, rcIndex, rcName, version)
-					}
-					if linter.OpticCI != nil {
-						return fmt.Errorf("optic linter does not support overrides (apis.%s.resources[%d].linter-overrides.%s.%s)",
-							api.Name, rcIndex, rcName, version)
-					}
-				}
 			}
 		}
 		if api.Output != nil {
 			if len(api.Output.Paths) > 0 && api.Output.Path != "" {
 				return fmt.Errorf("output should specify one of 'path' or 'paths', not both (apis.%s.output)",
 					api.Name)
-			}
-			if api.Output.Linter != "" {
-				if linter, ok := p.Linters[api.Output.Linter]; !ok {
-					return fmt.Errorf("linter %q not found (apis.%s.output.linter)",
-						api.Output.Linter, api.Name)
-				} else if linter.OpticCI != nil {
-					return fmt.Errorf("optic linter does not yet support compiled specs (apis.%s.output.linter)",
-						api.Name)
-				}
 			}
 		}
 	}

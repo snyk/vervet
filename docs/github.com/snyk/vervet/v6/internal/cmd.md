@@ -1,7 +1,7 @@
 # cmd
 
 ```go
-import "github.com/snyk/vervet/v5/internal/cmd"
+import "github.com/snyk/vervet/v6/internal/cmd"
 ```
 
 Package cmd provides subcommands for the vervet CLI\.
@@ -13,7 +13,6 @@ Package cmd provides subcommands for the vervet CLI\.
 - [func CheckCatalog(ctx *cli.Context) error](<#func-checkcatalog>)
 - [func Filter(ctx *cli.Context) error](<#func-filter>)
 - [func Generate(ctx *cli.Context) error](<#func-generate>)
-- [func Lint(ctx *cli.Context) error](<#func-lint>)
 - [func Localize(ctx *cli.Context) error](<#func-localize>)
 - [func PreviewCatalog(ctx *cli.Context) error](<#func-previewcatalog>)
 - [func Resolve(ctx *cli.Context) error](<#func-resolve>)
@@ -89,11 +88,6 @@ var BuildCommand = cli.Command{
             Aliases: []string{"c", "conf"},
             Usage:   "Project configuration file",
         },
-        &cli.BoolFlag{
-            Name:  "lint",
-            Usage: "Enable linting during build",
-            Value: true,
-        },
         &cli.StringFlag{
             Name:    "include",
             Aliases: []string{"I"},
@@ -120,7 +114,6 @@ var CLIApp = cli.App{
         &BuildCommand,
         &FilterCommand,
         &GenerateCommand,
-
         &LocalizeCommand,
         &ResourceCommand,
         &ResolveCommand,
@@ -128,7 +121,7 @@ var CLIApp = cli.App{
 }
 ```
 
-FilterCommand is the \`vervet filter\` subcommand
+FilterCommand is the \`vervet filter\` subcommand\.
 
 ```go
 var FilterCommand = cli.Command{
@@ -171,25 +164,7 @@ var GenerateCommand = cli.Command{
 }
 ```
 
-LintCommand is the \`vervet lint\` subcommand\.
-
-```go
-var LintCommand = cli.Command{
-    Name:      "lint",
-    Usage:     "Lint  versioned resources",
-    ArgsUsage: "[input resources root] [output api root]",
-    Flags: []cli.Flag{
-        &cli.StringFlag{
-            Name:    "config",
-            Aliases: []string{"c", "conf"},
-            Usage:   "Project configuration file",
-        },
-    },
-    Action: Lint,
-}
-```
-
-LocalizeCommand is the \`vervet localize\` subcommand
+LocalizeCommand is the \`vervet localize\` subcommand\.
 
 ```go
 var LocalizeCommand = cli.Command{
@@ -274,7 +249,7 @@ var Vervet = NewApp(&CLIApp, VervetParams{
 })
 ```
 
-## func [Build](<https://github.com/snyk/vervet/blob/main/internal/cmd/compiler.go#L39>)
+## func [Build](<https://github.com/snyk/vervet/blob/main/internal/cmd/compiler.go#L34>)
 
 ```go
 func Build(ctx *cli.Context) error
@@ -282,7 +257,7 @@ func Build(ctx *cli.Context) error
 
 Build compiles versioned resources into versioned API specs\.
 
-## func [CheckCatalog](<https://github.com/snyk/vervet/blob/main/internal/cmd/backstage.go#L69>)
+## func [CheckCatalog](<https://github.com/snyk/vervet/blob/main/internal/cmd/backstage.go#L70>)
 
 ```go
 func CheckCatalog(ctx *cli.Context) error
@@ -306,23 +281,15 @@ func Generate(ctx *cli.Context) error
 
 Generate executes code generators against OpenAPI specs\.
 
-## func [Lint](<https://github.com/snyk/vervet/blob/main/internal/cmd/compiler.go#L63>)
-
-```go
-func Lint(ctx *cli.Context) error
-```
-
-Lint checks versioned resources against linting rules\.
-
 ## func [Localize](<https://github.com/snyk/vervet/blob/main/internal/cmd/localize.go#L21>)
 
 ```go
 func Localize(ctx *cli.Context) error
 ```
 
-Localize references and validate a single OpenAPI spec file
+Localize references and validate a single OpenAPI spec file\.
 
-## func [PreviewCatalog](<https://github.com/snyk/vervet/blob/main/internal/cmd/backstage.go#L62>)
+## func [PreviewCatalog](<https://github.com/snyk/vervet/blob/main/internal/cmd/backstage.go#L63>)
 
 ```go
 func PreviewCatalog(ctx *cli.Context) error
@@ -344,7 +311,7 @@ Resolve aggregates\, renders and validates resource specs at a particular versio
 func ResourceFiles(ctx *cli.Context) error
 ```
 
-ResourceFiles is a command that lists all versioned OpenAPI spec files of matching resources\. It takes optional arguments to filter the output: api resource
+ResourceFiles is a command that lists all versioned OpenAPI spec files of matching resources\. It takes optional arguments to filter the output: api resource\.
 
 ## func [ResourceShow](<https://github.com/snyk/vervet/blob/main/internal/cmd/resource.go#L43>)
 
@@ -352,7 +319,7 @@ ResourceFiles is a command that lists all versioned OpenAPI spec files of matchi
 func ResourceShow(ctx *cli.Context) error
 ```
 
-ResourceShow is a command that lists all the versions of matching resources\. It takes optional arguments to filter the output: api resource
+ResourceShow is a command that lists all the versions of matching resources\. It takes optional arguments to filter the output: api resource\.
 
 ## func [ScaffoldInit](<https://github.com/snyk/vervet/blob/main/internal/cmd/scaffold.go#L32>)
 
@@ -362,7 +329,7 @@ func ScaffoldInit(ctx *cli.Context) error
 
 ScaffoldInit creates a new project configuration from a provided scaffold directory\.
 
-## func [UpdateCatalog](<https://github.com/snyk/vervet/blob/main/internal/cmd/backstage.go#L57>)
+## func [UpdateCatalog](<https://github.com/snyk/vervet/blob/main/internal/cmd/backstage.go#L58>)
 
 ```go
 func UpdateCatalog(ctx *cli.Context) error
@@ -370,7 +337,7 @@ func UpdateCatalog(ctx *cli.Context) error
 
 UpdateCatalog updates the catalog\-info\.yaml from Vervet versions\.
 
-## type [Prompt](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L90>)
+## type [Prompt](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L87>)
 
 Prompt is the default interactive prompt for vervet\.
 
@@ -378,29 +345,29 @@ Prompt is the default interactive prompt for vervet\.
 type Prompt struct{}
 ```
 
-### func \(Prompt\) [Confirm](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L93>)
+### func \(Prompt\) [Confirm](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L90>)
 
 ```go
 func (p Prompt) Confirm(label string) (bool, error)
 ```
 
-Confirm implements VervetPrompt\.Confirm
+Confirm implements VervetPrompt\.Confirm\.
 
-### func \(Prompt\) [Entry](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L113>)
+### func \(Prompt\) [Entry](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L110>)
 
 ```go
 func (p Prompt) Entry(label string) (string, error)
 ```
 
-Entry implements VervetPrompt\.Entry
+Entry implements VervetPrompt\.Entry\.
 
-### func \(Prompt\) [Select](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L131>)
+### func \(Prompt\) [Select](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L128>)
 
 ```go
 func (p Prompt) Select(label string, items []string) (string, error)
 ```
 
-Select implements VervetPrompt\.Select
+Select implements VervetPrompt\.Select\.
 
 ## type [VervetApp](<https://github.com/snyk/vervet/blob/main/internal/cmd/cmd.go#L28-L31>)
 

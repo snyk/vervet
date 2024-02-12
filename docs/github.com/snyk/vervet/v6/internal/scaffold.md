@@ -1,7 +1,7 @@
 # scaffold
 
 ```go
-import "github.com/snyk/vervet/v5/internal/scaffold"
+import "github.com/snyk/vervet/v6/internal/scaffold"
 ```
 
 ## Index
@@ -24,7 +24,7 @@ ErrAlreadyInitialized is used when scaffolding is being run on a project that is
 var ErrAlreadyInitialized = fmt.Errorf("project files already exist")
 ```
 
-## type [Manifest](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L28-L35>)
+## type [Manifest](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L27-L34>)
 
 Manifest defines the scaffold manifest model\.
 
@@ -39,7 +39,7 @@ type Manifest struct {
 }
 ```
 
-## type [Option](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L39>)
+## type [Option](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L38>)
 
 Option defines a functional option that modifies a new Scaffold in the constructor\.
 
@@ -47,7 +47,7 @@ Option defines a functional option that modifies a new Scaffold in the construct
 type Option func(*Scaffold)
 ```
 
-### func [Force](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L43>)
+### func [Force](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L42>)
 
 ```go
 func Force(force bool) Option
@@ -55,7 +55,7 @@ func Force(force bool) Option
 
 Force sets the force flag on a Scaffold\, which determines whether existing destination files will be overwritten\. Default is false\.
 
-## type [Scaffold](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L19-L23>)
+## type [Scaffold](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L18-L22>)
 
 Scaffold defines a Vervet API project scaffold\.
 
@@ -65,7 +65,7 @@ type Scaffold struct {
 }
 ```
 
-### func [New](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L52>)
+### func [New](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L51>)
 
 ```go
 func New(dst, src string, options ...Option) (*Scaffold, error)
@@ -73,7 +73,7 @@ func New(dst, src string, options ...Option) (*Scaffold, error)
 
 New returns a new Scaffold loaded from source directory \`src\` for operation on destination directory \`dst\`\. The Scaffold src must contain a \`manifest\.yaml\` which defines how dst will be provisioned\.
 
-### func \(\*Scaffold\) [Init](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L115>)
+### func \(\*Scaffold\) [Init](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L114>)
 
 ```go
 func (s *Scaffold) Init() error
@@ -81,7 +81,7 @@ func (s *Scaffold) Init() error
 
 Init runs a script called \`init\` in the scaffold source if present\, in the destination directory\.
 
-### func \(\*Scaffold\) [Organize](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L88>)
+### func \(\*Scaffold\) [Organize](<https://github.com/snyk/vervet/blob/main/internal/scaffold/scaffold.go#L87>)
 
 ```go
 func (s *Scaffold) Organize() error

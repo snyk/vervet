@@ -3,12 +3,11 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v5/config"
-	"github.com/snyk/vervet/v5/internal/compiler"
+	"github.com/snyk/vervet/v6/config"
+	"github.com/snyk/vervet/v6/internal/compiler"
 )
 
 // BuildCommand is the `vervet build` subcommand.
@@ -21,11 +20,6 @@ var BuildCommand = cli.Command{
 			Name:    "config",
 			Aliases: []string{"c", "conf"},
 			Usage:   "Project configuration file",
-		},
-		&cli.BoolFlag{
-			Name:  "lint",
-			Usage: "Enable linting during build",
-			Value: true,
 		},
 		&cli.StringFlag{
 			Name:    "include",
@@ -42,53 +36,15 @@ func Build(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	comp, err := compiler.New(ctx.Context, project, ctx.Bool("lint"))
+	comp, err := compiler.New(ctx.Context, project)
 	if err != nil {
 		return err
 	}
-	return comp.BuildAll(ctx.Context)
-}
-
-// LintCommand is the `vervet lint` subcommand.
-var LintCommand = cli.Command{
-	Name:      "lint",
-	Usage:     "Lint  versioned resources",
-	ArgsUsage: "[input resources root] [output api root]",
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:    "config",
-			Aliases: []string{"c", "conf"},
-			Usage:   "Project configuration file",
-		},
-	},
-	Action: Lint,
-}
-
-// Lint checks versioned resources against linting rules.
-func Lint(ctx *cli.Context) error {
-	fmt.Fprintln(os.Stderr, `
-Vervet is no longer needed to perform API linting.
-Update your projects to use 'spectral lint' or 'sweater-comb lint' instead.
-`[1:])
-	fmt.Fprintln(os.Stderr, `
-Attempting to run 'sweater-comb lint' from your current working directory...
-`[1:])
-	scpath, err := exec.LookPath("sweater-comb")
+	err = comp.BuildAll(ctx.Context)
 	if err != nil {
-		scpath = "node_modules/.bin/sweater-comb"
-	}
-	if _, err := os.Stat(scpath); err != nil {
-		fmt.Fprintln(os.Stderr, `
-Failed to find a 'sweater-comb' executable script.
-'npm install @snyk/sweater-comb' and try again?
-`[1:])
 		return err
 	}
-	cmd := exec.Command(scpath, "lint")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	return nil
 }
 
 func projectFromContext(ctx *cli.Context) (*config.Project, error) {

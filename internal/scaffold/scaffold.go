@@ -8,7 +8,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/snyk/vervet/v5/internal/files"
+	"github.com/snyk/vervet/v6/internal/files"
 )
 
 // ErrAlreadyInitialized is used when scaffolding is being run on a project that is already setup.

@@ -8,9 +8,9 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v5"
-	"github.com/snyk/vervet/v5/internal/cmd"
-	"github.com/snyk/vervet/v5/testdata"
+	"github.com/snyk/vervet/v6"
+	"github.com/snyk/vervet/v6/internal/cmd"
+	"github.com/snyk/vervet/v6/testdata"
 )
 
 func TestBuild(t *testing.T) {

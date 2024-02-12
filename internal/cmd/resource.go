@@ -9,9 +9,9 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v5"
-	"github.com/snyk/vervet/v5/config"
-	"github.com/snyk/vervet/v5/internal/compiler"
+	"github.com/snyk/vervet/v6"
+	"github.com/snyk/vervet/v6/config"
+	"github.com/snyk/vervet/v6/internal/compiler"
 )
 
 // ResourceCommand is the `vervet resource` subcommand.

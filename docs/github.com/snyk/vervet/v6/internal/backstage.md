@@ -1,7 +1,7 @@
 # backstage
 
 ```go
-import "github.com/snyk/vervet/v5/internal/backstage"
+import "github.com/snyk/vervet/v6/internal/backstage"
 ```
 
 Package backstage supports vervet's integration with Backstage to automatically populate API definitions in the catalog info from compiled versions\.
