@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v6"
 	"go.uber.org/multierr"
 
 	"vervet-underground/config"

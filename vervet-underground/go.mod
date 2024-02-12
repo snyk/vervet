@@ -20,7 +20,7 @@ require (
 	github.com/prometheus/client_model v0.5.0
 	github.com/rs/zerolog v1.31.0
 	github.com/slok/go-http-metrics v0.11.0
-	github.com/snyk/vervet/v5 v5.10.1
+	github.com/snyk/vervet/v6 v6.0.0
 	github.com/spf13/viper v1.17.0
 	github.com/testcontainers/testcontainers-go v0.26.0
 	go.uber.org/multierr v1.11.0

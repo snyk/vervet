@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v6"
 	"github.com/spf13/viper"
 )
 

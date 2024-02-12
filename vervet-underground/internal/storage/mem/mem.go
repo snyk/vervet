@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v6"
 
 	"vervet-underground/internal/storage"
 )

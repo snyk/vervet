@@ -15,8 +15,8 @@ import (
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	prommiddleware "github.com/slok/go-http-metrics/middleware"
 	prommiddlewarestd "github.com/slok/go-http-metrics/middleware/std"
-	"github.com/snyk/vervet/v5"
-	"github.com/snyk/vervet/v5/versionware"
+	"github.com/snyk/vervet/v6"
+	"github.com/snyk/vervet/v6/versionware"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/scraper"

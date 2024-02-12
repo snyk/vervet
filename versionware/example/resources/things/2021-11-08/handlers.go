@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/snyk/vervet/v5"
-	"github.com/snyk/vervet/v5/versionware/example/resources/things"
-	"github.com/snyk/vervet/v5/versionware/example/store"
+	"github.com/snyk/vervet/v6"
+	"github.com/snyk/vervet/v6/versionware/example/resources/things"
+	"github.com/snyk/vervet/v6/versionware/example/store"
 )
 
 // Version is the resource release version of handlers in this package.

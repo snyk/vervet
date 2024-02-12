@@ -8,7 +8,7 @@ import (
 	"time"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v6"
 
 	"vervet-underground/config"
 	"vervet-underground/internal/handler"
