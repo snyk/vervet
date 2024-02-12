@@ -16,7 +16,7 @@ import (
 	"github.com/vmware-labs/yaml-jsonpath/pkg/yamlpath"
 	"gopkg.in/yaml.v3"
 
-	"github.com/snyk/vervet/v5"
+	"github.com/snyk/vervet/v6"
 )
 
 const (

@@ -11,8 +11,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v5/config"
-	"github.com/snyk/vervet/v5/testdata"
+	"github.com/snyk/vervet/v6/config"
+	"github.com/snyk/vervet/v6/testdata"
 )
 
 func setup(c *qt.C) {

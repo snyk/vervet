@@ -1,4 +1,4 @@
-module github.com/snyk/vervet/v5
+module github.com/snyk/vervet/v6
 
 go 1.21
 
