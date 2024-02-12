@@ -1,7 +1,7 @@
 # generator
 
 ```go
-import "github.com/snyk/vervet/v5/internal/generator"
+import "github.com/snyk/vervet/v6/internal/generator"
 ```
 
 ## Index
@@ -18,7 +18,7 @@ import "github.com/snyk/vervet/v5/internal/generator"
 - [type Option](<#type-option>)
   - [func Debug(debug bool) Option](<#func-debug>)
   - [func DryRun(dryRun bool) Option](<#func-dryrun>)
-  - [func Filesystem(FS fs.FS) Option](<#func-filesystem>)
+  - [func Filesystem(fileSystem fs.FS) Option](<#func-filesystem>)
   - [func Force(force bool) Option](<#func-force>)
   - [func Functions(funcs template.FuncMap) Option](<#func-functions>)
   - [func Here(here string) Option](<#func-here>)
@@ -40,7 +40,7 @@ func MapPathOperations(p *openapi3.PathItem) map[string]*openapi3.Operation
 
 MapPathOperations returns a mapping from HTTP method to \*openapi3\.Operation for a given \*openapi3\.PathItem\.
 
-## func [NewMap](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L38>)
+## func [NewMap](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L37>)
 
 ```go
 func NewMap(generatorsConf config.Generators, options ...Option) (map[string]*Generator, error)
@@ -48,7 +48,7 @@ func NewMap(generatorsConf config.Generators, options ...Option) (map[string]*Ge
 
 NewMap instanstiates a map of Generators from configuration\.
 
-## type [Generator](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L22-L35>)
+## type [Generator](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L21-L34>)
 
 Generator generates files for new resources from data models and templates\.
 
@@ -58,7 +58,7 @@ type Generator struct {
 }
 ```
 
-### func [New](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L51>)
+### func [New](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L50>)
 
 ```go
 func New(conf *config.Generator, options ...Option) (*Generator, error)
@@ -66,7 +66,7 @@ func New(conf *config.Generator, options ...Option) (*Generator, error)
 
 New returns a new Generator from configuration\.
 
-### func \(\*Generator\) [Execute](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L211>)
+### func \(\*Generator\) [Execute](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L210>)
 
 ```go
 func (g *Generator) Execute(resources ResourceMap) ([]string, error)
@@ -74,7 +74,7 @@ func (g *Generator) Execute(resources ResourceMap) ([]string, error)
 
 Execute runs the generator on the given resources\.
 
-### func \(\*Generator\) [Scope](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L315>)
+### func \(\*Generator\) [Scope](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L314>)
 
 ```go
 func (g *Generator) Scope() config.GeneratorScope
@@ -111,7 +111,7 @@ type OperationVersion struct {
 }
 ```
 
-## type [Option](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L163>)
+## type [Option](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L162>)
 
 Option configures a Generator\.
 
@@ -119,7 +119,7 @@ Option configures a Generator\.
 type Option func(g *Generator)
 ```
 
-### func [Debug](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L173>)
+### func [Debug](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L172>)
 
 ```go
 func Debug(debug bool) Option
@@ -127,7 +127,7 @@ func Debug(debug bool) Option
 
 Debug turns on template debug logging\.
 
-### func [DryRun](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L181>)
+### func [DryRun](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L180>)
 
 ```go
 func DryRun(dryRun bool) Option
@@ -135,15 +135,15 @@ func DryRun(dryRun bool) Option
 
 DryRun executes templates and lists the files that would be generated without actually generating them\.
 
-### func [Filesystem](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L196>)
+### func [Filesystem](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L195>)
 
 ```go
-func Filesystem(FS fs.FS) Option
+func Filesystem(fileSystem fs.FS) Option
 ```
 
 Filesystem sets the filesytem that the generator checks for templates\.
 
-### func [Force](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L166>)
+### func [Force](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L165>)
 
 ```go
 func Force(force bool) Option
@@ -151,13 +151,13 @@ func Force(force bool) Option
 
 Force configures the Generator to overwrite generated artifacts\.
 
-### func [Functions](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L202>)
+### func [Functions](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L201>)
 
 ```go
 func Functions(funcs template.FuncMap) Option
 ```
 
-### func [Here](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L189>)
+### func [Here](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L188>)
 
 ```go
 func Here(here string) Option
@@ -193,7 +193,7 @@ func MapResources(proj *config.Project) (ResourceMap, error)
 
 MapResources returns a mapping of all resources managed within a Vervet project\.
 
-## type [ResourceScope](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L272-L283>)
+## type [ResourceScope](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L271-L282>)
 
 ResourceScope identifies a resource that the generator is building for\.
 
@@ -212,7 +212,7 @@ type ResourceScope struct {
 }
 ```
 
-### func \(\*ResourceScope\) [Resource](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L286>)
+### func \(\*ResourceScope\) [Resource](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L285>)
 
 ```go
 func (s *ResourceScope) Resource() string
@@ -220,7 +220,7 @@ func (s *ResourceScope) Resource() string
 
 Resource returns the name of the resource in scope\.
 
-## type [VersionScope](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L292-L302>)
+## type [VersionScope](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L291-L301>)
 
 VersionScope identifies a distinct version of a resource that the generator is building for\.
 
@@ -238,7 +238,7 @@ type VersionScope struct {
 }
 ```
 
-### func \(\*VersionScope\) [Resource](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L305>)
+### func \(\*VersionScope\) [Resource](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L304>)
 
 ```go
 func (s *VersionScope) Resource() string
@@ -246,7 +246,7 @@ func (s *VersionScope) Resource() string
 
 Resource returns the name of the resource in scope\.
 
-### func \(\*VersionScope\) [Version](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L310>)
+### func \(\*VersionScope\) [Version](<https://github.com/snyk/vervet/blob/main/internal/generator/generator.go#L309>)
 
 ```go
 func (s *VersionScope) Version() *vervet.Version

@@ -1,7 +1,7 @@
 # generate
 
 ```go
-import "github.com/snyk/vervet/v5/generate"
+import "github.com/snyk/vervet/v6/generate"
 ```
 
 ## Index

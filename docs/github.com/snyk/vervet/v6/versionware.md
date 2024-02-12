@@ -1,7 +1,7 @@
 # versionware
 
 ```go
-import "github.com/snyk/vervet/v5/versionware"
+import "github.com/snyk/vervet/v6/versionware"
 ```
 
 Package versionware provides routing and middleware for building versioned HTTP services\.
@@ -160,7 +160,7 @@ func NewValidator(config *ValidatorConfig, docs ...*openapi3.T) (*Validator, err
 
 NewValidator returns a new validation middleware\, which validates versioned requests according to the given OpenAPI spec versions\. For configuration defaults\, a nil config may be used\.
 
-### func \(\*Validator\) [Middleware](<https://github.com/snyk/vervet/blob/main/versionware/validator.go#L121>)
+### func \(\*Validator\) [Middleware](<https://github.com/snyk/vervet/blob/main/versionware/validator.go#L124>)
 
 ```go
 func (v *Validator) Middleware(h http.Handler) http.Handler
