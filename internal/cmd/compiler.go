@@ -42,11 +42,18 @@ func Build(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	comp, err := compiler.New(ctx.Context, project, ctx.Bool("lint"))
+	comp, err := compiler.New(ctx.Context, project)
 	if err != nil {
 		return err
 	}
-	return comp.BuildAll(ctx.Context)
+	err = comp.BuildAll(ctx.Context)
+	if err != nil {
+		return err
+	}
+	if ctx.Bool("lint") {
+		return Lint(ctx)
+	}
+	return nil
 }
 
 // LintCommand is the `vervet lint` subcommand.

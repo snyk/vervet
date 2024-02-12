@@ -10,9 +10,7 @@ import (
 
 // Project defines collection of APIs and the standards they adhere to.
 type Project struct {
-	Version string `json:"version"`
-	// NOTE: Linters are deprecated and may be removed in v5.
-	Linters    Linters    `json:"linters,omitempty"`
+	Version    string     `json:"version"`
 	Generators Generators `json:"generators,omitempty"`
 	APIs       APIs       `json:"apis"`
 }
@@ -28,9 +26,6 @@ func (p *Project) APINames() []string {
 }
 
 func (p *Project) init() {
-	if p.Linters == nil {
-		p.Linters = Linters{}
-	}
 	if p.Generators == nil {
 		p.Generators = Generators{}
 	}
@@ -46,11 +41,7 @@ func (p *Project) validate() error {
 	if p.Version != "1" {
 		return fmt.Errorf("unsupported version %q", p.Version)
 	}
-	err := p.Linters.init()
-	if err != nil {
-		return err
-	}
-	err = p.Generators.init()
+	err := p.Generators.init()
 	if err != nil {
 		return err
 	}
