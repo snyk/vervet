@@ -3,7 +3,7 @@ version: 2.1
 orbs:
   go: circleci/go@1.9.0
   publish: snyk/publish@1
-  snyk: snyk/snyk@1
+  prodsec: snyk/prodsec-orb@1.1
 
 defaults: &defaults
   resource_class: small
@@ -94,6 +94,15 @@ jobs:
       - run:
           command: cd vervet-underground && golangci-lint run -v ./...
 
+  security-scans:
+    <<: *vu_defaults
+    steps:
+      - checkout
+      - prodsec/security_scans:
+          mode: auto
+          token-variable: MONITOR_SNYK_TOKEN
+          org: platform-extensibility
+
   build-vu:
     <<: *vu_defaults
     steps:
@@ -105,21 +114,6 @@ jobs:
           command: make build-docker
       - publish/save-image:
           image_name: vervet-underground
-
-  scan-vu-container:
-    <<: *vu_defaults
-    steps:
-      - setup_build_remote_docker
-      - publish/load-image:
-          image_name: vervet-underground
-      - snyk/scan:
-          organization: platform-extensibility
-          command: container test
-          fail-on-issues: true
-          severity-threshold: high
-          monitor-on-build: false
-          docker-image-name: vervet-underground:${CIRCLE_WORKFLOW_ID}
-          token-variable: MONITOR_SNYK_TOKEN
 
   release:
     <<: *defaults
@@ -144,13 +138,19 @@ workflows:
       - test-vu:
           name: Test VU
           <<: *ignore_main_branch_filter
-          
+
       - lint:
           name: Lint
           <<: *ignore_main_branch_filter
 
       - lint-vu:
           name: Lint VU
+          <<: *ignore_main_branch_filter
+
+      - security-scans:
+          name: Security Scans
+          context:
+            - team-extensibility
           <<: *ignore_main_branch_filter
 
       - build-vu:
@@ -160,8 +160,12 @@ workflows:
             - Test VU
             - Lint VU
 
-      - scan-vu-container:
-          name: Scan Container
+      - prodsec/container-scan:
+          name: Scan VU Container
+          docker_image_name: vervet-underground:${CIRCLE_WORKFLOW_ID}
+          docker_image_filename: images/vervet-underground:${CIRCLE_WORKFLOW_ID}.tar.gz
+          snyk_token_variable: MONITOR_SNYK_TOKEN
+          snyk_organization: platform-extensibility
           context:
             - team-extensibility
           requires:
@@ -172,7 +176,13 @@ workflows:
       - test:
           name: Test
           <<: *only_main_branch_filter
-          
+
+      - security-scans:
+          name: Security Scans
+          context:
+            - team-extensibility
+          <<: *only_main_branch_filter
+
       - build-vu:
           name: Build Docker Image
           context: snyk-docker-build
