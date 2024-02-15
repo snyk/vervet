@@ -101,7 +101,7 @@ jobs:
       - prodsec/security_scans:
           mode: auto
           token-variable: MONITOR_SNYK_TOKEN
-          org: platform-extensibility
+          org: platform-api
 
   build-vu:
     <<: *vu_defaults
@@ -150,7 +150,7 @@ workflows:
       - security-scans:
           name: Security Scans
           context:
-            - team-extensibility
+            - team-api
           <<: *ignore_main_branch_filter
 
       - build-vu:
@@ -165,9 +165,9 @@ workflows:
           docker_image_name: vervet-underground:${CIRCLE_WORKFLOW_ID}
           docker_image_filename: images/vervet-underground:${CIRCLE_WORKFLOW_ID}.tar.gz
           snyk_token_variable: MONITOR_SNYK_TOKEN
-          snyk_organization: platform-extensibility
+          snyk_organization: platform-api
           context:
-            - team-extensibility
+            - team-api
           requires:
             - Build Docker Image
 
@@ -180,7 +180,7 @@ workflows:
       - security-scans:
           name: Security Scans
           context:
-            - team-extensibility
+            - team-api
           <<: *only_main_branch_filter
 
       - build-vu:
@@ -198,13 +198,13 @@ workflows:
           name: Publish Docker Image
           image_name: vervet-underground
           fedramp: "no"
-          snyk_organization: platform-extensibility
+          snyk_organization: platform-api
           snyk_token_variable: MONITOR_SNYK_TOKEN
           snyk_project_tags: component=pkg:github/snyk/vervet-underground@main,component=pkg:github/snyk/vervet@main
           context:
             - snyk-docker-build
             - infra-publish-orb
-            - team-extensibility
+            - team-api
             - snyk-bot-slack
           requires:
             - Build Docker Image
