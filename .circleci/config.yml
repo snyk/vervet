@@ -150,7 +150,7 @@ workflows:
       - security-scans:
           name: Security Scans
           context:
-            - team-api
+            - platformeng_api
           <<: *ignore_main_branch_filter
 
       - build-vu:
