@@ -57,6 +57,12 @@ func ExampleHandler() {
 func TestHandler(t *testing.T) {
 	c := qt.New(t)
 	h := versionware.NewHandler([]versionware.VersionHandler{{
+		Version: vervet.MustParseVersion("2021-08-01~beta"),
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte("aug beta"))
+			c.Assert(err, qt.IsNil)
+		}),
+	}, {
 		Version: vervet.MustParseVersion("2021-10-01"),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, err := w.Write([]byte("oct"))
@@ -95,6 +101,12 @@ func TestHandler(t *testing.T) {
 		"2021-11-05", "2021-11-01", "nov", 200,
 	}, {
 		"2023-02-05", "2021-11-01", "nov", 200,
+	}, {
+		"2021-08-01", "", "Not Found\n", 404,
+	}, {
+		"2021-08-01~beta", "2021-08-01~beta", "aug beta", 200,
+	}, {
+		"2021-09-01~beta", "2021-09-01", "sept", 200,
 	}}
 	for i, test := range tests {
 		c.Run(fmt.Sprintf("%d requested %s resolved %s", i, test.requested, test.resolved), func(c *qt.C) {

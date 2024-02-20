@@ -336,13 +336,13 @@ func (vi *VersionIndex) resolveIndex(query time.Time) (int, error) {
 	return lower, nil
 }
 
-// resolveForBuild returns the most stable version effective on the query
+// ResolveForBuild returns the most stable version effective on the query
 // version date with respect to the given version stability. Returns
 // ErrNoMatchingVersion if no version matches.
 //
-// Use resolveForBuild when resolving version deprecation and effective releases
+// Use ResolveForBuild when resolving version deprecation and effective releases
 // _within a single resource_ during the "compilation" or "collation" process.
-func (vi *VersionIndex) resolveForBuild(query Version) (Version, error) {
+func (vi *VersionIndex) ResolveForBuild(query Version) (Version, error) {
 	i, err := vi.resolveIndex(query.Date)
 	if err != nil {
 		return Version{}, err

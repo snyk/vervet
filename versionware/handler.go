@@ -69,7 +69,7 @@ func (h *Handler) HandleErrors(errFunc VersionErrorHandler) {
 // Resolve returns the resolved version and its associated http.Handler for the
 // requested version.
 func (h *Handler) Resolve(requested vervet.Version) (*vervet.Version, http.Handler, error) {
-	resolvedVersion, err := h.index.Resolve(requested)
+	resolvedVersion, err := h.index.ResolveForBuild(requested)
 	if err != nil {
 		return nil, nil, err
 	}
