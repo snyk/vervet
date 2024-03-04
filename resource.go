@@ -144,7 +144,7 @@ func (rv *ResourceVersions) At(vs string) (*ResourceVersion, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid version %q: %w", vs, err)
 	}
-	resolvedVersion, err := rv.index.resolveForBuild(v)
+	resolvedVersion, err := rv.index.ResolveForBuild(v)
 	if err != nil {
 		return nil, err
 	}
