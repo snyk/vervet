@@ -8,7 +8,7 @@ metadata:
     backstage.io/techdocs-ref: dir:.
     circleci.com/project-slug: github/snyk/vervet
     github.com/project-slug: snyk/vervet
-    github.com/team-slug: snyk/extensibility
+    github.com/team-slug: snyk/api
     snyk.io/jira-prefix: EXT
   labels:
     snyk.io/visibility: public
@@ -19,4 +19,4 @@ metadata:
 spec:
   type: internal-tooling
   lifecycle: "-"
-  owner: extensibility
+  owner: api
