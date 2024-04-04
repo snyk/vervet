@@ -1,0 +1,78 @@
+openapi: 3.0.3
+x-snyk-api-stability: ga
+info:
+  title: Registry
+  version: 3.0.0
+servers:
+  - url: /api/v3
+    description: Snyk Registry
+tags:
+  - name: Something
+    description: Something
+paths:
+  /examples/hello-world/{id}:
+    get:
+      description: Get a single result from the hello-world example
+      operationId: helloWorldGetOne
+      parameters:
+        - { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/parameters/version.yaml#/Version' }
+        - name: id
+          description: The id of the hello-world example entity to be retrieved.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '400': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/400.yaml#/400' }
+        '401': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/401.yaml#/401' }
+        '404': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/404.yaml#/404' }
+        '500': { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/responses/500.yaml#/500' }
+        '200':
+          description: 'A hello world entity being requested is returned'
+          headers:
+            snyk-version-requested: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionRequestedResponseHeader' }
+            snyk-version-served: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/VersionServedResponseHeader' }
+            snyk-request-id: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/headers/headers.yaml#/RequestIdResponseHeader' }
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  jsonapi: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/common.yaml#/JsonApi' }
+                  links: { $ref: 'https://raw.githubusercontent.com/snyk/sweater-comb/v1.2.2/components/common.yaml#/Links' }
+                  data: { $ref: '#/components/schemas/HelloWorld'}
+                required: ['jsonapi', 'data', 'links']
+                additionalProperties: false
+
+components:
+  schemas:
+    HelloWorld:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+          format: uuid
+        attributes:
+          type: object
+          properties:
+            message:
+              type: string
+            requestSubject:
+              type: object
+              properties:
+                publicId:
+                  type: string
+                  format: uuid
+                type:
+                  type: string
+                clientId:
+                  type: string
+                  format: uuid
+              required: ['publicId', 'type' ]
+              additionalProperties: false
+          required: ['message', 'requestSubject']
+          additionalProperties: false
+      required: ['type', 'id', 'attributes']
+      additionalProperties: false

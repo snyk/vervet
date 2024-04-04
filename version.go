@@ -152,6 +152,19 @@ func (s Stability) Compare(sr Stability) int {
 	return 0
 }
 
+func (s Stability) Resolvable() []Stability {
+	// We do not route to WIP paths unless explicitly requested
+	switch s {
+	case StabilityExperimental:
+		return []Stability{StabilityExperimental}
+	case StabilityBeta:
+		return []Stability{StabilityExperimental, StabilityBeta}
+	case StabilityGA:
+		return []Stability{StabilityExperimental, StabilityBeta, StabilityGA}
+	}
+	return []Stability{s}
+}
+
 // Compare returns -1 if the given version is less than, 0 if equal to, and 1
 // if greater than the caller target version.
 func (v Version) Compare(vr Version) int {

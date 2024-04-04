@@ -217,8 +217,6 @@ func setOperationByName(path *openapi3.PathItem, opName string, op *openapi3.Ope
 	}
 }
 
-var stabilities = []Stability{StabilityExperimental, StabilityBeta, StabilityGA}
-
 func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 	versions := specs.versions()
 	var versionDates []time.Time
@@ -229,20 +227,23 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 	}
 
 	documentVersions := map[Version]*openapi3.T{}
-	for _, date := range versionDates {
-		for _, stability := range stabilities {
-			v := Version{Date: date, Stability: stability}
-			doc, err := specs.at(v)
-			if err == ErrNoMatchingVersion {
-				continue
-			} else if err != nil {
-				return nil, err
+	for _, spec := range specs {
+		for _, doc := range spec.versions {
+			for _, stability := range doc.Version.Stability.Resolvable() {
+				v := Version{Date: doc.Version.Date, Stability: stability}
+				doc, err := specs.at(v)
+				if err == ErrNoMatchingVersion {
+					continue
+				} else if err != nil {
+					return nil, err
+				}
+				documentVersions[v] = doc
+				if doc.Extensions == nil {
+					doc.Extensions = map[string]interface{}{}
+				}
+				doc.Extensions[ExtSnykApiVersion] = v.String()
+				documentVersions[v] = doc
 			}
-			if doc.Extensions == nil {
-				doc.Extensions = map[string]interface{}{}
-			}
-			doc.Extensions[ExtSnykApiVersion] = v.String()
-			documentVersions[v] = doc
 		}
 	}
 	sv := &SpecVersions{
