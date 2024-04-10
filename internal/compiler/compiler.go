@@ -184,10 +184,16 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 
 			// Merge all overlays
 			for _, doc := range api.overlayIncludes {
-				vervet.Merge(spec, doc.T, true)
+				err = vervet.Merge(spec, doc.T, true)
+				if err != nil {
+					return buildErr(err)
+				}
 			}
 			for _, doc := range api.overlayInlines {
-				vervet.Merge(spec, doc, true)
+				err = vervet.Merge(spec, doc, true)
+				if err != nil {
+					return buildErr(err)
+				}
 			}
 
 			// Write the compiled spec to JSON and YAML

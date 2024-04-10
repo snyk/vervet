@@ -24,11 +24,18 @@ var openapiCmp = qt.CmpEquals(cmpopts.IgnoreUnexported(
 
 func TestMergeComponents(t *testing.T) {
 	c := qt.New(t)
+	c.Run("component without replace and conflict", func(c *qt.C) {
+		src := mustLoadFile(c, "merge_test_conflict.yaml")
+		dst := mustLoadFile(c, "merge_test_dst.yaml")
+		err := vervet.Merge(dst, src, false)
+		c.Assert(err, qt.IsNotNil)
+	})
 	c.Run("component without replace", func(c *qt.C) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
 		dstOrig := mustLoadFile(c, "merge_test_dst.yaml")
 		dst := mustLoadFile(c, "merge_test_dst.yaml")
-		vervet.Merge(dst, src, false)
+		err := vervet.Merge(dst, src, false)
+		c.Assert(err, qt.IsNil)
 
 		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, dstOrig.Components.Schemas["Foo"])
 		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
@@ -62,7 +69,8 @@ func TestMergeComponents(t *testing.T) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
 		dstOrig := mustLoadFile(c, "merge_test_dst.yaml")
 		dst := mustLoadFile(c, "merge_test_dst.yaml")
-		vervet.Merge(dst, src, true)
+		err := vervet.Merge(dst, src, true)
+		c.Assert(err, qt.IsNil)
 
 		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, src.Components.Schemas["Foo"])
 		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
@@ -96,7 +104,8 @@ func TestMergeComponents(t *testing.T) {
 		src := mustLoadFile(c, "merge_test_src.yaml")
 		dstOrig := mustLoadFile(c, "merge_test_dst_missing_components.yaml")
 		dst := mustLoadFile(c, "merge_test_dst_missing_components.yaml")
-		vervet.Merge(dst, src, true)
+		err := vervet.Merge(dst, src, true)
+		c.Assert(err, qt.IsNil)
 
 		c.Assert(dst.Components.Schemas["Foo"], openapiCmp, src.Components.Schemas["Foo"])
 		c.Assert(dst.Components.Schemas["Bar"], openapiCmp, src.Components.Schemas["Bar"])
@@ -147,7 +156,8 @@ tags:
 	c.Run("tags without replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
-		vervet.Merge(dst, src, false)
+		err := vervet.Merge(dst, src, false)
+		c.Assert(err, qt.IsNil)
 		c.Assert(dst.Tags, qt.DeepEquals, openapi3.Tags{{
 			Extensions:  map[string]interface{}{},
 			Name:        "bar",
@@ -165,7 +175,8 @@ tags:
 	c.Run("tags with replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
-		vervet.Merge(dst, src, true)
+		err := vervet.Merge(dst, src, true)
+		c.Assert(err, qt.IsNil)
 		c.Assert(dst.Tags, qt.DeepEquals, openapi3.Tags{{
 			Extensions:  map[string]interface{}{},
 			Name:        "bar",
@@ -225,7 +236,8 @@ x-extension:
 	c.Run("without replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
-		vervet.Merge(dst, src, false)
+		err := vervet.Merge(dst, src, false)
+		c.Assert(err, qt.IsNil)
 		c.Assert(dst.Info, qt.DeepEquals, &openapi3.Info{
 			Extensions: map[string]interface{}{},
 			Title:      "Dst",
@@ -255,7 +267,8 @@ x-extension:
 	c.Run("with replace", func(c *qt.C) {
 		src := mustLoad(c, srcYaml)
 		dst := mustLoad(c, dstYaml)
-		vervet.Merge(dst, src, true)
+		err := vervet.Merge(dst, src, true)
+		c.Assert(err, qt.IsNil)
 		c.Assert(dst.Info, qt.DeepEquals, &openapi3.Info{
 			Extensions: map[string]interface{}{},
 			Title:      "Src",
@@ -303,7 +316,8 @@ paths:
 `
 	src := mustLoad(c, srcYaml)
 	dst := &openapi3.T{}
-	vervet.Merge(dst, src, false)
+	err := vervet.Merge(dst, src, false)
+	c.Assert(err, qt.IsNil)
 	c.Assert(dst.Paths, qt.HasLen, 1)
 }
 
