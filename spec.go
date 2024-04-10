@@ -88,7 +88,7 @@ func (sv *SpecVersions) At(v Version) (*openapi3.T, error) {
 	return doc, nil
 }
 
-func (sv *SpecVersions) resolveOperations() {
+func (sv *SpecVersions) resolveOperations() error {
 	type operationKey struct {
 		path, operation string
 	}
@@ -151,7 +151,14 @@ func (sv *SpecVersions) resolveOperations() {
 			if currentOp == nil {
 				// The added operation may reference components from its source
 				// document; import those that are missing here.
-				mergeComponents(doc, opValue.src, false)
+				err := mergeComponents(doc, opValue.src, false)
+				if err != nil {
+					return fmt.Errorf(`
+Cannot rollup endpoints as there are conflicts in components."
+"This is a known problem with Vervet.
+Please rename conflicting components as a workaround:
+	%w`, err)
+				}
 				setOperationByName(currentPathItem, opKey.operation, opValue.operation)
 			}
 		}
@@ -161,6 +168,7 @@ func (sv *SpecVersions) resolveOperations() {
 			currentActiveOps[opKey] = nextOpValue
 		}
 	}
+	return nil
 }
 
 var operationNames = []string{
@@ -250,8 +258,8 @@ func newSpecVersions(specs resourceVersionsSlice) (*SpecVersions, error) {
 		index:     NewVersionIndex(maps.Keys(documentVersions)),
 		documents: documentVersions,
 	}
-	sv.resolveOperations()
-	return sv, nil
+	err := sv.resolveOperations()
+	return sv, err
 }
 
 func findResources(root string) ([]string, error) {

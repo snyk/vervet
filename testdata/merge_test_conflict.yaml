@@ -5,13 +5,12 @@ components:
       properties:
         color:
           type: string
-          enum: ["red", "green", "blue", "alpha"]
-        quantity:
-          type: number
-    Baz:
-      type: object
-      properties:
-        other:
+          enum: ["red", "green", "blue"]
+        dimension:
+          type: array
+          items:
+            type: number
+        strange:
           type: boolean
   parameters:
     Foo:
@@ -20,17 +19,8 @@ components:
       required: true
       schema:
         type: string
-    Baz:
-      in: path
-      name: baz
-      required: true
-      schema:
-        type: string
   headers:
     Foo:
-      schema:
-        type: string
-    Baz:
       schema:
         type: string
   requestBodies:
@@ -40,32 +30,16 @@ components:
        application/json:
         schema:
           $ref: '#/components/schemas/Foo'
-    Baz:
-     required: true
-     content:
-       application/json:
-        schema:
-          $ref: '#/components/schemas/Baz'
   responses:
     '200':
       content:
         application/vnd.api+json:
           schema:
             $ref: '#/components/schemas/Foo'
-    '202':
-      content:
-        application/vnd.api+json:
-          schema:
-            $ref: '#/components/schemas/Baz'
   securitySchemes:
     Foo:
-     type: http
-     scheme: basic
-    Baz:
      type: http
      scheme: basic
   examples:
     Foo:
      value: foo
-    Baz:
-     value: bazil

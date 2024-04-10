@@ -1,6 +1,7 @@
 package vervet
 
 import (
+	"errors"
 	"sort"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -19,8 +20,11 @@ import (
 //   - This function is suitable for overlay merging scenarios only.
 //   - Component merging should be removed. Use Collator for safe component
 //     merging.
-func Merge(dst, src *openapi3.T, replace bool) {
-	mergeComponents(dst, src, replace)
+func Merge(dst, src *openapi3.T, replace bool) error {
+	err := mergeComponents(dst, src, replace)
+	if err != nil {
+		return err
+	}
 	mergeExtensions(dst, src, replace)
 	mergeInfo(dst, src, replace)
 	mergeOpenAPIVersion(dst, src, replace)
@@ -28,6 +32,8 @@ func Merge(dst, src *openapi3.T, replace bool) {
 	mergeSecurityRequirements(dst, src, replace)
 	mergeServers(dst, src, replace)
 	mergeTags(dst, src, replace)
+
+	return nil
 }
 
 func mergeOpenAPIVersion(dst, src *openapi3.T, replace bool) {
@@ -87,9 +93,9 @@ func initDestinationComponents(dst, src *openapi3.T) {
 	}
 }
 
-func mergeComponents(dst, src *openapi3.T, replace bool) {
+func mergeComponents(dst, src *openapi3.T, replace bool) error {
 	if src.Components == nil {
-		return
+		return nil
 	}
 
 	if dst.Components == nil {
@@ -98,23 +104,50 @@ func mergeComponents(dst, src *openapi3.T, replace bool) {
 
 	initDestinationComponents(dst, src)
 
-	mergeMap(dst.Components.Schemas, src.Components.Schemas, replace)
-	mergeMap(dst.Components.Parameters, src.Components.Parameters, replace)
-	mergeMap(dst.Components.Headers, src.Components.Headers, replace)
-	mergeMap(dst.Components.RequestBodies, src.Components.RequestBodies, replace)
-	mergeMap(dst.Components.Responses, src.Components.Responses, replace)
-	mergeMap(dst.Components.SecuritySchemes, src.Components.SecuritySchemes, replace)
-	mergeMap(dst.Components.Examples, src.Components.Examples, replace)
-	mergeMap(dst.Components.Links, src.Components.Links, replace)
-	mergeMap(dst.Components.Callbacks, src.Components.Callbacks, replace)
+	err := mergeMap(dst.Components.Schemas, src.Components.Schemas, replace)
+	if err != nil {
+		return err
+	}
+	err = mergeMap(dst.Components.Parameters, src.Components.Parameters, replace)
+	if err != nil {
+		return err
+	}
+	err = mergeMap(dst.Components.Headers, src.Components.Headers, replace)
+	if err != nil {
+		return err
+	}
+	err = mergeMap(dst.Components.RequestBodies, src.Components.RequestBodies, replace)
+	if err != nil {
+		return err
+	}
+	err = mergeMap(dst.Components.Responses, src.Components.Responses, replace)
+	if err != nil {
+		return err
+	}
+	err = mergeMap(dst.Components.SecuritySchemes, src.Components.SecuritySchemes, replace)
+	if err != nil {
+		return err
+	}
+	err = mergeMap(dst.Components.Examples, src.Components.Examples, replace)
+	if err != nil {
+		return err
+	}
+	err = mergeMap(dst.Components.Links, src.Components.Links, replace)
+	if err != nil {
+		return err
+	}
+	return mergeMap(dst.Components.Callbacks, src.Components.Callbacks, replace)
 }
 
-func mergeMap[T any](dst, src map[string]T, replace bool) {
+func mergeMap[T any](dst, src map[string]T, replace bool) error {
 	for k, v := range src {
-		if _, ok := dst[k]; !ok || replace {
-			dst[k] = v
+		existing, exists := dst[k]
+		if exists && !replace && !componentsEqual(v, existing) {
+			return errors.New("conflicting component: " + k)
 		}
+		dst[k] = v
 	}
+	return nil
 }
 
 func mergeExtensions(dst, src *openapi3.T, replace bool) {
