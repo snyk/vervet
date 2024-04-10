@@ -22,13 +22,9 @@ func TestSpecs(t *testing.T) {
 		MustParseVersion("2021-06-13~experimental"),
 		MustParseVersion("2021-06-13~beta"),
 		MustParseVersion("2021-08-20~experimental"),
-		MustParseVersion("2021-08-20~beta"),
 		MustParseVersion("2023-06-01~experimental"),
-		MustParseVersion("2023-06-01~beta"),
 		MustParseVersion("2023-06-02~experimental"),
-		MustParseVersion("2023-06-02~beta"),
 		MustParseVersion("2023-06-03~experimental"),
-		MustParseVersion("2023-06-03~beta"),
 	})
 
 	type expectResourceVersion struct {
@@ -153,4 +149,17 @@ func TestSpecs(t *testing.T) {
 			c.Assert(versionStr, qt.Equals, expected.version)
 		}
 	}
+}
+
+func TestDoesNotGenerateSpecsForStabilitiesWithNoChanges(t *testing.T) {
+	c := qt.New(t)
+	specs, err := LoadSpecVersions(testdata.Path("overgen"))
+	c.Assert(err, qt.IsNil)
+	versions := specs.Versions()
+	c.Assert(versions, qt.ContentEquals, VersionSlice{
+		MustParseVersion("2021-08-11"),
+		MustParseVersion("2021-08-11~beta"),
+		MustParseVersion("2021-08-11~experimental"),
+		MustParseVersion("2023-11-15~experimental"),
+	})
 }
