@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/go-cmp/cmp"
@@ -241,10 +242,19 @@ var cmpComponents = cmp.Options{
 		openapi3.Schema{},
 		openapi3.SchemaRef{},
 	),
-	// Refs themselves can mutate during relocation, so they are excluded from
-	// content comparison.
 	cmp.FilterPath(func(p cmp.Path) bool {
-		return p.Last().String() == ".Ref" || p.Last().String() == ".extra"
+		// We can't reflect on non-exported members, this will only be relevant
+		// if there are fields on the source structures that are unexpected -
+		// eg invalid openapi properties.
+		isPrivate := false
+		member := p.Last().String()
+		if len(member) > 1 {
+			isPrivate = unicode.IsLower(rune(member[1]))
+		}
+		// Refs themselves can mutate during relocation, so they are excluded
+		// from content comparison.
+		isRef := p.Last().String() == ".Ref"
+		return isPrivate || isRef
 	}, cmp.Ignore()),
 }
 
