@@ -33,7 +33,7 @@ func TestLoad(t *testing.T) {
 			Host:     "localhost",
 			Services: nil,
 			Storage: config.StorageConfig{
-				Type: config.StorageTypeMemory,
+				Type: config.StorageTypeDisk,
 			},
 		}
 		c.Assert(*conf, qt.DeepEquals, expected)
@@ -52,7 +52,7 @@ func TestLoad(t *testing.T) {
 			Host:     "0.0.0.0",
 			Services: []config.ServiceConfig{{URL: "localhost", Name: "localhost"}},
 			Storage: config.StorageConfig{
-				Type: config.StorageTypeMemory,
+				Type: config.StorageTypeDisk,
 			},
 		}
 		c.Assert(*conf, qt.DeepEquals, expected)
@@ -81,7 +81,7 @@ func TestLoad(t *testing.T) {
 				},
 			},
 			Storage: config.StorageConfig{
-				Type: config.StorageTypeMemory,
+				Type: config.StorageTypeDisk,
 			},
 		}
 		c.Assert(*conf, qt.DeepEquals, expected)
@@ -195,7 +195,7 @@ func TestLoad(t *testing.T) {
 		secretConfig := createTestFile(c, []byte(`{
 			"services": [{"url":"http://user:password@localhost","name":"localhost"}],
 			"storage": {
-				"type": "memory"
+				"type": "disk"
 			}
 		}`))
 
@@ -206,7 +206,7 @@ func TestLoad(t *testing.T) {
 			Host:     "0.0.0.0",
 			Services: []config.ServiceConfig{{URL: "http://user:password@localhost", Name: "localhost"}},
 			Storage: config.StorageConfig{
-				Type: config.StorageTypeMemory,
+				Type: config.StorageTypeDisk,
 			},
 		}
 		c.Assert(*conf, qt.DeepEquals, expected)
@@ -217,7 +217,7 @@ func TestLoad(t *testing.T) {
 			"host": "0.0.0.0",
 			"services": [{"url":"http://user:password@localhost"}],
 			"storage": {
-				"type": "memory"
+				"type": "disk"
 			}
 		}`))
 		_, err := config.Load(cfg.Name())
@@ -229,7 +229,7 @@ func TestLoad(t *testing.T) {
 			"host": "0.0.0.0",
 			"services": [{"url":"http://service-a","name":"service-a"},{"url":"http://service-a","name":"service-a"}],
 			"storage": {
-				"type": "memory"
+				"type": "disk"
 			}
 		}`))
 		_, err := config.Load(cfg.Name())

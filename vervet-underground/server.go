@@ -19,7 +19,6 @@ import (
 	"vervet-underground/internal/storage"
 	"vervet-underground/internal/storage/disk"
 	"vervet-underground/internal/storage/gcs"
-	"vervet-underground/internal/storage/mem"
 	"vervet-underground/internal/storage/s3"
 )
 
@@ -176,8 +175,6 @@ func initializeStorage(ctx context.Context, cfg *config.ServerConfig, overlayCon
 		return storage.NewCollator(collatorOpts...)
 	}
 	switch cfg.Storage.Type {
-	case config.StorageTypeMemory:
-		return mem.New(mem.NewCollator(newCollator)), nil
 	case config.StorageTypeDisk:
 		return disk.New(cfg.Storage.Disk.Path, disk.NewCollator(newCollator)), nil
 	case config.StorageTypeS3:
