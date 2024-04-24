@@ -165,7 +165,7 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// Since the digest doesn't exist, add the whole key path
-			return s.PutObject(key, currentRevision.Blob)
+			return s.PutObject(key, currentRevision.Blob, &currentRevision.Timestamp)
 		}
 		return err
 	}
@@ -212,13 +212,22 @@ func (s *Storage) GetObject(key string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
-func (s *Storage) PutObject(key string, body []byte) error {
+func (s *Storage) PutObject(key string, body []byte, timestamp *time.Time) error {
 	path := path.Join(s.path, key)
 	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, body, 0600)
+	err = os.WriteFile(path, body, 0600)
+	if err != nil {
+		return err
+	}
+	if timestamp == nil {
+		return nil
+	}
+	// Preserve specified timestamp, mostly for testing using a monotonic clock
+	// on fast file systems.
+	return os.Chtimes(path, *timestamp, *timestamp)
 }
 
 // GetCollatedVersionSpec retrieves a single collated vervet.Version
@@ -282,7 +291,7 @@ func (s *Storage) putCollatedSpecs(objects map[vervet.Version]openapi3.T) error 
 		if err != nil {
 			return fmt.Errorf("failed to marshal json for collation upload: %w", err)
 		}
-		err = s.PutObject(storage.CollatedVersionsFolder+key.String()+"/spec.json", jsonBlob)
+		err = s.PutObject(storage.CollatedVersionsFolder+key.String()+"/spec.json", jsonBlob, nil)
 		if err != nil {
 			return err
 		}
