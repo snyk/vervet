@@ -14,6 +14,7 @@ type StorageType string
 
 const (
 	StorageTypeMemory StorageType = "memory"
+	StorageTypeDisk   StorageType = "disk"
 	StorageTypeS3     StorageType = "s3"
 	StorageTypeGCS    StorageType = "gcs"
 )
@@ -70,6 +71,12 @@ type StorageConfig struct {
 	IamRoleEnabled bool
 	S3             S3Config
 	GCS            GcsConfig
+	Disk           DiskConfig
+}
+
+// DiskConfig defines configuration options for local disk storage.
+type DiskConfig struct {
+	Path string
 }
 
 // S3Config defines configuration options for AWS S3 storage.

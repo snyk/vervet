@@ -87,6 +87,34 @@ func TestLoad(t *testing.T) {
 		c.Assert(*conf, qt.DeepEquals, expected)
 	})
 
+	c.Run("disk config", func(c *qt.C) {
+		f := createTestFile(c, []byte(`{
+			"host": "0.0.0.0",
+			"services": [{"url":"localhost","name":"localhost"}],
+			"storage": {
+				"type": "disk",
+				"disk": {
+					"path": "/tmp/foobar"
+				}
+			}
+		}`))
+
+		conf, err := config.Load(f.Name())
+		c.Assert(err, qt.IsNil)
+
+		expected := config.ServerConfig{
+			Host:     "0.0.0.0",
+			Services: []config.ServiceConfig{{URL: "localhost", Name: "localhost"}},
+			Storage: config.StorageConfig{
+				Type: config.StorageTypeDisk,
+				Disk: config.DiskConfig{
+					Path: "/tmp/foobar",
+				},
+			},
+		}
+		c.Assert(*conf, qt.DeepEquals, expected)
+	})
+
 	c.Run("s3 config", func(c *qt.C) {
 		f := createTestFile(c, []byte(`{
 			"host": "0.0.0.0",
