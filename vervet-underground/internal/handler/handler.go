@@ -69,7 +69,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) openapiVersions(w http.ResponseWriter, r *http.Request) {
-	versionIndex := h.store.VersionIndex()
+	versionIndex, err := h.store.VersionIndex(r.Context())
+	if err != nil {
+		logError(err)
+		http.Error(w, "Cannot get versions", http.StatusInternalServerError)
+		return
+	}
 	content, err := json.Marshal(versionIndex.Versions().Strings())
 	if err != nil {
 		logError(err)
@@ -105,7 +110,13 @@ func (h *Handler) openapiVersion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	versionIndex := h.store.VersionIndex()
+	ctx := r.Context()
+	versionIndex, err := h.store.VersionIndex(ctx)
+	if err != nil {
+		logError(err)
+		http.Error(w, "Cannot get versions", http.StatusInternalServerError)
+		return
+	}
 	resolvedVersion, err := versionIndex.Resolve(version)
 	if errors.Is(err, vervet.ErrNoMatchingVersion) {
 		http.Error(w, "Version not found", http.StatusNotFound)
@@ -118,7 +129,7 @@ func (h *Handler) openapiVersion(w http.ResponseWriter, r *http.Request) {
 	resolvedVersion.Stability = version.Stability
 	w.Header().Set(versionware.HeaderSnykVersionServed, resolvedVersion.String())
 
-	content, err := h.store.Version(r.Context(), resolvedVersion.String())
+	content, err := h.store.Version(ctx, resolvedVersion.String())
 	if err != nil {
 		logError(err)
 		http.Error(w, "Failure to retrieve version", http.StatusInternalServerError)

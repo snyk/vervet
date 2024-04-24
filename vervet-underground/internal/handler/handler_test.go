@@ -132,7 +132,7 @@ func (s *mockStorage) NotifyVersion(ctx context.Context, name string, version st
 	return nil
 }
 
-func (s *mockStorage) VersionIndex() vervet.VersionIndex {
+func (s *mockStorage) VersionIndex(ctx context.Context) (vervet.VersionIndex, error) {
 	return vervet.NewVersionIndex(vervet.VersionSlice{
 		vervet.MustParseVersion("2021-06-04~experimental"),
 		vervet.MustParseVersion("2021-10-20~experimental"),
@@ -140,7 +140,7 @@ func (s *mockStorage) VersionIndex() vervet.VersionIndex {
 		vervet.MustParseVersion("2022-01-16~experimental"),
 		vervet.MustParseVersion("2022-01-16~beta"),
 		vervet.MustParseVersion("2022-01-16~ga"),
-	})
+	}), nil
 }
 
 func (s *mockStorage) Version(ctx context.Context, version string) ([]byte, error) {

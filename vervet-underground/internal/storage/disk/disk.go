@@ -13,7 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -23,10 +22,8 @@ import (
 )
 
 type Storage struct {
-	path             string
-	mu               sync.RWMutex
-	collatedVersions vervet.VersionIndex
-	newCollator      func() (*storage.Collator, error)
+	path        string
+	newCollator func() (*storage.Collator, error)
 }
 
 // Option defines a Storage constructor option.
@@ -118,14 +115,10 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 		}
 		aggregate.Add(service, revision)
 	}
-	versions, specs, err := aggregate.Collate()
+	_, specs, err := aggregate.Collate()
 	if err != nil {
 		return err
 	}
-
-	s.mu.Lock()
-	s.collatedVersions = vervet.NewVersionIndex(versions)
-	s.mu.Unlock()
 
 	return s.putCollatedSpecs(specs)
 }
@@ -174,11 +167,24 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 }
 
 // VersionIndex implements scraper.Storage.
-func (s *Storage) VersionIndex() vervet.VersionIndex {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+func (s *Storage) VersionIndex(ctx context.Context) (vervet.VersionIndex, error) {
+	objects, err := s.ListObjects(ctx, storage.ServiceVersionsFolder)
+	if err != nil {
+		return vervet.VersionIndex{}, err
+	}
+	vs := make(vervet.VersionSlice, len(objects))
+	for idx, obj := range objects {
+		_, versionStr, _, err := parseServiceVersionRevisionKey(obj)
+		if err != nil {
+			return vervet.VersionIndex{}, err
+		}
+		vs[idx], err = vervet.ParseVersion(versionStr)
+		if err != nil {
+			return vervet.VersionIndex{}, err
+		}
+	}
 
-	return s.collatedVersions
+	return vervet.NewVersionIndex(vs), nil
 }
 
 // Version implements scraper.Storage.
@@ -190,9 +196,11 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 
 	blob, err := s.GetCollatedVersionSpec(version)
 	if err != nil {
-		s.mu.RLock()
-		resolved, err := s.collatedVersions.Resolve(parsedVersion)
-		s.mu.RUnlock()
+		index, err := s.VersionIndex(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resolved, err := index.Resolve(parsedVersion)
 		if err != nil {
 			return nil, err
 		}

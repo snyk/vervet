@@ -20,7 +20,7 @@ type ReadOnlyStorage interface {
 	HasVersion(ctx context.Context, name string, version string, digest string) (bool, error)
 
 	// VersionIndex fetches the Storage Versions index compiled by VU
-	VersionIndex() vervet.VersionIndex
+	VersionIndex(ctx context.Context) (vervet.VersionIndex, error)
 
 	// Version fetches the Storage Version spec compiled by VU
 	Version(ctx context.Context, version string) ([]byte, error)

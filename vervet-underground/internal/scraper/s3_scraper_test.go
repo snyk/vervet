@@ -62,7 +62,8 @@ func TestS3Scraper(t *testing.T) {
 		c.Assert(ok, qt.IsTrue)
 	}
 
-	vi := st.VersionIndex()
+	vi, err := st.VersionIndex(ctx)
+	c.Assert(err, qt.IsNil)
 	c.Assert(len(vi.Versions()), qt.Equals, 4)
 	for _, version := range vi.Versions() {
 		specData, err := st.Version(ctx, version.String())
@@ -121,7 +122,8 @@ func TestS3ScraperCollation(t *testing.T) {
 		c.Assert(ok, qt.IsTrue)
 	}
 
-	vi := st.VersionIndex()
+	vi, err := st.VersionIndex(ctx)
+	c.Assert(err, qt.IsNil)
 	c.Assert(len(vi.Versions()), qt.Equals, 4)
 	for _, version := range vi.Versions() {
 		specData, err := st.Version(ctx, version.String())
