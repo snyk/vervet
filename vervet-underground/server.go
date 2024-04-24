@@ -80,7 +80,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed initialization scraping of service")
 	}
 
-	h := handler.New(cfg, sc, handler.UseDefaultMiddleware)
+	h := handler.New(cfg, st, handler.UseDefaultMiddleware)
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf("%s:8080", cfg.Host),
