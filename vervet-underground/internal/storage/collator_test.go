@@ -137,12 +137,8 @@ func TestCollator_Collate(t *testing.T) {
 		Blob:    []byte(serviceBSpec),
 	})
 
-	versions, specs, err := collator.Collate()
+	specs, err := collator.Collate()
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(versions), qt.Equals, 3)
-	c.Assert(versions[0], qt.Equals, v20220201_beta)
-	c.Assert(versions[1], qt.Equals, v20220301_ga)
-	c.Assert(versions[2], qt.Equals, v20220401_ga)
 
 	c.Assert(specs[v20220201_beta].Paths.Find("/test"), qt.IsNotNil)
 	c.Assert(specs[v20220201_beta].Paths.Find("/example"), qt.IsNil)
@@ -181,11 +177,8 @@ func TestCollator_Collate_MigratingEndpoints(t *testing.T) {
 		Blob:    []byte(serviceCSpec),
 	})
 
-	versions, specs, err := collator.Collate()
+	specs, err := collator.Collate()
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(versions), qt.Equals, 2)
-	c.Assert(versions[0], qt.Equals, v20220201_exp)
-	c.Assert(versions[1], qt.Equals, v20230314_exp)
 
 	c.Assert(specs[v20220201_exp].Paths.Find("/test"), qt.IsNotNil)
 	c.Assert(specs[v20230314_exp].Paths.Find("/test"), qt.IsNotNil)
@@ -222,7 +215,7 @@ func TestCollator_Collate_ExcludePatterns(t *testing.T) {
 		Version: v20220401_ga,
 		Blob:    []byte(serviceBSpec),
 	})
-	_, specs, err := collator.Collate()
+	specs, err := collator.Collate()
 	c.Assert(err, qt.IsNil)
 
 	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Extensions["x-other-internal"], qt.IsNil)
@@ -256,7 +249,7 @@ func TestCollator_Collate_Conflict(t *testing.T) {
 		Timestamp: time.Date(2021, 6, 15, 0, 0, 0, 0, time.UTC),
 	})
 
-	_, specs, err := collator.Collate()
+	specs, err := collator.Collate()
 	c.Assert(err, qt.IsNil)
 	// First path wins
 	c.Assert(specs[vervet.MustParseVersion("2021-06-15")].Paths["/examples/hello-world"].Post.Description,
@@ -304,7 +297,7 @@ func TestCollator_Collate_Overlay(t *testing.T) {
 		Version: v20220401_ga,
 		Blob:    []byte(serviceBSpec),
 	})
-	_, specs, err := collator.Collate()
+	specs, err := collator.Collate()
 	c.Assert(err, qt.IsNil)
 
 	c.Assert(specs[v20220401_ga].Servers[0].URL, qt.Equals, "https://awesome.snyk.io/rest")

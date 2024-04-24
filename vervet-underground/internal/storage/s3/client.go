@@ -269,7 +269,7 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 		}
 		aggregate.Add(service, revision)
 	}
-	_, specs, err := aggregate.Collate()
+	specs, err := aggregate.Collate()
 	if err != nil {
 		return err
 	}
