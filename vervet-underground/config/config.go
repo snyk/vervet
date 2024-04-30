@@ -13,9 +13,9 @@ import (
 type StorageType string
 
 const (
-	StorageTypeMemory StorageType = "memory"
-	StorageTypeS3     StorageType = "s3"
-	StorageTypeGCS    StorageType = "gcs"
+	StorageTypeDisk StorageType = "disk"
+	StorageTypeS3   StorageType = "s3"
+	StorageTypeGCS  StorageType = "gcs"
 )
 
 // ServerConfig defines the configuration options for the Vervet Underground service.
@@ -70,6 +70,12 @@ type StorageConfig struct {
 	IamRoleEnabled bool
 	S3             S3Config
 	GCS            GcsConfig
+	Disk           DiskConfig
+}
+
+// DiskConfig defines configuration options for local disk storage.
+type DiskConfig struct {
+	Path string
 }
 
 // S3Config defines configuration options for AWS S3 storage.
@@ -92,7 +98,7 @@ type GcsConfig struct {
 // setDefaults sets default values for the ServerConfig.
 func setDefaults() {
 	viper.SetDefault("host", "localhost")
-	viper.SetDefault("storage.type", StorageTypeMemory)
+	viper.SetDefault("storage.type", StorageTypeDisk)
 }
 
 // loadEnv sets up the config store to load values from environment variables,

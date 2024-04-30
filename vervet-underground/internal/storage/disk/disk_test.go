@@ -1,4 +1,4 @@
-package mem
+package disk
 
 import (
 	"context"
@@ -15,7 +15,15 @@ var t0 = time.Date(2021, time.December, 3, 20, 49, 51, 0, time.UTC)
 
 func TestNotifyVersions(t *testing.T) {
 	c := qt.New(t)
-	s := New()
+	s := New("/tmp/specs")
+	c.Cleanup(func() {
+		ds, ok := s.(*Storage)
+		if !ok {
+			return
+		}
+		err := ds.Cleanup()
+		c.Assert(err, qt.IsNil)
+	})
 	ctx := context.Background()
 	err := s.NotifyVersions(ctx, "petfood", []string{"2021-09-01", "2021-09-16"}, t0)
 	c.Assert(err, qt.IsNil)
@@ -24,7 +32,15 @@ func TestNotifyVersions(t *testing.T) {
 
 func TestHasVersion(t *testing.T) {
 	c := qt.New(t)
-	s := New()
+	s := New("/tmp/specs")
+	c.Cleanup(func() {
+		ds, ok := s.(*Storage)
+		if !ok {
+			return
+		}
+		err := ds.Cleanup()
+		c.Assert(err, qt.IsNil)
+	})
 	ctx := context.Background()
 	const cricketsDigest = "sha256:mWpHX0/hIZS9mVd8eobfHWm6OkUsKZLiqd6ShRnNzA4="
 	const geckosDigest = "sha256:c5JD7m0g4DVhoaX4z8HFcTP8S/yUOEsjgP8ECkuEHqM="
@@ -65,7 +81,15 @@ const emptySpec = `{"components":{},"info":{"title":"","version":""},"openapi":"
 
 func TestCollateVersions(t *testing.T) {
 	c := qt.New(t)
-	s := New()
+	s := New("/tmp/specs")
+	c.Cleanup(func() {
+		ds, ok := s.(*Storage)
+		if !ok {
+			return
+		}
+		err := ds.Cleanup()
+		c.Assert(err, qt.IsNil)
+	})
 
 	ctx := context.Background()
 	err := s.NotifyVersion(ctx, "petfood", "2021-09-16", []byte(emptySpec), t0)
@@ -92,9 +116,17 @@ func TestCollateVersions(t *testing.T) {
 	c.Assert(string(after), qt.Equals, spec)
 }
 
-func TestMemStorageCollateVersion(t *testing.T) {
-	s := New()
+func TestDiskStorageCollateVersion(t *testing.T) {
 	c := qt.New(t)
+	s := New("/tmp/specs")
+	c.Cleanup(func() {
+		ds, ok := s.(*Storage)
+		if !ok {
+			return
+		}
+		err := ds.Cleanup()
+		c.Assert(err, qt.IsNil)
+	})
 
 	storage.AssertCollateVersion(c, s)
 }

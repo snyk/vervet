@@ -12,12 +12,11 @@ import (
 
 	"vervet-underground/config"
 	"vervet-underground/internal/handler"
-	"vervet-underground/internal/scraper"
 )
 
 func TestHealth(t *testing.T) {
 	c := qt.New(t)
-	cfg, h := setup(c)
+	cfg, h := setup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/", nil)
@@ -33,7 +32,7 @@ func TestHealth(t *testing.T) {
 
 func TestOpenapi(t *testing.T) {
 	c := qt.New(t)
-	_, h := setup(c)
+	_, h := setup()
 
 	for _, path := range []string{"/openapi", "/openapi/"} {
 		w := httptest.NewRecorder()
@@ -55,7 +54,7 @@ func TestOpenapi(t *testing.T) {
 
 func TestMetrics(t *testing.T) {
 	c := qt.New(t)
-	_, h := setup(c)
+	_, h := setup()
 
 	w := httptest.NewRecorder()
 	// NOTE: Metrics are counted globally, so in order for this metrics test to
@@ -78,7 +77,7 @@ func TestMetrics(t *testing.T) {
 
 func TestOpenapiVersion(t *testing.T) {
 	c := qt.New(t)
-	_, h := setup(c)
+	_, h := setup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/openapi/2022-01-16~beta", nil)
@@ -91,7 +90,7 @@ func TestOpenapiVersion(t *testing.T) {
 
 func TestOpenapiVersionNotFound(t *testing.T) {
 	c := qt.New(t)
-	_, h := setup(c)
+	_, h := setup()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/openapi/2021-01-16~beta", nil)
@@ -102,7 +101,7 @@ func TestOpenapiVersionNotFound(t *testing.T) {
 	c.Assert(contents, qt.DeepEquals, []byte("Version not found\n"))
 }
 
-func setup(c *qt.C) (*config.ServerConfig, *handler.Handler) {
+func setup() (*config.ServerConfig, *handler.Handler) {
 	cfg := &config.ServerConfig{
 		Services: []config.ServiceConfig{{
 			Name: "petfood", URL: "http://petfood.svc.cluster.local",
@@ -111,9 +110,7 @@ func setup(c *qt.C) (*config.ServerConfig, *handler.Handler) {
 		}},
 	}
 	st := &mockStorage{}
-	sc, err := scraper.New(cfg, st)
-	c.Assert(err, qt.IsNil)
-	h := handler.New(cfg, sc, handler.UseDefaultMiddleware)
+	h := handler.New(cfg, st, handler.UseDefaultMiddleware)
 	return cfg, h
 }
 
@@ -135,7 +132,7 @@ func (s *mockStorage) NotifyVersion(ctx context.Context, name string, version st
 	return nil
 }
 
-func (s *mockStorage) VersionIndex() vervet.VersionIndex {
+func (s *mockStorage) VersionIndex(ctx context.Context) (vervet.VersionIndex, error) {
 	return vervet.NewVersionIndex(vervet.VersionSlice{
 		vervet.MustParseVersion("2021-06-04~experimental"),
 		vervet.MustParseVersion("2021-10-20~experimental"),
@@ -143,7 +140,7 @@ func (s *mockStorage) VersionIndex() vervet.VersionIndex {
 		vervet.MustParseVersion("2022-01-16~experimental"),
 		vervet.MustParseVersion("2022-01-16~beta"),
 		vervet.MustParseVersion("2022-01-16~ga"),
-	})
+	}), nil
 }
 
 func (s *mockStorage) Version(ctx context.Context, version string) ([]byte, error) {

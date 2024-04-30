@@ -11,6 +11,21 @@ import (
 	"github.com/snyk/vervet/v6"
 )
 
+// ReadOnlyStorage defines functionality needed to fetch spec versions.
+// Implmentations can assume that the storage has already been populated
+// through the Storage interface.
+type ReadOnlyStorage interface {
+	// HasVersion returns whether the storage has already stored the service
+	// API spec version at the given content digest.
+	HasVersion(ctx context.Context, name string, version string, digest string) (bool, error)
+
+	// VersionIndex fetches the Storage Versions index compiled by VU
+	VersionIndex(ctx context.Context) (vervet.VersionIndex, error)
+
+	// Version fetches the Storage Version spec compiled by VU
+	Version(ctx context.Context, version string) ([]byte, error)
+}
+
 // Storage defines the storage functionality needed in order to store service
 // API version spec snapshots.
 type Storage interface {
@@ -24,21 +39,13 @@ type Storage interface {
 	// respective versions gathered.
 	CollateVersions(ctx context.Context, serviceFilter map[string]bool) error
 
-	// HasVersion returns whether the storage has already stored the service
-	// API spec version at the given content digest.
-	HasVersion(ctx context.Context, name string, version string, digest string) (bool, error)
-
 	// NotifyVersion tells the storage to store the given version contents at
 	// the scrapeTime. The storage implementation must detect and ignore
 	// duplicate version contents, as some services may not provide content
 	// digest headers in their responses.
 	NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error
 
-	// VersionIndex fetches the Storage Versions index compiled by VU
-	VersionIndex() vervet.VersionIndex
-
-	// Version fetches the Storage Version spec compiled by VU
-	Version(ctx context.Context, version string) ([]byte, error)
+	ReadOnlyStorage
 }
 
 // CollatedVersionMappedSpecs Compiled aggregated spec for all services at that given version.

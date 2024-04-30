@@ -11,7 +11,7 @@ fmt:
 
 .PHONY: clean
 clean:
-	rm -f server && go clean
+	rm -f api scraper && go clean
 
 .PHONY: lint
 lint:
@@ -36,8 +36,13 @@ test:
 	go test ./... -count=1 -race
 
 .PHONY: build
-build:
-	go build server.go
+build: api scraper
+
+api:
+	go build -o api cmd/api/main.go
+
+scraper:
+	go build -o scraper cmd/scraper/main.go
 #----------------------------------------------------------------------------------
 # Check for updates to packages in remote OSS repositories and update go.mod AND
 # go.sum to match changes. Then download the all the dependencies
@@ -57,10 +62,11 @@ test-coverage:
 
 .PHONY: start
 start:
-	go run server.go
+	go run cmd/scraper/main.go
+	go run cmd/api/main.go
 
 .PHONY: install-tools
-install-tools: 
+install-tools:
 ifndef CI
 	mkdir -p ${GO_BIN}
 	curl -sSfL 'https://raw.githubusercontent.com/golangci/golangci-lint/${GOCI_LINT_V}/install.sh' | sh -s -- -b ${GO_BIN} ${GOCI_LINT_V}

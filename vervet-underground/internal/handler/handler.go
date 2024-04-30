@@ -19,21 +19,21 @@ import (
 	"github.com/snyk/vervet/v6/versionware"
 
 	"vervet-underground/config"
-	"vervet-underground/internal/scraper"
+	"vervet-underground/internal/storage"
 )
 
 // Handler handles Vervet Underground HTTP requests.
 type Handler struct {
 	cfg    *config.ServerConfig
-	sc     *scraper.Scraper
+	store  storage.ReadOnlyStorage
 	router chi.Router
 }
 
 // New returns a new Handler.
-func New(cfg *config.ServerConfig, sc *scraper.Scraper, routerOptions ...func(r chi.Router)) *Handler {
+func New(cfg *config.ServerConfig, store storage.ReadOnlyStorage, routerOptions ...func(r chi.Router)) *Handler {
 	h := &Handler{
 		cfg:    cfg,
-		sc:     sc,
+		store:  store,
 		router: chi.NewRouter(),
 	}
 	for i := range routerOptions {
@@ -69,7 +69,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) openapiVersions(w http.ResponseWriter, r *http.Request) {
-	versionIndex := h.sc.VersionIndex()
+	versionIndex, err := h.store.VersionIndex(r.Context())
+	if err != nil {
+		logError(err)
+		http.Error(w, "Cannot get versions", http.StatusInternalServerError)
+		return
+	}
 	content, err := json.Marshal(versionIndex.Versions().Strings())
 	if err != nil {
 		logError(err)
@@ -105,7 +110,13 @@ func (h *Handler) openapiVersion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	versionIndex := h.sc.VersionIndex()
+	ctx := r.Context()
+	versionIndex, err := h.store.VersionIndex(ctx)
+	if err != nil {
+		logError(err)
+		http.Error(w, "Cannot get versions", http.StatusInternalServerError)
+		return
+	}
 	resolvedVersion, err := versionIndex.Resolve(version)
 	if errors.Is(err, vervet.ErrNoMatchingVersion) {
 		http.Error(w, "Version not found", http.StatusNotFound)
@@ -118,7 +129,7 @@ func (h *Handler) openapiVersion(w http.ResponseWriter, r *http.Request) {
 	resolvedVersion.Stability = version.Stability
 	w.Header().Set(versionware.HeaderSnykVersionServed, resolvedVersion.String())
 
-	content, err := h.sc.Version(r.Context(), resolvedVersion.String())
+	content, err := h.store.Version(ctx, resolvedVersion.String())
 	if err != nil {
 		logError(err)
 		http.Error(w, "Failure to retrieve version", http.StatusInternalServerError)

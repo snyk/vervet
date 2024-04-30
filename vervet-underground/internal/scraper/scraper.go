@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
-	"github.com/snyk/vervet/v6"
 	"go.uber.org/multierr"
 
 	"vervet-underground/config"
@@ -285,12 +284,4 @@ func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string
 func isLegacyVersion(version string) bool {
 	// This default version predates vervet's creation date.
 	return version == "2021-01-01"
-}
-
-func (s *Scraper) VersionIndex() vervet.VersionIndex {
-	return s.storage.VersionIndex()
-}
-
-func (s *Scraper) Version(ctx context.Context, version string) ([]byte, error) {
-	return s.storage.Version(ctx, version)
 }

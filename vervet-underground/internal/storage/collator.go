@@ -98,7 +98,7 @@ func (c *Collator) Add(service string, revision ContentRevision) {
 }
 
 // Collate processes added service revisions to collate unified versions and OpenAPI specs for each version.
-func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T, error) {
+func (c *Collator) Collate() (map[vervet.Version]openapi3.T, error) {
 	specs := make(map[vervet.Version]openapi3.T)
 	sort.Sort(c.uniqueVersions)
 
@@ -120,23 +120,23 @@ func (c *Collator) Collate() (vervet.VersionSlice, map[vervet.Version]openapi3.T
 			if err != nil {
 				log.Error().Err(err).Msgf("could not merge revision for version %s", version)
 				collatorMergeError.WithLabelValues(version.String()).Inc()
-				return nil, nil, err
+				return nil, err
 			}
 			if err := vervet.RemoveElements(spec, c.excludePatterns); err != nil {
 				log.Error().Err(err).Msgf("could not merge revision for version %s", version)
 				collatorMergeError.WithLabelValues(version.String()).Inc()
-				return nil, nil, err
+				return nil, err
 			}
 			if err := c.applyOverlay(spec); err != nil {
 				log.Error().Err(err).Msgf("failed to merge overlay for version %s", version)
 				collatorMergeError.WithLabelValues(version.String()).Inc()
-				return nil, nil, err
+				return nil, err
 			}
 			specs[version] = *spec
 		}
 	}
 
-	return c.uniqueVersions, specs, nil
+	return specs, nil
 }
 
 func mergeRevisions(revisions ContentRevisions) (*openapi3.T, error) {

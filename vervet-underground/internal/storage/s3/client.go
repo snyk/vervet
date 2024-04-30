@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -47,9 +46,6 @@ type Storage struct {
 	client      *s3.Client
 	config      Config
 	newCollator func() (*storage.Collator, error)
-
-	mu               sync.RWMutex
-	collatedVersions vervet.VersionIndex
 }
 
 func New(ctx context.Context, awsCfg *Config, options ...Option) (storage.Storage, error) {
@@ -187,11 +183,19 @@ func (s *Storage) NotifyVersion(ctx context.Context, name string, version string
 }
 
 // Versions implements scraper.Storage.
-func (s *Storage) VersionIndex() vervet.VersionIndex {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	return s.collatedVersions
+func (s *Storage) VersionIndex(ctx context.Context) (vervet.VersionIndex, error) {
+	versions, err := s.ListCollatedVersions(ctx)
+	if err != nil {
+		return vervet.VersionIndex{}, err
+	}
+	vs := make(vervet.VersionSlice, len(versions))
+	for idx, version := range versions {
+		vs[idx], err = vervet.ParseVersion(version)
+		if err != nil {
+			return vervet.VersionIndex{}, err
+		}
+	}
+	return vervet.NewVersionIndex(vs), nil
 }
 
 // Version implements scraper.Storage.
@@ -203,9 +207,11 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 
 	blob, err := s.GetCollatedVersionSpec(ctx, version)
 	if err != nil {
-		s.mu.RLock()
-		resolved, err := s.collatedVersions.Resolve(parsedVersion)
-		s.mu.RUnlock()
+		index, err := s.VersionIndex(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resolved, err := index.Resolve(parsedVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -263,14 +269,10 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 		}
 		aggregate.Add(service, revision)
 	}
-	versions, specs, err := aggregate.Collate()
+	specs, err := aggregate.Collate()
 	if err != nil {
 		return err
 	}
-
-	s.mu.Lock()
-	s.collatedVersions = vervet.NewVersionIndex(versions)
-	s.mu.Unlock()
 
 	n, err := s.putCollatedSpecs(ctx, specs)
 	if err != nil {

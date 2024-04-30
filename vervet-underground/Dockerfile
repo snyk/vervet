@@ -18,7 +18,10 @@ RUN go mod download
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 \
-    go build -v -o /go/bin/app ./
+    go build -v -o /go/bin/app ./cmd/api/main.go
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 \
+    go build -v -o /go/bin/scraper ./cmd/scraper/main.go
 
 #################
 # Runtime stage #
