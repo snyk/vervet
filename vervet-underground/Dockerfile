@@ -35,6 +35,7 @@ FROM --platform=amd64 gcr.io/snyk-main/ubuntu-20:2.3.7_202404190856
 
 COPY config.*.json /
 COPY --from=builder /go/bin/app /
+COPY --from=builder /go/bin/scraper /
 
 USER snyk
 
