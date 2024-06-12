@@ -12,6 +12,8 @@ import (
 	gcstesting "github.com/snyk/vervet/v6/internal/storage/gcs/testing"
 )
 
+var specFile = "spec.txt"
+
 func TestPutObject(t *testing.T) {
 	c := qt.New(t)
 	cfg := gcstesting.Setup(c)
@@ -44,16 +46,16 @@ func TestGetObject(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader([]byte(data))
-	err = client.PutObject(ctx, storage.CollatedVersionsFolder+"spec.txt", reader)
+	err = client.PutObject(ctx, storage.CollatedVersionsFolder+specFile, reader)
 	c.Assert(err, qt.IsNil)
 
 	// Assert
 	objects, err := client.ListObjects(ctx, storage.CollatedVersionsFolder, "")
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(objects), qt.Equals, 1)
-	c.Assert(objects[0].Name, qt.Equals, storage.CollatedVersionsFolder+"spec.txt")
+	c.Assert(objects[0].Name, qt.Equals, storage.CollatedVersionsFolder+specFile)
 
-	res, err := client.GetObject(ctx, storage.CollatedVersionsFolder+"spec.txt")
+	res, err := client.GetObject(ctx, storage.CollatedVersionsFolder+specFile)
 	c.Assert(err, qt.IsNil)
 	c.Assert(res, qt.Not(qt.IsNil))
 	c.Assert(string(res), qt.Equals, data)
@@ -83,7 +85,7 @@ func TestListObjectsAndPrefixes(t *testing.T) {
 
 	// convert byte slice to io.Reader
 	reader := bytes.NewReader([]byte(data))
-	err = client.PutObject(ctx, storage.CollatedVersionsFolder+"2022-02-02/spec.txt", reader)
+	err = client.PutObject(ctx, storage.CollatedVersionsFolder+"2022-02-02/"+specFile, reader)
 	c.Assert(err, qt.IsNil)
 
 	// Assert

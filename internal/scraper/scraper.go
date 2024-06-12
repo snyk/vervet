@@ -209,7 +209,12 @@ func httpError(r *http.Response) error {
 	return errors.Errorf("request failed: HTTP %d", r.StatusCode)
 }
 
-func (s *Scraper) getNewVersion(ctx context.Context, svc service, version string) (respContents []byte, isNew bool, err error) {
+func (s *Scraper) getNewVersion(ctx context.Context,
+	svc service,
+	version string) (respContents []byte,
+	isNew bool,
+	err error,
+) {
 	// TODO: Services don't emit HEAD currently with compiled vervet
 	//       will need to enforce down the line
 	isNew, err = s.hasNewVersion(ctx, svc, version)

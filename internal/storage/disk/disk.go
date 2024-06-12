@@ -138,7 +138,12 @@ func (s *Storage) HasVersion(ctx context.Context, name string, version string, d
 }
 
 // NotifyVersion implements scraper.Storage.
-func (s *Storage) NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersion(ctx context.Context,
+	name string,
+	version string,
+	contents []byte,
+	scrapeTime time.Time,
+) error {
 	digest := storage.NewDigest(contents)
 	key := s.getServiceVersionRevisionKey(name, version, string(digest))
 	parsedVersion, err := vervet.ParseVersion(version)

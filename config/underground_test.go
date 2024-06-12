@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
+
 	"github.com/snyk/vervet/v6"
 	"github.com/snyk/vervet/v6/config"
 )

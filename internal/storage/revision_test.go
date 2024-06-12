@@ -31,12 +31,34 @@ func TestServiceRevisions_ResolveLatestRevision(t *testing.T) {
 	}
 
 	ut := storage.NewServiceRevisions()
-	ut.Add(storage.ContentRevision{Version: v20220301_ga, Digest: "0301ga_0", Timestamp: time.Date(2022, 3, 1, 0, 0, 0, 0, time.UTC)})
-	ut.Add(storage.ContentRevision{Version: v20220301_ga, Digest: "0301ga_1", Timestamp: time.Date(2022, 3, 1, 12, 0, 0, 0, time.UTC)})
-	ut.Add(storage.ContentRevision{Version: v20220301_ga, Digest: "0301ga_2", Timestamp: time.Date(2022, 3, 4, 0, 0, 0, 0, time.UTC)})
-	ut.Add(storage.ContentRevision{Version: v20220315_beta, Digest: "0315beta_0", Timestamp: time.Date(2022, 3, 15, 0, 0, 0, 0, time.UTC)})
-	ut.Add(storage.ContentRevision{Version: v20220401_ga, Digest: "0401ga_0"})
-	ut.Add(storage.ContentRevision{Version: v20220401_beta, Digest: "0401beta_0"})
+	ut.Add(storage.ContentRevision{
+		Version:   v20220301_ga,
+		Digest:    "0301ga_0",
+		Timestamp: time.Date(2022, 3, 1, 0, 0, 0, 0, time.UTC),
+	})
+	ut.Add(storage.ContentRevision{
+		Version:   v20220301_ga,
+		Digest:    "0301ga_1",
+		Timestamp: time.Date(2022, 3, 1, 12, 0, 0, 0, time.UTC),
+	})
+	ut.Add(storage.ContentRevision{
+		Version:   v20220301_ga,
+		Digest:    "0301ga_2",
+		Timestamp: time.Date(2022, 3, 4, 0, 0, 0, 0, time.UTC),
+	})
+	ut.Add(storage.ContentRevision{
+		Version:   v20220315_beta,
+		Digest:    "0315beta_0",
+		Timestamp: time.Date(2022, 3, 15, 0, 0, 0, 0, time.UTC),
+	})
+	ut.Add(storage.ContentRevision{
+		Version: v20220401_ga,
+		Digest:  "0401ga_0",
+	})
+	ut.Add(storage.ContentRevision{
+		Version: v20220401_beta,
+		Digest:  "0401beta_0",
+	})
 
 	tcs := []struct {
 		version        string

@@ -28,6 +28,10 @@ const (
 // setupMutex protects port acquisition among concurrent tests.
 var setupMutex sync.Mutex
 
+func localAddr(port string) string {
+	return "localhost:" + port
+}
+
 // Setup launches a fake GCS server and returns the storage configuration
 // needed to connect to it.
 //
@@ -52,7 +56,7 @@ func Setup(c *qt.C) *gcs.Config {
 	// Proxy localhost:44443 to the mapped port. Ideally we'd just use the
 	// mapped port, but fake-gcs-server needs to know its public-url before we
 	// start it, so there's a bootstrapping problem.
-	ln, err := net.Listen("tcp", "localhost:"+gcsPort)
+	ln, err := net.Listen("tcp", localAddr(gcsPort))
 	c.Assert(err, qt.IsNil)
 	copyIO := func(dst, src net.Conn) {
 		defer dst.Close()
@@ -69,7 +73,7 @@ func Setup(c *qt.C) *gcs.Config {
 			}
 			c.Assert(err, qt.IsNil)
 			go func(conn net.Conn) {
-				proxy, err := net.Dial("tcp", "localhost:"+mappedPort.Port())
+				proxy, err := net.Dial("tcp", localAddr(mappedPort.Port()))
 				c.Assert(err, qt.IsNil)
 				go copyIO(conn, proxy)
 				go copyIO(proxy, conn)
@@ -80,7 +84,7 @@ func Setup(c *qt.C) *gcs.Config {
 
 	return &gcs.Config{
 		GcsRegion:   GcsRegion,
-		GcsEndpoint: "http://localhost:" + gcsPort + "/storage/v1/",
+		GcsEndpoint: "http://" + localAddr(gcsPort) + "/storage/v1/",
 		BucketName:  BucketName,
 		Credentials: gcs.StaticKeyCredentials{
 			ProjectId: ProjectId,
@@ -102,7 +106,7 @@ func Connect(ctx context.Context, c *qt.C, gcsPort string) testcontainers.Contai
 			"-scheme", "http",
 			"-backend", "memory",
 			"-port", "4443",
-			"-public-host", "localhost:" + gcsPort,
+			"-public-host", localAddr(gcsPort),
 			"-data", "/data",
 		},
 		Mounts: []testcontainers.ContainerMount{
@@ -119,7 +123,7 @@ func Connect(ctx context.Context, c *qt.C, gcsPort string) testcontainers.Contai
 
 // findOpenPort returns an available open port on the host machine.
 func findOpenPort(c *qt.C) string {
-	ln, err := net.Listen("tcp", "localhost:0")
+	ln, err := net.Listen("tcp", localAddr("0"))
 	c.Assert(err, qt.IsNil)
 	defer ln.Close()
 	return strconv.Itoa(ln.Addr().(*net.TCPAddr).Port) //nolint:forcetypeassert // acked

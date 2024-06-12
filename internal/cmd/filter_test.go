@@ -16,7 +16,7 @@ func TestFilterInclude(t *testing.T) {
 	tmpOut := c.TempDir()
 
 	c.Run("filter include hello-world", func(c *qt.C) {
-		stdout, err := os.Create(tmpOut + "/spec.yaml")
+		stdout, err := os.Create(tmpOut + specFile)
 		c.Assert(err, qt.IsNil)
 		defer stdout.Close()
 		c.Patch(&os.Stdout, stdout)
@@ -32,11 +32,11 @@ func TestFilterInclude(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 	})
 
-	out, err := os.ReadFile(tmpOut + "/spec.yaml")
+	out, err := os.ReadFile(tmpOut + specFile)
 	c.Assert(err, qt.IsNil)
 	c.Log(string(out))
 
-	doc, err := vervet.NewDocumentFile(tmpOut + "/spec.yaml")
+	doc, err := vervet.NewDocumentFile(tmpOut + specFile)
 	c.Assert(err, qt.IsNil)
 
 	// Included paths and their referenced components are present
@@ -53,7 +53,7 @@ func XestFilterExclude(t *testing.T) {
 	tmpOut := c.TempDir()
 
 	c.Run("filter hello-world", func(c *qt.C) {
-		stdout, err := os.Create(tmpOut + "/spec.yaml")
+		stdout, err := os.Create(tmpOut + specFile)
 		c.Assert(err, qt.IsNil)
 		defer stdout.Close()
 		app := cmd.NewApp(&cmd.CLIApp, cmd.VervetParams{
@@ -74,7 +74,7 @@ func XestFilterExclude(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 	})
 
-	doc, err := vervet.NewDocumentFile(tmpOut + "/spec.yaml")
+	doc, err := vervet.NewDocumentFile(tmpOut + specFile)
 	c.Assert(err, qt.IsNil)
 
 	// Excluded paths and components only these reference, are not present

@@ -62,18 +62,20 @@ func New(ctx context.Context, awsCfg *Config, options ...Option) (storage.Storag
 		bucketName = os.Getenv("S3_BUCKET")
 	*/
 	if !awsCfg.IamRoleEnabled {
-		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, loadOptions ...interface{}) (aws.Endpoint, error) {
-			if awsCfg.AwsEndpoint != "" {
-				return aws.Endpoint{
-					PartitionID:   "aws",
-					URL:           awsCfg.AwsEndpoint,
-					SigningRegion: awsCfg.AwsRegion,
-				}, nil
-			}
+		customResolver := aws.EndpointResolverWithOptionsFunc(
+			func(service, region string, loadOptions ...interface{}) (aws.Endpoint, error) {
+				if awsCfg.AwsEndpoint != "" {
+					return aws.Endpoint{
+						PartitionID:   "aws",
+						URL:           awsCfg.AwsEndpoint,
+						SigningRegion: awsCfg.AwsRegion,
+					}, nil
+				}
 
-			// returning EndpointNotFoundError will allow the service to fallback to its default resolution
-			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
-		})
+				// returning EndpointNotFoundError will allow the service to fallback to its default resolution
+				return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+			},
+		)
 
 		loadOptions = append(loadOptions, config.WithRegion(awsCfg.AwsRegion),
 			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
@@ -146,7 +148,13 @@ func (s *Storage) HasVersion(ctx context.Context, name string, version string, d
 }
 
 // NotifyVersion implements scraper.Storage.
-func (s *Storage) NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersion(
+	ctx context.Context,
+	name string,
+	version string,
+	contents []byte,
+	scrapeTime time.Time,
+) error {
 	digest := storage.NewDigest(contents)
 	key := getServiceVersionRevisionKey(name, version, string(digest))
 	parsedVersion, err := vervet.ParseVersion(version)
@@ -220,7 +228,8 @@ func (s *Storage) Version(ctx context.Context, version string) ([]byte, error) {
 	return blob, nil
 }
 
-// CollateVersions aggregates versions and revisions from all the services, and produces unified versions and merged specs for all APIs.
+// CollateVersions aggregates versions and revisions from all the services, and
+// produces unified versions and merged specs for all APIs.
 func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]bool) error {
 	// create an aggregate to process collated data from storage data
 	aggregate, err := s.newCollator()

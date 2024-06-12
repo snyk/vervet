@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/snyk/vervet/v6"
 	"github.com/spf13/viper"
+
+	"github.com/snyk/vervet/v6"
 )
 
 // StorageType describes backend implementations supported by Vervet Underground.

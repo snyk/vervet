@@ -72,7 +72,11 @@ func TestMetrics(t *testing.T) {
 	contents, err := io.ReadAll(w.Result().Body)
 	c.Assert(err, qt.IsNil)
 	// Metrics captured the /openapi request above
-	c.Assert(string(contents), qt.Contains, `vu_http_response_size_bytes_count{code="200",handler="/openapi/2021-10-20~beta",method="GET",service=""} 1`)
+	c.Assert(
+		string(contents),
+		qt.Contains,
+		`vu_http_response_size_bytes_count{code="200",handler="/openapi/2021-10-20~beta",method="GET",service=""} 1`,
+	)
 }
 
 func TestOpenapiVersion(t *testing.T) {
@@ -128,7 +132,13 @@ func (s *mockStorage) HasVersion(ctx context.Context, name string, version strin
 	return true, nil
 }
 
-func (s *mockStorage) NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error {
+func (s *mockStorage) NotifyVersion(
+	ctx context.Context,
+	name string,
+	version string,
+	contents []byte,
+	scrapeTime time.Time,
+) error {
 	return nil
 }
 

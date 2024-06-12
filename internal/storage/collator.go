@@ -7,11 +7,13 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
+
 	"github.com/snyk/vervet/v6"
 )
 
-// Collator is an aggregate of service specs and uniqueVersions scraped by VU. It is responsible for collating uniqueVersions and
-// specs from all services VU manages.
+// Collator is an aggregate of service specs and uniqueVersions scraped by VU. It
+// is responsible for collating uniqueVersions and specs from all services VU
+// manages.
 // This is the top level resource all storage classes should use for producing collated data.
 type Collator struct {
 	// revisions is a map of service name to the service's revisions.
@@ -107,7 +109,9 @@ func (c *Collator) Collate() (map[vervet.Version]openapi3.T, error) {
 		for service, serviceRevisions := range c.revisions {
 			rev, err := serviceRevisions.ResolveLatestRevision(version)
 			if err != nil {
-				// don't halt execution if we can't resolve version for this service - it is possible for a service to not have this version available.
+				// don't halt execution if we can't resolve version for this
+				// service - it is possible for a service to not have this
+				// version available.
 				log.Trace().Err(err).Msgf("could not resolve version %s for service %s", version, service)
 				continue
 			}
@@ -147,7 +151,13 @@ func mergeRevisions(revisions ContentRevisions) (*openapi3.T, error) {
 		// JSON will deserialize here correctly
 		src, err := loader.LoadFromData(revision.Blob)
 		if err != nil {
-			return nil, fmt.Errorf("could not load revision %s-%s-%s: %w", revision.Service, revision.Version, revision.Digest, err)
+			return nil, fmt.Errorf(
+				"could not load revision %s-%s-%s: %w",
+				revision.Service,
+				revision.Version,
+				revision.Digest,
+				err,
+			)
 		}
 
 		// Each service will declare their own /openapi paths. Collate only the
@@ -174,7 +184,12 @@ func mergeRevisions(revisions ContentRevisions) (*openapi3.T, error) {
 			Version: revision.Version,
 		}
 		if err := collator.Collate(rv); err != nil {
-			return nil, fmt.Errorf("could not collate revision %s-%s-%s: %w", revision.Service, revision.Version, revision.Digest, err)
+			return nil, fmt.Errorf("could not collate revision %s-%s-%s: %w",
+				revision.Service,
+				revision.Version,
+				revision.Digest,
+				err,
+			)
 		}
 	}
 	return collator.Result(), nil
@@ -186,6 +201,5 @@ func (c *Collator) applyOverlay(spec *openapi3.T) error {
 	if err != nil {
 		return err
 	}
-	vervet.Merge(spec, overlayDoc, true)
-	return nil
+	return vervet.Merge(spec, overlayDoc, true)
 }

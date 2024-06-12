@@ -21,12 +21,13 @@ type ContentRevision struct {
 	// Blob is the actual content of this revision, the unmarshalled API spec.
 	Blob []byte
 	// TODO: store the sunset time when a version is removed
-	//sunset    *time.Time
+	// sunset    *time.Time
 }
 
 // ServiceRevisions tracks a collection of ContentRevisions and API uniqueVersions for a single service.
 type ServiceRevisions struct {
-	// revisions is a map of version to a collection of revisions.  During collation, content revision with the latest scraping timestamp is used.
+	// revisions is a map of version to a collection of revisions. During
+	// collation, content revision with the latest scraping timestamp is used.
 	revisions map[vervet.Version]ContentRevisions
 	// versions is a collection of API uniqueVersions that this service serves.
 	versions vervet.VersionSlice

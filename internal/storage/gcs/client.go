@@ -186,7 +186,12 @@ func (s *Storage) HasVersion(ctx context.Context, name string, version string, d
 }
 
 // NotifyVersion updates a Service's storage.ContentRevision if storage.Digest has changed.
-func (s *Storage) NotifyVersion(ctx context.Context, name string, version string, contents []byte, scrapeTime time.Time) error {
+func (s *Storage) NotifyVersion(ctx context.Context,
+	name string,
+	version string,
+	contents []byte,
+	scrapeTime time.Time,
+) error {
 	digest := vustorage.NewDigest(contents)
 	key := getServiceVersionRevisionKey(name, version, string(digest))
 	parsedVersion, err := vervet.ParseVersion(version)
@@ -359,7 +364,11 @@ func (s *Storage) GetObject(ctx context.Context, key string) ([]byte, error) {
 
 // GetObjectWithMetadata actually retrieves the json blob form GCS
 // with metadata around the storage in GCS.
-func (s *Storage) GetObjectWithMetadata(ctx context.Context, key string) (*storage.Reader, *storage.ObjectAttrs, error) {
+func (s *Storage) GetObjectWithMetadata(ctx context.Context,
+	key string) (*storage.Reader,
+	*storage.ObjectAttrs,
+	error,
+) {
 	handle := s.c.Bucket(s.config.BucketName).Object(key)
 	attrs, err := handle.Attrs(ctx)
 	if err != nil {
