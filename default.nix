@@ -4,7 +4,7 @@ buildGoModule rec {
   version = builtins.substring 0 8 lastMod;
   src = ./.;
 
-  vendorHash = "sha256-sumj5H1MOnsMPn5YML9co/kwU3WSiKbapfHXRIg0Xp4=";
+  vendorHash = "sha256-h9EhXURMl9FtB694iRxkgxsJjwatCvn6+mXHKSaOzfM=";
 
   meta = with lib; {
     description = "API resource versioning tool";
