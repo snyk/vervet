@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   go: circleci/go@1.9.0
+  node: circleci/node@5.2.0
   publish: snyk/publish@1
   prodsec: snyk/prodsec-orb@1.1
 
@@ -11,19 +12,11 @@ defaults: &defaults
   docker:
     - image: cimg/go:1.21-node
 
-test_vu_defaults: &test_vu_defaults
+test_defaults: &test_defaults
   resource_class: medium
-  working_directory: ~/vervet/vervet-underground
+  working_directory: ~/vervet
   machine:
     image: ubuntu-2004:2023.10.1
-
-vu_defaults: &vu_defaults
-  resource_class: small
-  working_directory: ~/vervet/vervet-underground
-  docker:
-    - image: cimg/go:1.21-node
-  environment:
-    DOCKER_BUILDKIT: 1
 
 ignore_main_branch_filter: &ignore_main_branch_filter
   filters:
@@ -53,12 +46,15 @@ commands:
 
 jobs:
   test:
-    <<: *defaults
+    <<: *test_defaults
     steps:
+      - node/install
       - run:
           name: Install spectral
-          command: sudo npm install -g @stoplight/spectral@6.5.0
+          command: npm install -g @stoplight/spectral@6.5.0
       - checkout
+      - go/install:
+          version: 1.21.3
       - go/mod-download-cached
       - run:
           name: Verify testdata/output up to date
@@ -66,17 +62,6 @@ jobs:
       - run:
           name: Run tests
           command: go test ./... -count=1
-
-  test-vu:
-    <<: *test_vu_defaults
-    steps:
-      - checkout:
-          path: ~/vervet
-      - go/install:
-          version: 1.21.3
-      - go/mod-download-cached
-      - run:
-          command: make test
 
   lint:
     docker:
@@ -86,16 +71,8 @@ jobs:
       - run:
           command: golangci-lint run -v ./...
 
-  lint-vu:
-    docker:
-      - image: golangci/golangci-lint:v1.51.0
-    steps:
-      - checkout
-      - run:
-          command: cd vervet-underground && golangci-lint run -v ./...
-
   security-scans:
-    <<: *vu_defaults
+    <<: *defaults
     steps:
       - checkout
       - prodsec/security_scans:
@@ -104,14 +81,14 @@ jobs:
           org: platformeng_api
 
   build-vu:
-    <<: *vu_defaults
+    <<: *defaults
     steps:
       - checkout:
           path: ~/vervet
       - gcr_auth
       - run:
           name: Build Docker Image
-          command: make build-docker
+          command: make build-docker APP=vervet-underground
       - publish/save-image:
           image_name: vervet-underground
 
@@ -135,16 +112,8 @@ workflows:
           name: Test
           <<: *ignore_main_branch_filter
 
-      - test-vu:
-          name: Test VU
-          <<: *ignore_main_branch_filter
-
       - lint:
           name: Lint
-          <<: *ignore_main_branch_filter
-
-      - lint-vu:
-          name: Lint VU
           <<: *ignore_main_branch_filter
 
       - security-scans:
@@ -157,8 +126,8 @@ workflows:
           name: Build Docker Image
           context: snyk-docker-build
           requires:
-            - Test VU
-            - Lint VU
+            - Test
+            - Lint
 
       - prodsec/container-scan:
           name: Scan VU Container
