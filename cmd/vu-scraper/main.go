@@ -11,12 +11,12 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/snyk/vervet/v6/config"
-	"github.com/snyk/vervet/v6/internal/scraper"
-	"github.com/snyk/vervet/v6/internal/storage"
-	"github.com/snyk/vervet/v6/internal/storage/disk"
-	"github.com/snyk/vervet/v6/internal/storage/gcs"
-	"github.com/snyk/vervet/v6/internal/storage/s3"
+	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v7/internal/scraper"
+	"github.com/snyk/vervet/v7/internal/storage"
+	"github.com/snyk/vervet/v7/internal/storage/disk"
+	"github.com/snyk/vervet/v7/internal/storage/gcs"
+	"github.com/snyk/vervet/v7/internal/storage/s3"
 )
 
 func main() {

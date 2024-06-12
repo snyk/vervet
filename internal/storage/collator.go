@@ -8,7 +8,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
 
-	"github.com/snyk/vervet/v6"
+	"github.com/snyk/vervet/v7"
 )
 
 // Collator is an aggregate of service specs and uniqueVersions scraped by VU. It

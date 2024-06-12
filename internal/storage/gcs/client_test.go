@@ -7,9 +7,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v6/internal/storage"
-	"github.com/snyk/vervet/v6/internal/storage/gcs"
-	gcstesting "github.com/snyk/vervet/v6/internal/storage/gcs/testing"
+	"github.com/snyk/vervet/v7/internal/storage"
+	"github.com/snyk/vervet/v7/internal/storage/gcs"
+	gcstesting "github.com/snyk/vervet/v7/internal/storage/gcs/testing"
 )
 
 var specFile = "spec.txt"

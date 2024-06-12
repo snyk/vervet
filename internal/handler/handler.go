@@ -16,10 +16,10 @@ import (
 	prommiddleware "github.com/slok/go-http-metrics/middleware"
 	prommiddlewarestd "github.com/slok/go-http-metrics/middleware/std"
 
-	"github.com/snyk/vervet/v6"
-	"github.com/snyk/vervet/v6/config"
-	"github.com/snyk/vervet/v6/internal/storage"
-	"github.com/snyk/vervet/v6/versionware"
+	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v7/internal/storage"
+	"github.com/snyk/vervet/v7/versionware"
 )
 
 // Handler handles Vervet Underground HTTP requests.

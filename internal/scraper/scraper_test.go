@@ -14,9 +14,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 
-	"github.com/snyk/vervet/v6/config"
-	"github.com/snyk/vervet/v6/internal/scraper"
-	"github.com/snyk/vervet/v6/internal/storage/disk"
+	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v7/internal/scraper"
+	"github.com/snyk/vervet/v7/internal/storage/disk"
 )
 
 var (

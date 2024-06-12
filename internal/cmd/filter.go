@@ -6,7 +6,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v6"
+	"github.com/snyk/vervet/v7"
 )
 
 // FilterCommand is the `vervet filter` subcommand.

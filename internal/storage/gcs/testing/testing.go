@@ -16,7 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/snyk/vervet/v6/internal/storage/gcs"
+	"github.com/snyk/vervet/v7/internal/storage/gcs"
 )
 
 const (

@@ -12,9 +12,9 @@ import (
 	"github.com/ghodss/yaml"
 	"go.uber.org/multierr"
 
-	"github.com/snyk/vervet/v6"
-	"github.com/snyk/vervet/v6/config"
-	"github.com/snyk/vervet/v6/internal/files"
+	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v7/internal/files"
 )
 
 // A Compiler checks and builds versioned API resource inputs into aggregated

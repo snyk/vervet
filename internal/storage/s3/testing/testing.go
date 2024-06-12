@@ -6,7 +6,7 @@ import (
 	"github.com/elgohr/go-localstack"
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v6/internal/storage/s3"
+	"github.com/snyk/vervet/v7/internal/storage/s3"
 )
 
 const (

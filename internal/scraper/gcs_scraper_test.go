@@ -9,10 +9,10 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v6/config"
-	"github.com/snyk/vervet/v6/internal/scraper"
-	"github.com/snyk/vervet/v6/internal/storage/gcs"
-	gcstesting "github.com/snyk/vervet/v6/internal/storage/gcs/testing"
+	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v7/internal/scraper"
+	"github.com/snyk/vervet/v7/internal/storage/gcs"
+	gcstesting "github.com/snyk/vervet/v7/internal/storage/gcs/testing"
 )
 
 func TestGCSScraper(t *testing.T) {

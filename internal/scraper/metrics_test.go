@@ -8,8 +8,8 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/snyk/vervet/v6/internal/scraper"
-	"github.com/snyk/vervet/v6/internal/testutil"
+	"github.com/snyk/vervet/v7/internal/scraper"
+	"github.com/snyk/vervet/v7/internal/testutil"
 )
 
 type mockRoundTripper struct {

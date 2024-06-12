@@ -9,9 +9,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v6"
-	"github.com/snyk/vervet/v6/config"
-	"github.com/snyk/vervet/v6/internal/handler"
+	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v7/internal/handler"
 )
 
 func TestHealth(t *testing.T) {
