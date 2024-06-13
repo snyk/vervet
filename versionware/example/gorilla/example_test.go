@@ -96,15 +96,22 @@ func Example() {
 	PrintResp(srv.Client().Get(srv.URL + "/healthcheck"))
 
 	// Create some things
+	path := srv.URL + "/api/things?version=2021-11-01~experimental"
 	PrintResp(srv.Client().Post(
-		srv.URL+"/api/things?version=2021-11-01~experimental", "application/json",
-		bytes.NewBufferString(`{"name":"foo","color":"blue","strangeness":32}`)))
+		path,
+		"application/json",
+		bytes.NewBufferString(`{"name":"foo","color":"blue","strangeness":32}`),
+	))
 	PrintResp(srv.Client().Post(
-		srv.URL+"/api/things?version=2021-11-01~experimental", "application/json",
-		bytes.NewBufferString(`{"name":"shiny","color":"green","strangeness":99}`)))
+		path,
+		"application/json",
+		bytes.NewBufferString(`{"name":"shiny","color":"green","strangeness":99}`),
+	))
 	PrintResp(srv.Client().Post(
-		srv.URL+"/api/things?version=2021-11-01~experimental", "application/json",
-		bytes.NewBufferString(`{"name":"cochineal","color":"red","strangeness":5}`)))
+		path,
+		"application/json",
+		bytes.NewBufferString(`{"name":"cochineal","color":"red","strangeness":5}`),
+	))
 
 	// 404: no matching version
 	PrintResp(srv.Client().Post(
@@ -113,8 +120,10 @@ func Example() {
 
 	// 400: create an invalid thing
 	PrintResp(srv.Client().Post(
-		srv.URL+"/api/things?version=2021-11-01~experimental", "application/json",
-		bytes.NewBufferString(`{"name":"eggplant","color":"purple","banality":17}`)))
+		path,
+		"application/json",
+		bytes.NewBufferString(`{"name":"eggplant","color":"purple","banality":17}`),
+	))
 
 	// 200: get a thing
 	PrintResp(srv.Client().Get(srv.URL + "/api/things/1?version=2021-11-10~experimental"))

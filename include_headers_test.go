@@ -6,8 +6,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v6"
-	"github.com/snyk/vervet/v6/testdata"
+	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v7/testdata"
 )
 
 func TestCommonResponseHeaders(t *testing.T) {

@@ -1,3 +1,4 @@
+APP:=vervet
 GO_BIN=$(shell pwd)/.bin/go
 
 SHELL:=env PATH=$(GO_BIN):$(PATH) $(SHELL)
@@ -8,8 +9,16 @@ GOCI_LINT_V?=v1.54.2
 all: lint test build
 
 .PHONY: build
-build:
+build: vervet vu-api vu-scraper
+
+vervet:
 	go build -a -o vervet ./cmd/vervet
+
+vu-api:
+	go build -a -o vu-api ./cmd/vu-api
+
+vu-scraper:
+	go build -a -o vu-scraper ./cmd/vu-scraper
 
 # Run go mod tidy yourself
 
@@ -31,7 +40,13 @@ lint:
 
 .PHONY: lint-docker
 lint-docker:
-	docker run --rm -v $(shell pwd):/vervet -w /vervet golangci/golangci-lint:${GOCI_LINT_V} golangci-lint run -v ./...
+	docker run --rm -v $(shell pwd):/${APP} -w /${APP} golangci/golangci-lint:${GOCI_LINT_V} golangci-lint run -v ./...
+
+.PHONY: build-docker
+build-docker:
+	docker build \
+		-t ${APP}:${CIRCLE_WORKFLOW_ID} \
+		-t gcr.io/snyk-main/${APP}:${CIRCLE_SHA1} .
 
 #----------------------------------------------------------------------------------
 #  Ignores the test cache and forces a full test suite execution
@@ -52,7 +67,7 @@ clean:
 	$(RM) vervet
 
 .PHONY: install-tools
-install-tools: 
+install-tools:
 ifndef CI
 	mkdir -p ${GO_BIN}
 	curl -sSfL 'https://raw.githubusercontent.com/golangci/golangci-lint/${GOCI_LINT_V}/install.sh' | sh -s -- -b ${GO_BIN} ${GOCI_LINT_V}
@@ -66,3 +81,8 @@ format: ## Format source code with gofmt and golangci-lint
 .PHONY: tidy
 tidy:
 	go mod tidy -v
+
+.PHONY: start-vu
+start-vu:
+	go run cmd/vu-scraper/main.go
+	go run cmd/vu-api/main.go

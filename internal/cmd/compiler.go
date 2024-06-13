@@ -6,8 +6,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v6/config"
-	"github.com/snyk/vervet/v6/internal/compiler"
+	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v7/internal/compiler"
 )
 
 // BuildCommand is the `vervet build` subcommand.

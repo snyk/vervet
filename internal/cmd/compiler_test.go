@@ -8,10 +8,12 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v6"
-	"github.com/snyk/vervet/v6/internal/cmd"
-	"github.com/snyk/vervet/v6/testdata"
+	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v7/internal/cmd"
+	"github.com/snyk/vervet/v7/testdata"
 )
+
+var specFile = "/spec.yaml"
 
 func TestBuild(t *testing.T) {
 	c := qt.New(t)
@@ -36,7 +38,7 @@ func TestBuild(t *testing.T) {
 	}}
 	for _, test := range tests {
 		c.Run("built version "+test.version, func(c *qt.C) {
-			doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + "/spec.yaml")
+			doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + specFile)
 			c.Assert(err, qt.IsNil)
 			c.Assert(doc.Validate(context.TODO()), qt.IsNil)
 			for _, path := range test.paths {
@@ -82,7 +84,7 @@ func TestBuildInclude(t *testing.T) {
 	for _, test := range tests {
 		c.Assert(err, qt.IsNil)
 		// Load just-built OpenAPI YAML file
-		doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + "/spec.yaml")
+		doc, err := vervet.NewDocumentFile(dstDir + "/" + test.version + specFile)
 		c.Assert(err, qt.IsNil)
 
 		expected, err := os.ReadFile(testdata.Path("output/" + test.version + "/spec.json"))

@@ -8,8 +8,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v6/generate"
-	"github.com/snyk/vervet/v6/testdata"
+	"github.com/snyk/vervet/v7/generate"
+	"github.com/snyk/vervet/v7/testdata"
 )
 
 func TestGenerateFS(t *testing.T) {

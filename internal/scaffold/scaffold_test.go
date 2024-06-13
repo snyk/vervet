@@ -7,8 +7,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v6/internal/scaffold"
-	"github.com/snyk/vervet/v6/testdata"
+	"github.com/snyk/vervet/v7/internal/scaffold"
+	"github.com/snyk/vervet/v7/testdata"
 )
 
 func TestScaffold(t *testing.T) {
