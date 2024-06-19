@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/ghodss/yaml"
@@ -165,6 +166,13 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 		}
 		versions := specVersions.Versions()
 		for _, version := range versions {
+			if version.LifecycleAt(time.Now()) == vervet.LifecycleUnreleased {
+				return buildErr(fmt.Errorf(
+					"API spec with version %s is in the future. This is not supported as it may cause breakage",
+					version,
+				))
+			}
+
 			spec, err := specVersions.At(version)
 			if err == vervet.ErrNoMatchingVersion {
 				continue

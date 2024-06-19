@@ -442,6 +442,8 @@ func (l Lifecycle) String() string {
 		return "deprecated"
 	case LifecycleSunset:
 		return "sunset"
+	case LifecycleUnreleased:
+		return "unreleased"
 	default:
 		panic(fmt.Sprintf("invalid lifecycle (%d)", int(l)))
 	}

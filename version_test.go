@@ -437,13 +437,3 @@ func TestLifecycleAtDefaultDate(t *testing.T) {
 		})
 	}
 }
-
-func TestLifecycleAtUnreleasedVersionStringPanics(t *testing.T) {
-	c := qt.New(t)
-	c.Patch(TimeNow, func() time.Time { return time.Date(2022, time.June, 6, 14, 49, 50, 0, time.UTC) })
-	version := MustParseVersion("2022-10-16~wip")
-	lifecycle := version.LifecycleAt(time.Time{})
-	c.Assert(func() {
-		c.Log(lifecycle.String())
-	}, qt.PanicMatches, "invalid lifecycle.*")
-}
