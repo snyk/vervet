@@ -217,3 +217,31 @@ func TestCollateMergingResources(t *testing.T) {
 	result := collator.Result()
 	c.Assert(result.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Responses["204"], qt.IsNotNil)
 }
+
+func TestCollateOperationsOnSamePath(t *testing.T) {
+	c := qt.New(t)
+	collator := vervet.NewCollator(vervet.UseFirstRoute(true))
+	examples1, err := vervet.LoadResourceVersions(testdata.Path("operation-change/_examples"))
+	c.Assert(err, qt.IsNil)
+	examples1v, err := examples1.At("2021-06-15~experimental")
+	c.Assert(err, qt.IsNil)
+
+	examples2, err := vervet.LoadResourceVersions(testdata.Path("operation-change/_examples2"))
+	c.Assert(err, qt.IsNil)
+	examples2v, err := examples2.At("2021-06-15~experimental")
+	c.Assert(err, qt.IsNil)
+
+	err = collator.Collate(examples1v)
+	c.Assert(err, qt.IsNil)
+	err = collator.Collate(examples2v)
+	c.Assert(err, qt.IsNil)
+
+	result := collator.Result()
+
+	c.Assert(result.Paths["/examples/hello-world"].Get, qt.Not(qt.IsNil))
+	c.Assert(result.Paths["/examples/hello-world"].Get.Description, qt.Contains, " - from example 1")
+	c.Assert(result.Paths["/examples/hello-world"].Post, qt.Not(qt.IsNil))
+	c.Assert(result.Paths["/examples/hello-world"].Post.Description, qt.Contains, " - from example 1")
+	c.Assert(result.Paths["/examples/hello-world"].Put, qt.Not(qt.IsNil))
+	c.Assert(result.Paths["/examples/hello-world"].Put.Description, qt.Contains, " - from example 2")
+}

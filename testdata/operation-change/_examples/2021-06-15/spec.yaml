@@ -1,0 +1,52 @@
+---
+openapi: 3.0.3
+x-snyk-api-stability: beta
+info:
+  title: Registry
+  version: 3.0.0
+servers:
+  - url: /api/v3
+    description: Snyk Registry
+paths:
+  /examples/hello-world:
+    post:
+      description: Create a single result from the hello-world example - from example 1
+      operationId: helloWorldCreate
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              properties:
+                attributes:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                    betaField:
+                      type: string
+                  additionalProperties: false
+                  required: ['message', 'betaField']
+              additionalProperties: false
+              required: ['attributes']
+      responses:
+        '201':
+          description: 'A hello world entity being requested is returned'
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                required: ['jsonapi', 'data', 'links']
+                additionalProperties: false
+    get:
+      description: Get a list of hello-worlds example - from example 1
+      operationId: helloWorldGetList
+      responses:
+        '200':
+          description: 'A hello world entity being requested is returned'
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                required: ['jsonapi', 'data', 'links']
+                additionalProperties: false
