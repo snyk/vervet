@@ -272,20 +272,29 @@ func (c *Collator) mergePaths(rv *ResourceVersion) error {
 	}
 	var errs error
 	for k, v := range rv.T.Paths {
-		route := routeForPath(k)
-		if _, ok := c.seenRoutes[route]; ok {
-			if c.useFirstRoute {
-				continue
+		for opName, opValue := range v.Operations() {
+			route := routeForPath(k, opName)
+			if _, ok := c.seenRoutes[route]; ok {
+				if c.useFirstRoute {
+					continue
+				} else {
+					errs = multierr.Append(
+						errs,
+						fmt.Errorf("conflict in #/paths %s: declared in both %s and %s", k, rv.path, c.pathSources[k]),
+					)
+				}
 			} else {
-				errs = multierr.Append(
-					errs,
-					fmt.Errorf("conflict in #/paths %s: declared in both %s and %s", k, rv.path, c.pathSources[k]),
-				)
+				c.seenRoutes[route] = struct{}{}
+				if c.result.Paths[k] == nil {
+					// Path doesn't exist in output
+					c.result.Paths[k] = v
+				} else {
+					// There is another operation on this path, merge the
+					// current operation into that one
+					c.result.Paths[k].SetOperation(opName, opValue)
+				}
+				c.pathSources[k] = rv.path
 			}
-		} else {
-			c.seenRoutes[route] = struct{}{}
-			c.result.Paths[k] = v
-			c.pathSources[k] = rv.path
 		}
 	}
 	return errs
@@ -293,6 +302,6 @@ func (c *Collator) mergePaths(rv *ResourceVersion) error {
 
 var routeForPathRE = regexp.MustCompile(`\{[^}]*\}`)
 
-func routeForPath(path string) string {
-	return routeForPathRE.ReplaceAllString(path, "{}")
+func routeForPath(path, operation string) string {
+	return fmt.Sprintf("%s %s", operation, routeForPathRE.ReplaceAllString(path, "{}"))
 }

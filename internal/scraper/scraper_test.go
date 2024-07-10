@@ -31,16 +31,16 @@ var (
 	petfood = &testService{
 		versions: []string{"2021-09-01", "2021-09-16"},
 		contents: map[string]string{
-			"2021-09-01": `{"paths":{"/crickets": {}}}`,
-			"2021-09-16": `{"paths":{"/crickets": {}, "/kibble": {}}}`,
+			"2021-09-01": `{"paths":{"/crickets": {"get": {}}}}`,
+			"2021-09-16": `{"paths":{"/crickets": {"get": {}}, "/kibble": {"get": {}}}}`,
 		},
 	}
 	animals = &testService{
 		versions: []string{"2021-01-01", "2021-10-01", "2021-10-16"},
 		contents: map[string]string{
-			"2021-01-01": `{"paths":{"/legacy": {}}}`,
-			"2021-10-01": `{"paths":{"/geckos": {}}}`,
-			"2021-10-16": `{"paths":{"/geckos": {}, "/puppies": {}}}`,
+			"2021-01-01": `{"paths":{"/legacy": {"get": {}}}}`,
+			"2021-10-01": `{"paths":{"/geckos": {"get": {}}}}`,
+			"2021-10-16": `{"paths":{"/geckos": {"get": {}}, "/puppies": {"get": {}}}}`,
 		},
 	}
 )
@@ -85,8 +85,8 @@ func TestScraper(t *testing.T) {
 	tests := []struct {
 		name, version, digest string
 	}{
-		{"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
-		{"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
+		{"petfood", "2021-09-01", "sha256:zCgJaPeR8R21wsAlYn46xO6NE3XJiyFtLnYrP4DpM3U="},
+		{"animals", "2021-10-16", "sha256:hcv2i7awT6CcSCecw9WrYBokFyzYNVaQArGgqHqdj7s="},
 	}
 
 	cfg := &config.ServerConfig{

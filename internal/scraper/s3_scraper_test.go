@@ -24,8 +24,8 @@ func TestS3Scraper(t *testing.T) {
 	tests := []struct {
 		name, version, digest string
 	}{
-		{"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w="},
-		{"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg="},
+		{"petfood", "2021-09-01", "sha256:zCgJaPeR8R21wsAlYn46xO6NE3XJiyFtLnYrP4DpM3U="},
+		{"animals", "2021-10-16", "sha256:hcv2i7awT6CcSCecw9WrYBokFyzYNVaQArGgqHqdj7s="},
 	}
 
 	cfg := &config.ServerConfig{
@@ -90,9 +90,9 @@ func TestS3ScraperCollation(t *testing.T) {
 	tests := []struct {
 		name, version, digest string
 	}{{
-		"petfood", "2021-09-01", "sha256:I20cAQ3VEjDrY7O0B678yq+0pYN2h3sxQy7vmdlo4+w=",
+		"petfood", "2021-09-01", "sha256:zCgJaPeR8R21wsAlYn46xO6NE3XJiyFtLnYrP4DpM3U=",
 	}, {
-		"animals", "2021-10-16", "sha256:P1FEFvnhtxJSqXr/p6fMNKE+HYwN6iwKccBGHIVZbyg=",
+		"animals", "2021-10-16", "sha256:hcv2i7awT6CcSCecw9WrYBokFyzYNVaQArGgqHqdj7s=",
 	}}
 
 	cfg := &config.ServerConfig{
