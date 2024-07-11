@@ -1,11 +1,10 @@
 version: 2.1
 
 orbs:
-  prodsec: snyk/prodsec-orb@1.0
+  prodsec: snyk/prodsec-orb@1
   go: circleci/go@1.9.0
   node: circleci/node@5.2.0
   publish: snyk/publish@1
-  prodsec: snyk/prodsec-orb@1.1
 
 defaults: &defaults
   resource_class: small
