@@ -122,6 +122,7 @@ workflows:
             - snyk-bot-slack
           channel: alerts-api
           trusted-branch: main
+          <<: *ignore_main_branch_filter
 
       - security-scans:
           name: Security Scans
