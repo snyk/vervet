@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
@@ -99,6 +100,23 @@ func (c *Collator) Add(service string, revision ContentRevision) {
 	}
 }
 
+func isPathSunsetEligible(pathItem *openapi3.PathItem) bool {
+	currentDate := time.Now()
+	for _, operation := range pathItem.Operations() {
+		if sunsetDateStr, ok := operation.Extensions["x-snyk-sunset-eligible"]; ok {
+			sunsetDate, err := time.Parse("2006-01-02", sunsetDateStr.(string)[:10])
+			if err != nil {
+				log.Error().Err(err).Msg("invalid sunset date format")
+				continue
+			}
+			if currentDate.After(sunsetDate) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Collate processes added service revisions to collate unified versions and OpenAPI specs for each version.
 func (c *Collator) Collate() (map[vervet.Version]openapi3.T, error) {
 	specs := make(map[vervet.Version]openapi3.T)
@@ -125,6 +143,11 @@ func (c *Collator) Collate() (map[vervet.Version]openapi3.T, error) {
 				log.Error().Err(err).Msgf("could not merge revision for version %s", version)
 				collatorMergeError.WithLabelValues(version.String()).Inc()
 				return nil, err
+			}
+			for path, pathItem := range spec.Paths {
+				if isPathSunsetEligible(pathItem) {
+					delete(spec.Paths, path)
+				}
 			}
 			if err := vervet.RemoveElements(spec, c.excludePatterns); err != nil {
 				log.Error().Err(err).Msgf("could not merge revision for version %s", version)
