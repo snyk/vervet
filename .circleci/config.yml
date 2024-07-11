@@ -1,6 +1,7 @@
 version: 2.1
 
 orbs:
+  prodsec: snyk/prodsec-orb@1.0
   go: circleci/go@1.9.0
   node: circleci/node@5.2.0
   publish: snyk/publish@1
@@ -115,6 +116,13 @@ workflows:
       - lint:
           name: Lint
           <<: *ignore_main_branch_filter
+
+      - prodsec/secrets-scan:
+          name: Scan repository for secrets
+          context:
+            - snyk-bot-slack
+          channel: alerts-api
+          trusted-branch: main
 
       - security-scans:
           name: Security Scans
