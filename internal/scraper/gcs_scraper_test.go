@@ -24,7 +24,7 @@ func TestGCSScraper(t *testing.T) {
 	tests := []struct {
 		service, version, digest string
 	}{
-		{"petfood", "2021-09-01", "sha256:zCgJaPeR8R21wsAlYn46xO6NE3XJiyFtLnYrP4DpM3U="},
+		{"petfood", "2021-09-01~experimental", "sha256:zCgJaPeR8R21wsAlYn46xO6NE3XJiyFtLnYrP4DpM3U="},
 		{"animals", "2021-10-16", "sha256:hcv2i7awT6CcSCecw9WrYBokFyzYNVaQArGgqHqdj7s="},
 	}
 
@@ -61,14 +61,20 @@ func TestGCSScraper(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
-		c.Assert(err, qt.IsNil)
-		c.Assert(ok, qt.IsTrue)
+		if scraper.IsExperimentalVersion(test.version) {
+			ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+			c.Assert(err, qt.IsNil)
+			c.Assert(ok, qt.IsFalse, qt.Commentf("experimental version %s should not be included", test.version))
+		} else {
+			ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+			c.Assert(err, qt.IsNil)
+			c.Assert(ok, qt.IsTrue)
+		}
 	}
 
 	vi, err := st.VersionIndex(ctx)
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(vi.Versions()), qt.Equals, 4)
+	c.Assert(len(vi.Versions()), qt.Equals, 3)
 	for _, version := range vi.Versions() {
 		specData, err := st.Version(ctx, version.String())
 		c.Assert(err, qt.IsNil)
@@ -95,7 +101,7 @@ func TestGCSScraperCollation(t *testing.T) {
 	tests := []struct {
 		service, version, digest string
 	}{
-		{"petfood", "2021-09-01", "sha256:zCgJaPeR8R21wsAlYn46xO6NE3XJiyFtLnYrP4DpM3U="},
+		{"petfood", "2021-09-01~experimental", "sha256:zCgJaPeR8R21wsAlYn46xO6NE3XJiyFtLnYrP4DpM3U="},
 		{"animals", "2021-10-16", "sha256:hcv2i7awT6CcSCecw9WrYBokFyzYNVaQArGgqHqdj7s="},
 	}
 
@@ -125,14 +131,20 @@ func TestGCSScraperCollation(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
-		c.Assert(err, qt.IsNil)
-		c.Assert(ok, qt.IsTrue)
+		if scraper.IsExperimentalVersion(test.version) {
+			ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+			c.Assert(err, qt.IsNil)
+			c.Assert(ok, qt.IsFalse, qt.Commentf("experimental version %s should not be included", test.version))
+		} else {
+			ok, err := st.HasVersion(ctx, test.service, test.version, test.digest)
+			c.Assert(err, qt.IsNil)
+			c.Assert(ok, qt.IsTrue)
+		}
 	}
 
 	vi, err := st.VersionIndex(ctx)
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(vi.Versions()), qt.Equals, 4)
+	c.Assert(len(vi.Versions()), qt.Equals, 3)
 	for _, version := range vi.Versions() {
 		specData, err := st.Version(ctx, version.String())
 		c.Assert(err, qt.IsNil)

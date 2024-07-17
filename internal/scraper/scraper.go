@@ -155,6 +155,11 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 		// TODO: we might run this concurrently per live service pod if/when
 		// we're more k8s aware, but we won't do that yet.
 
+		// Skip if it's an experimental version
+		if IsExperimentalVersion(versions[i]) {
+			continue
+		}
+
 		// Skip if it's a legacy api using the default legacy version.
 		if isLegacyVersion(versions[i]) {
 			continue
@@ -289,4 +294,8 @@ func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string
 func isLegacyVersion(version string) bool {
 	// This default version predates vervet's creation date.
 	return version == "2021-01-01"
+}
+
+func IsExperimentalVersion(version string) bool {
+	return strings.HasSuffix(version, "~experimental")
 }
