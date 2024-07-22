@@ -6,7 +6,7 @@ let
   };
 in pkgs.mkShell {
   nativeBuildInputs = with pkgs.buildPackages; [
-    go_1_21
+    go_1_22
     gopls
     gotools
     golangci-lint

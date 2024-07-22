@@ -33,7 +33,6 @@ linters:
     - errname
     # - errorlint - Good to have linter but potential to introduce breaking changes.
     # - exhaustive - Causes too much noise at the moment.
-    - exportloopref
     - gci
     - gocritic
     - goconst
