@@ -8,6 +8,7 @@ import (
 
 	"github.com/snyk/vervet/v7/config"
 	"github.com/snyk/vervet/v7/internal/compiler"
+	"github.com/snyk/vervet/v7/internal/simplebuild"
 )
 
 // BuildCommand is the `vervet build` subcommand.
@@ -28,6 +29,34 @@ var BuildCommand = cli.Command{
 		},
 	},
 	Action: Build,
+}
+
+var SimpleBuildCommand = cli.Command{
+	Name:      "simplebuild",
+	Usage:     "Build versioned resources into versioned OpenAPI specs",
+	ArgsUsage: "[input resources root]",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c", "conf"},
+			Usage:   "Project configuration file",
+		},
+		&cli.StringFlag{
+			Name:    "include",
+			Aliases: []string{"I"},
+			Usage:   "OpenAPI specification to include in build output",
+		},
+	},
+	Action: SimpleBuild,
+}
+
+func SimpleBuild(ctx *cli.Context) error {
+	project, err := projectFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	err = simplebuild.Build(ctx.Context, project)
+	return err
 }
 
 // Build compiles versioned resources into versioned API specs.
