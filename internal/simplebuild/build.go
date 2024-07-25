@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 
@@ -45,22 +46,21 @@ type VersionSet []VersionedOp
 type Operations map[OpKey]VersionSet
 
 type VersionedDoc struct {
-	Version vervet.Version
-	Doc     *openapi3.T
+	VersionDate time.Time
+	Doc         *openapi3.T
 }
 type DocSet []VersionedDoc
 
 func (ops Operations) Build() (DocSet, error) {
-	versionIndex := ops.Versions()
-	versions := versionIndex.Versions()
-	output := make(DocSet, len(versions))
-	for idx, version := range versions {
+	versionDates := ops.VersionDates()
+	output := make(DocSet, len(versionDates))
+	for idx, versionDate := range versionDates {
 		output[idx] = VersionedDoc{
-			Doc:     &openapi3.T{},
-			Version: version,
+			Doc:         &openapi3.T{},
+			VersionDate: versionDate,
 		}
 		for path, spec := range ops {
-			op := spec.GetLatest(version)
+			op := spec.GetLatest(versionDate)
 			if op == nil {
 				continue
 			}
@@ -70,25 +70,25 @@ func (ops Operations) Build() (DocSet, error) {
 	return output, nil
 }
 
-func (ops Operations) Versions() vervet.VersionIndex {
-	versionSet := map[vervet.Version]struct{}{}
+func (ops Operations) VersionDates() []time.Time {
+	versionSet := map[time.Time]struct{}{}
 	for _, opSet := range ops {
 		for _, op := range opSet {
-			versionSet[op.Version] = struct{}{}
+			versionSet[op.Version.Date] = struct{}{}
 		}
 	}
-	uniqueVersions := make(vervet.VersionSlice, len(versionSet))
+	uniqueVersions := make([]time.Time, len(versionSet))
 	idx := 0
 	for version := range versionSet {
 		uniqueVersions[idx] = version
 		idx++
 	}
-	return vervet.NewVersionIndex(uniqueVersions)
+	return uniqueVersions
 }
 
 func (docs DocSet) Write() error {
 	for _, doc := range docs {
-		fmt.Println(doc.Version)
+		fmt.Println(doc.VersionDate.Format(time.DateOnly))
 		out, err := doc.Doc.MarshalJSON()
 		if err != nil {
 			return err
@@ -158,15 +158,22 @@ func ResourceSpecFiles(resource *config.ResourceSet) ([]string, error) {
 	return files.LocalFSSource{}.Match(resource)
 }
 
-func (vs VersionSet) GetLatest(before vervet.Version) *openapi3.Operation {
+func (vs VersionSet) GetLatest(before time.Time) *openapi3.Operation {
 	var latest *VersionedOp
 	for _, versionedOp := range vs {
-		isBefore := versionedOp.Version.Compare(before) <= 0
-		isLowerStability := versionedOp.Version.Stability.Compare(before.Stability) < 0
-		if isBefore && !isLowerStability {
-			if latest == nil || versionedOp.Version.Compare(latest.Version) > 0 {
-				latest = &versionedOp
-			}
+		if versionedOp.Version.Date.After(before) {
+			continue
+		}
+		if latest == nil {
+			latest = &versionedOp
+			continue
+		}
+		// Higher stabilities always take precedent
+		if versionedOp.Version.Stability.Compare(latest.Version.Stability) < 0 {
+			continue
+		}
+		if versionedOp.Version.Compare(latest.Version) > 0 {
+			latest = &versionedOp
 		}
 	}
 	if latest == nil {

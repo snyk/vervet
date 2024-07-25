@@ -1,6 +1,7 @@
 package simplebuild_test
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -30,7 +31,7 @@ func TestGetLatest(t *testing.T) {
 				Operation: openapi3.NewOperation(),
 			},
 		}
-		op := vs.GetLatest(before)
+		op := vs.GetLatest(before.Date)
 		c.Assert(op, qt.Equals, vs[1].Operation)
 	})
 
@@ -50,12 +51,12 @@ func TestGetLatest(t *testing.T) {
 				Operation: openapi3.NewOperation(),
 			},
 		}
-		op := vs.GetLatest(before)
+		op := vs.GetLatest(before.Date)
 		c.Assert(op, qt.Equals, vs[2].Operation)
 	})
 
-	c.Run("ignores lower stabilities", func(c *qt.C) {
-		before := vervet.MustParseVersion("2024-06-01~beta")
+	c.Run("selects highest stability", func(c *qt.C) {
+		before := vervet.MustParseVersion("2024-06-01")
 		vs := simplebuild.VersionSet{
 			simplebuild.VersionedOp{
 				Version:   vervet.MustParseVersion("2024-01-01"),
@@ -74,20 +75,8 @@ func TestGetLatest(t *testing.T) {
 				Operation: openapi3.NewOperation(),
 			},
 		}
-		op := vs.GetLatest(before)
+		op := vs.GetLatest(before.Date)
 		c.Assert(op, qt.Equals, vs[2].Operation)
-	})
-
-	c.Run("ignores lower stability", func(c *qt.C) {
-		before := vervet.MustParseVersion("2024-06-01")
-		vs := simplebuild.VersionSet{
-			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-05-01~beta"),
-				Operation: openapi3.NewOperation(),
-			},
-		}
-		op := vs.GetLatest(before)
-		c.Assert(op, qt.IsNil)
 	})
 }
 
@@ -106,7 +95,7 @@ func TestBuild(t *testing.T) {
 		}
 		output, err := ops.Build()
 		c.Assert(err, qt.IsNil)
-		c.Assert(output[0].Version.Date, qt.Equals, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
+		c.Assert(output[0].VersionDate, qt.Equals, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
 		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.IsNotNil)
 	})
 
@@ -142,7 +131,7 @@ func TestBuild(t *testing.T) {
 		}
 		output, err := ops.Build()
 		c.Assert(err, qt.IsNil)
-		c.Assert(output[0].Version, qt.Equals, version)
+		c.Assert(output[0].VersionDate, qt.Equals, version.Date)
 		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
 		c.Assert(output[0].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
 		c.Assert(output[0].Doc.Paths["/bar"].Get, qt.Equals, getBar)
@@ -176,11 +165,19 @@ func TestBuild(t *testing.T) {
 		output, err := ops.Build()
 		c.Assert(err, qt.IsNil)
 
-		outputVersions := make([]vervet.Version, len(output))
-		for idx, out := range output {
-			outputVersions[idx] = out.Version
+		inputVersions := make([]time.Time, len(versions))
+		for idx, in := range versions {
+			inputVersions[idx] = in.Date
 		}
-		c.Assert(outputVersions, qt.DeepEquals, versions)
+		slices.SortFunc(inputVersions, compareDates)
+
+		outputVersions := make([]time.Time, len(output))
+		for idx, out := range output {
+			outputVersions[idx] = out.VersionDate
+		}
+		slices.SortFunc(outputVersions, compareDates)
+
+		c.Assert(outputVersions, qt.DeepEquals, inputVersions)
 	})
 
 	c.Run("merges distinct operations from previous versions", func(c *qt.C) {
@@ -218,17 +215,19 @@ func TestBuild(t *testing.T) {
 		output, err := ops.Build()
 		c.Assert(err, qt.IsNil)
 
-		c.Assert(output[0].Version, qt.Equals, versionA)
+		slices.SortFunc(output, compareDocs)
+
+		c.Assert(output[0].VersionDate, qt.Equals, versionA.Date)
 		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
 		c.Assert(output[0].Doc.Paths["/foo"].Post, qt.IsNil)
 		c.Assert(output[0].Doc.Paths["/bar"], qt.IsNil)
 
-		c.Assert(output[1].Version, qt.Equals, versionB)
+		c.Assert(output[1].VersionDate, qt.Equals, versionB.Date)
 		c.Assert(output[1].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
 		c.Assert(output[1].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
 		c.Assert(output[1].Doc.Paths["/bar"], qt.IsNil)
 
-		c.Assert(output[2].Version, qt.Equals, versionC)
+		c.Assert(output[2].VersionDate, qt.Equals, versionC.Date)
 		c.Assert(output[2].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
 		c.Assert(output[2].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
 		c.Assert(output[2].Doc.Paths["/bar"].Get, qt.Equals, getBar)
@@ -265,20 +264,22 @@ func TestBuild(t *testing.T) {
 		output, err := ops.Build()
 		c.Assert(err, qt.IsNil)
 
-		c.Assert(output[0].Version, qt.Equals, versionA)
+		slices.SortFunc(output, compareDocs)
+
+		c.Assert(output[0].VersionDate, qt.Equals, versionA.Date)
 		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.Equals, getFooOld)
 		c.Assert(output[0].Doc.Paths["/bar"], qt.IsNil)
 
-		c.Assert(output[1].Version, qt.Equals, versionB)
+		c.Assert(output[1].VersionDate, qt.Equals, versionB.Date)
 		c.Assert(output[1].Doc.Paths["/foo"].Get, qt.Equals, getFooOld)
 		c.Assert(output[1].Doc.Paths["/bar"].Get, qt.Equals, getBar)
 
-		c.Assert(output[2].Version, qt.Equals, versionC)
+		c.Assert(output[2].VersionDate, qt.Equals, versionC.Date)
 		c.Assert(output[2].Doc.Paths["/foo"].Get, qt.Equals, getFooNew)
 		c.Assert(output[2].Doc.Paths["/bar"].Get, qt.Equals, getBar)
 	})
 
-	c.Run("lower stabilities are not merged into higher", func(c *qt.C) {
+	c.Run("lower stabilities are merged into higher", func(c *qt.C) {
 		versionBetaA := vervet.MustParseVersion("2024-01-01~beta")
 		versionGA := vervet.MustParseVersion("2024-01-02")
 		versionBetaB := vervet.MustParseVersion("2024-01-03~beta")
@@ -313,18 +314,27 @@ func TestBuild(t *testing.T) {
 		output, err := ops.Build()
 		c.Assert(err, qt.IsNil)
 
-		c.Assert(output[0].Version, qt.Equals, versionBetaA)
+		slices.SortFunc(output, compareDocs)
+
+		c.Assert(output[0].VersionDate, qt.Equals, versionBetaA.Date)
 		c.Assert(output[0].Doc.Paths["/foo"], qt.IsNil)
 		c.Assert(output[0].Doc.Paths["/bar"].Get, qt.Equals, getBar)
 
-		c.Assert(output[1].Version, qt.Equals, versionGA)
+		c.Assert(output[1].VersionDate, qt.Equals, versionGA.Date)
 		c.Assert(output[1].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
 		c.Assert(output[1].Doc.Paths["/foo"].Post, qt.IsNil)
-		c.Assert(output[1].Doc.Paths["/bar"], qt.IsNil)
+		c.Assert(output[0].Doc.Paths["/bar"].Get, qt.Equals, getBar)
 
-		c.Assert(output[2].Version, qt.Equals, versionBetaB)
+		c.Assert(output[2].VersionDate, qt.Equals, versionBetaB.Date)
 		c.Assert(output[2].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
 		c.Assert(output[2].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
 		c.Assert(output[2].Doc.Paths["/bar"].Get, qt.Equals, getBar)
 	})
+}
+
+func compareDocs(a, b simplebuild.VersionedDoc) int {
+	return a.VersionDate.Compare(b.VersionDate)
+}
+func compareDates(a, b time.Time) int {
+	return a.Compare(b)
 }
