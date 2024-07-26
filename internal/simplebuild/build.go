@@ -59,12 +59,17 @@ func (ops Operations) Build() (DocSet, error) {
 			Doc:         &openapi3.T{},
 			VersionDate: versionDate,
 		}
+		refResolver := NewRefResolver(output[idx].Doc)
 		for path, spec := range ops {
 			op := spec.GetLatest(versionDate)
 			if op == nil {
 				continue
 			}
 			output[idx].Doc.AddOperation(path.Path, path.Method, op)
+			err := refResolver.Resolve(op)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return output, nil
