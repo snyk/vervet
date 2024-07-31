@@ -24,7 +24,7 @@ func Build(ctx context.Context, project *config.Project) error {
 			return err
 		}
 
-		// TODO: apply overlays
+		docs.ApplyOverlays(ctx, apiConfig.Overlays)
 
 		if apiConfig.Output != nil {
 			err = docs.WriteOutputs(*apiConfig.Output)
