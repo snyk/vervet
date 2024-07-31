@@ -23,9 +23,14 @@ func Build(ctx context.Context, project *config.Project) error {
 		if err != nil {
 			return err
 		}
-		err = docs.Write()
-		if err != nil {
-			return err
+
+		// TODO: apply overlays
+
+		if apiConfig.Output != nil {
+			err = docs.WriteOutputs(*apiConfig.Output)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -89,18 +94,6 @@ func (ops Operations) VersionDates() []time.Time {
 		idx++
 	}
 	return uniqueVersions
-}
-
-func (docs DocSet) Write() error {
-	for _, doc := range docs {
-		fmt.Println(doc.VersionDate.Format(time.DateOnly))
-		out, err := doc.Doc.MarshalJSON()
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(out))
-	}
-	return nil
 }
 
 func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
