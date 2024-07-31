@@ -19,16 +19,19 @@ func TestGetLatest(t *testing.T) {
 		before := vervet.MustParseVersion("3000-01-01")
 		vs := simplebuild.VersionSet{
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-01-01"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-01-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-03-01"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-03-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-02-01"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-02-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 		}
 		op := vs.GetLatest(before.Date)
@@ -39,16 +42,19 @@ func TestGetLatest(t *testing.T) {
 		before := vervet.MustParseVersion("2024-02-15")
 		vs := simplebuild.VersionSet{
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-01-01"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-01-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-03-01"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-03-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-02-01"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-02-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 		}
 		op := vs.GetLatest(before.Date)
@@ -59,20 +65,24 @@ func TestGetLatest(t *testing.T) {
 		before := vervet.MustParseVersion("2024-06-01")
 		vs := simplebuild.VersionSet{
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-01-01"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-01-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-02-01~beta"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-02-01~beta"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-03-01"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-03-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 			simplebuild.VersionedOp{
-				Version:   vervet.MustParseVersion("2024-04-01~experimental"),
-				Operation: openapi3.NewOperation(),
+				Version:      vervet.MustParseVersion("2024-04-01~experimental"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			},
 		}
 		op := vs.GetLatest(before.Date)
@@ -88,9 +98,10 @@ func TestBuild(t *testing.T) {
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   vervet.MustParseVersion("2024-01-01"),
-				Operation: openapi3.NewOperation(),
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-01-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			}},
 		}
 		output, err := ops.Build()
@@ -110,23 +121,26 @@ func TestBuild(t *testing.T) {
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   version,
-				Operation: getFoo,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      version,
+				Operation:    getFoo,
+				ResourceName: "foo",
 			}},
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "POST",
-			}: simplebuild.VersionSet{{
-				Version:   version,
-				Operation: postFoo,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      version,
+				Operation:    postFoo,
+				ResourceName: "foo",
 			}},
 			simplebuild.OpKey{
 				Path:   "/bar",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   version,
-				Operation: getBar,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      version,
+				Operation:    getBar,
+				ResourceName: "bar",
 			}},
 		}
 		output, err := ops.Build()
@@ -147,19 +161,22 @@ func TestBuild(t *testing.T) {
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   versions[0],
-				Operation: openapi3.NewOperation(),
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versions[0],
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
 			}},
 			simplebuild.OpKey{
 				Path:   "/bar",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   versions[1],
-				Operation: openapi3.NewOperation(),
-			}, {
-				Version:   versions[2],
-				Operation: openapi3.NewOperation(),
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versions[1],
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "bar",
+			}, simplebuild.VersionedOp{
+				Version:      versions[2],
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "bar",
 			}},
 		}
 		output, err := ops.Build()
@@ -193,23 +210,26 @@ func TestBuild(t *testing.T) {
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   versionA,
-				Operation: getFoo,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionA,
+				Operation:    getFoo,
+				ResourceName: "foo",
 			}},
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "POST",
-			}: simplebuild.VersionSet{{
-				Version:   versionB,
-				Operation: postFoo,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionB,
+				Operation:    postFoo,
+				ResourceName: "foo",
 			}},
 			simplebuild.OpKey{
 				Path:   "/bar",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   versionC,
-				Operation: getBar,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionC,
+				Operation:    getBar,
+				ResourceName: "bar",
 			}},
 		}
 		output, err := ops.Build()
@@ -246,19 +266,21 @@ func TestBuild(t *testing.T) {
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   versionA,
-				Operation: getFooOld,
-			}, {
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionA,
+				Operation:    getFooOld,
+				ResourceName: "foo",
+			}, simplebuild.VersionedOp{
 				Version:   versionC,
 				Operation: getFooNew,
 			}},
 			simplebuild.OpKey{
 				Path:   "/bar",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   versionB,
-				Operation: getBar,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionB,
+				Operation:    getBar,
+				ResourceName: "bar",
 			}},
 		}
 		output, err := ops.Build()
@@ -292,23 +314,26 @@ func TestBuild(t *testing.T) {
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   versionGA,
-				Operation: getFoo,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionGA,
+				Operation:    getFoo,
+				ResourceName: "foo",
 			}},
 			simplebuild.OpKey{
 				Path:   "/foo",
 				Method: "POST",
-			}: simplebuild.VersionSet{{
-				Version:   versionBetaB,
-				Operation: postFoo,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionBetaB,
+				Operation:    postFoo,
+				ResourceName: "foo",
 			}},
 			simplebuild.OpKey{
 				Path:   "/bar",
 				Method: "GET",
-			}: simplebuild.VersionSet{{
-				Version:   versionBetaA,
-				Operation: getBar,
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionBetaA,
+				Operation:    getBar,
+				ResourceName: "bar",
 			}},
 		}
 		output, err := ops.Build()
@@ -329,6 +354,102 @@ func TestBuild(t *testing.T) {
 		c.Assert(output[2].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
 		c.Assert(output[2].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
 		c.Assert(output[2].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+	})
+}
+
+func TestAnnotate(t *testing.T) {
+	c := qt.New(t)
+
+	c.Run("adds version dates and resource name to operations", func(c *qt.C) {
+		vs := simplebuild.VersionSet{
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-01-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
+			},
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-02-01~beta"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
+			},
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-03-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "bar",
+			},
+		}
+		vs.Annotate()
+		c.Assert(vs[0].Operation.Extensions[vervet.ExtSnykApiVersion], qt.Equals, "2024-01-01")
+		c.Assert(vs[0].Operation.Extensions[vervet.ExtSnykApiResource], qt.Equals, "foo")
+		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykApiVersion], qt.Equals, "2024-02-01~beta")
+		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykApiResource], qt.Equals, "foo")
+		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykApiVersion], qt.Equals, "2024-03-01")
+		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykApiResource], qt.Equals, "bar")
+	})
+
+	c.Run("adds a list of all other versions", func(c *qt.C) {
+		vs := simplebuild.VersionSet{
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-01-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
+			},
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-02-01~beta"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
+			},
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-03-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "bar",
+			},
+		}
+		vs.Annotate()
+		c.Assert(
+			vs[0].Operation.Extensions[vervet.ExtSnykApiReleases],
+			qt.DeepEquals,
+			[]string{"2024-01-01", "2024-02-01~beta", "2024-03-01"},
+		)
+		c.Assert(
+			vs[1].Operation.Extensions[vervet.ExtSnykApiReleases],
+			qt.DeepEquals,
+			[]string{"2024-01-01", "2024-02-01~beta", "2024-03-01"},
+		)
+		c.Assert(
+			vs[2].Operation.Extensions[vervet.ExtSnykApiReleases],
+			qt.DeepEquals,
+			[]string{"2024-01-01", "2024-02-01~beta", "2024-03-01"},
+		)
+	})
+
+	c.Run("adds deprecation annotations on older versions", func(c *qt.C) {
+		vs := simplebuild.VersionSet{
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-01-01~beta"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
+			},
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-02-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
+			},
+			simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-03-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "bar",
+			},
+		}
+		vs.Annotate()
+		c.Assert(vs[0].Operation.Extensions[vervet.ExtSnykDeprecatedBy], qt.Equals, "2024-02-01")
+		// beta sunsets after 91 days
+		c.Assert(vs[0].Operation.Extensions[vervet.ExtSnykSunsetEligible], qt.Equals, "2024-05-02")
+		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykDeprecatedBy], qt.Equals, "2024-03-01")
+		// ga sunsets after 181 days
+		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykSunsetEligible], qt.Equals, "2024-08-29")
+		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykDeprecatedBy], qt.IsNil)
+		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykSunsetEligible], qt.IsNil)
 	})
 }
 

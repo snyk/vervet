@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -19,12 +20,18 @@ func Build(ctx context.Context, project *config.Project) error {
 		if err != nil {
 			return err
 		}
+		for _, op := range operations {
+			op.Annotate()
+		}
 		docs, err := operations.Build()
 		if err != nil {
 			return err
 		}
 
-		docs.ApplyOverlays(ctx, apiConfig.Overlays)
+		err = docs.ApplyOverlays(ctx, apiConfig.Overlays)
+		if err != nil {
+			return err
+		}
 
 		if apiConfig.Output != nil {
 			err = docs.WriteOutputs(*apiConfig.Output)
@@ -42,8 +49,9 @@ type OpKey struct {
 }
 
 type VersionedOp struct {
-	Version   vervet.Version
-	Operation *openapi3.Operation
+	Version      vervet.Version
+	Operation    *openapi3.Operation
+	ResourceName string
 }
 
 type VersionSet []VersionedOp
@@ -107,6 +115,7 @@ func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 		for _, path := range paths {
 			versionDir := filepath.Dir(path)
 			versionStr := filepath.Base(versionDir)
+			resourceName := filepath.Base(filepath.Dir(filepath.Dir(path)))
 
 			doc, err := vervet.NewDocumentFile(path)
 			if err != nil {
@@ -141,8 +150,9 @@ func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 						operations[k] = []VersionedOp{}
 					}
 					operations[k] = append(operations[k], VersionedOp{
-						Version:   version,
-						Operation: opDef,
+						Version:      version,
+						Operation:    opDef,
+						ResourceName: resourceName,
 					})
 				}
 			}
@@ -178,4 +188,49 @@ func (vs VersionSet) GetLatest(before time.Time) *openapi3.Operation {
 		return nil
 	}
 	return latest.Operation
+}
+
+// Annotate adds Snyk specific extensions to openapi operations. These
+// extensions are:
+//   - x-snyk-api-version: version where the operation was defined
+//   - x-snyk-api-releases: all versions of this api
+//   - x-snyk-deprecated-by: if there is a later version of this operation, the
+//     version of that operation
+//   - x-snyk-sunset-eligible: the date after this operation can be sunset
+//   - x-snyk-api-resource: what resource this operation acts on
+//   - x-snyk-api-lifecycle: status of the operation, can be one of:
+//     [ unreleased, released, deprecated, sunset ]
+func (vs VersionSet) Annotate() {
+	slices.SortFunc(vs, func(a, b VersionedOp) int {
+		return a.Version.Compare(b.Version)
+	})
+
+	count := len(vs)
+
+	releases := make([]string, count)
+	for idx, op := range vs {
+		releases[idx] = op.Version.String()
+	}
+
+	for idx, op := range vs {
+		if op.Operation.Extensions == nil {
+			op.Operation.Extensions = make(map[string]interface{}, 6)
+		}
+		op.Operation.Extensions[vervet.ExtSnykApiResource] = op.ResourceName
+		op.Operation.Extensions[vervet.ExtSnykApiVersion] = op.Version.String()
+		op.Operation.Extensions[vervet.ExtSnykApiReleases] = releases
+		op.Operation.Extensions[vervet.ExtSnykApiLifecycle] = op.Version.LifecycleAt(time.Time{}).String()
+		if idx < (count - 1) {
+			laterVersion := vs[idx+1].Version
+			// Sanity check the later version actually deprecates this one
+			if !op.Version.DeprecatedBy(laterVersion) {
+				continue
+			}
+			op.Operation.Extensions[vervet.ExtSnykDeprecatedBy] = laterVersion.String()
+			sunsetDate, ok := op.Version.Sunset(laterVersion)
+			if ok {
+				op.Operation.Extensions[vervet.ExtSnykSunsetEligible] = sunsetDate.Format("2006-01-02")
+			}
+		}
+	}
 }
