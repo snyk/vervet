@@ -33,7 +33,6 @@ linters:
     - errname
     # - errorlint - Good to have linter but potential to introduce breaking changes.
     # - exhaustive - Causes too much noise at the moment.
-    - exportloopref
     - gci
     - gocritic
     - goconst
@@ -43,7 +42,6 @@ linters:
     - gocyclo
     # - gosec - Good to have linter but potential to introduce breaking changes.
     # - forbidigo - Good to have linter but potential to introduce breaking changes.
-    - ifshort
     - lll
     - misspell
     - nakedret
