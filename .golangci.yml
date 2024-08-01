@@ -42,7 +42,6 @@ linters:
     - gocyclo
     # - gosec - Good to have linter but potential to introduce breaking changes.
     # - forbidigo - Good to have linter but potential to introduce breaking changes.
-    - ifshort
     - lll
     - misspell
     - nakedret
