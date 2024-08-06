@@ -2,7 +2,10 @@ package simplebuild
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"time"
@@ -16,6 +19,9 @@ import (
 
 func Build(ctx context.Context, project *config.Project) error {
 	for _, apiConfig := range project.APIs {
+
+		fmt.Printf("Processing API: %s\n", apiConfig.Name)
+
 		operations, err := LoadPaths(ctx, apiConfig)
 		if err != nil {
 			return err
@@ -33,6 +39,13 @@ func Build(ctx context.Context, project *config.Project) error {
 			return err
 		}
 
+		sortDocsByVersionDate(docs)
+
+		err = CheckBreakingChanges(docs)
+		if err != nil {
+			return err
+		}
+
 		if apiConfig.Output != nil {
 			err = docs.WriteOutputs(*apiConfig.Output)
 			if err != nil {
@@ -41,6 +54,18 @@ func Build(ctx context.Context, project *config.Project) error {
 		}
 	}
 	return nil
+}
+
+func sortDocsByVersionDate(docs DocSet) {
+	slices.SortFunc(docs, func(a, b VersionedDoc) int {
+		if a.VersionDate.Before(b.VersionDate) {
+			return -1
+		}
+		if a.VersionDate.After(b.VersionDate) {
+			return 1
+		}
+		return 0
+	})
 }
 
 type OpKey struct {
@@ -233,4 +258,48 @@ func (vs VersionSet) Annotate() {
 			}
 		}
 	}
+}
+
+func CheckBreakingChanges(docs DocSet) error {
+	for i := 1; i < len(docs); i++ {
+		prevDoc := docs[i-1]
+		currDoc := docs[i]
+
+		// Create temporary file paths for previous and current specs
+		prevSpecPath := filepath.Join(os.TempDir(), fmt.Sprintf("spec-%d.json", i-1))
+		currSpecPath := filepath.Join(os.TempDir(), fmt.Sprintf("spec-%d.json", i))
+
+		// Write specs to temporary files
+		if err := writeTempSpecFile(prevDoc.Doc, prevSpecPath); err != nil {
+			return err
+		}
+		if err := writeTempSpecFile(currDoc.Doc, currSpecPath); err != nil {
+			return err
+		}
+
+		cmd := exec.Command("oasdiff", "breaking", "--fail-on", "ERR", prevSpecPath, currSpecPath)
+		output, err := cmd.CombinedOutput()
+		if err == nil {
+			return fmt.Errorf("no breaking change detected between versions %s and %s: \n %s",
+				prevDoc.VersionDate.Format(time.DateOnly), currDoc.VersionDate.Format(time.DateOnly), string(output))
+		}
+
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			continue // breaking change detected, continue to the next pair
+		}
+		if os.IsNotExist(err) {
+			return fmt.Errorf("oasdiff executable not found. Please ensure it is installed and available in your PATH")
+		}
+		return fmt.Errorf("failed to run oasdiff: %w", err)
+	}
+	return nil
+}
+
+func writeTempSpecFile(doc *openapi3.T, path string) error {
+	jsonBuf, err := doc.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("failed to marshal spec to JSON: %w", err)
+	}
+	return os.WriteFile(path, jsonBuf, 0644)
 }
