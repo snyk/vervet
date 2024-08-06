@@ -14,7 +14,12 @@ import (
 	"github.com/snyk/vervet/v7/internal/files"
 )
 
-func Build(ctx context.Context, project *config.Project) error {
+// Build compiles the versioned resources in a project configuration based on
+// simplified versioning rules, after the start date.
+func Build(ctx context.Context, project *config.Project, startDate vervet.Version, appendOutputFiles bool) error {
+	if time.Now().Before(startDate.Date) {
+		return nil
+	}
 	for _, apiConfig := range project.APIs {
 		operations, err := LoadPaths(ctx, apiConfig)
 		if err != nil {
@@ -23,7 +28,8 @@ func Build(ctx context.Context, project *config.Project) error {
 		for _, op := range operations {
 			op.Annotate()
 		}
-		docs, err := operations.Build()
+
+		docs, err := operations.Build(startDate)
 		if err != nil {
 			return err
 		}
@@ -34,7 +40,7 @@ func Build(ctx context.Context, project *config.Project) error {
 		}
 
 		if apiConfig.Output != nil {
-			err = docs.WriteOutputs(*apiConfig.Output)
+			err = docs.WriteOutputs(*apiConfig.Output, appendOutputFiles)
 			if err != nil {
 				return err
 			}
@@ -64,8 +70,9 @@ type VersionedDoc struct {
 }
 type DocSet []VersionedDoc
 
-func (ops Operations) Build() (DocSet, error) {
+func (ops Operations) Build(startVersion vervet.Version) (DocSet, error) {
 	versionDates := ops.VersionDates()
+	versionDates = filterVersionByStartDate(versionDates, startVersion.Date)
 	output := make(DocSet, len(versionDates))
 	for idx, versionDate := range versionDates {
 		output[idx] = VersionedDoc{
@@ -86,6 +93,16 @@ func (ops Operations) Build() (DocSet, error) {
 		}
 	}
 	return output, nil
+}
+
+func filterVersionByStartDate(dates []time.Time, startDate time.Time) []time.Time {
+	resultDates := []time.Time{startDate}
+	for _, d := range dates {
+		if d.After(startDate) {
+			resultDates = append(resultDates, d)
+		}
+	}
+	return resultDates
 }
 
 func (ops Operations) VersionDates() []time.Time {
