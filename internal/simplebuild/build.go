@@ -19,7 +19,6 @@ import (
 
 func Build(ctx context.Context, project *config.Project) error {
 	for _, apiConfig := range project.APIs {
-
 		fmt.Printf("Processing API: %s\n", apiConfig.Name)
 
 		operations, err := LoadPaths(ctx, apiConfig)
