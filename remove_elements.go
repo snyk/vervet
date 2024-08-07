@@ -49,13 +49,13 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 	}
 	// Remove excluded paths
 	excludedPaths := map[string]struct{}{}
-	for path := range doc.Paths {
+	for path := range doc.Paths.Map() {
 		if ex.isExcludedPath(path) {
 			excludedPaths[path] = struct{}{}
 		}
 	}
 	for path := range excludedPaths {
-		delete(doc.Paths, path)
+		doc.Paths.Delete(path)
 	}
 	// Remove excluded elements
 	if err := ex.apply(); err != nil {
@@ -115,7 +115,7 @@ func (ex *excluder) applyOperation(op *openapi3.Operation) {
 	}
 	op.Parameters = params
 
-	for _, resp := range op.Responses {
+	for _, resp := range op.Responses.Map() { // Use Map method to get underlying map
 		if resp.Value == nil {
 			continue
 		}

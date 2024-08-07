@@ -150,8 +150,9 @@ func TestCollator_Collate(t *testing.T) {
 	c.Assert(specs[v20220401_ga].Paths.Find("/example"), qt.IsNotNil)
 
 	// No filtering, so extensions are all present
-	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Extensions["x-other-internal"], qt.Not(qt.IsNil))
-	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Responses["204"].Value.Extensions["x-internal"], qt.Not(qt.IsNil))
+	c.Assert(specs[v20220401_ga].Paths.Find("/example").Post.Extensions["x-other-internal"], qt.Not(qt.IsNil))
+	c.Assert(specs[v20220401_ga].Paths.Find("/example").Post.Responses.Status(204).Value.Extensions["x-internal"],
+		qt.Not(qt.IsNil))
 }
 
 func TestCollator_Collate_MigratingEndpoints(t *testing.T) {
@@ -183,11 +184,11 @@ func TestCollator_Collate_MigratingEndpoints(t *testing.T) {
 	c.Assert(specs[v20220201_exp].Paths.Find("/test"), qt.IsNotNil)
 	c.Assert(specs[v20230314_exp].Paths.Find("/test"), qt.IsNotNil)
 
-	c.Assert(specs[v20220201_exp].Paths["/test"].Get.Responses["204"], qt.IsNotNil)
-	c.Assert(specs[v20220201_exp].Paths["/test"].Get.Responses["200"], qt.IsNil)
+	c.Assert(specs[v20220201_exp].Paths.Find("/test").Get.Responses.Status(204), qt.IsNotNil)
+	c.Assert(specs[v20220201_exp].Paths.Find("/test").Get.Responses.Status(200), qt.IsNil)
 
-	c.Assert(specs[v20230314_exp].Paths["/test"].Get.Responses["200"], qt.IsNotNil)
-	c.Assert(specs[v20230314_exp].Paths["/test"].Get.Responses["204"], qt.IsNil)
+	c.Assert(specs[v20230314_exp].Paths.Find("/test").Get.Responses.Status(200), qt.IsNotNil)
+	c.Assert(specs[v20230314_exp].Paths.Find("/test").Get.Responses.Status(204), qt.IsNil)
 }
 
 func TestCollator_Collate_ExcludePatterns(t *testing.T) {
@@ -218,8 +219,9 @@ func TestCollator_Collate_ExcludePatterns(t *testing.T) {
 	specs, err := collator.Collate()
 	c.Assert(err, qt.IsNil)
 
-	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Extensions["x-other-internal"], qt.IsNil)
-	c.Assert(specs[v20220401_ga].Paths["/example"].Post.Responses["204"].Value.Extensions["x-internal"], qt.IsNil)
+	c.Assert(specs[v20220401_ga].Paths.Find("/example").Post.Extensions["x-other-internal"], qt.IsNil)
+	c.Assert(specs[v20220401_ga].Paths.Find("/example").Post.Responses.Status(204).Value.Extensions["x-internal"],
+		qt.IsNil)
 }
 
 func TestCollator_Collate_Conflict(t *testing.T) {
@@ -252,7 +254,7 @@ func TestCollator_Collate_Conflict(t *testing.T) {
 	specs, err := collator.Collate()
 	c.Assert(err, qt.IsNil)
 	// First path wins
-	c.Assert(specs[vervet.MustParseVersion("2021-06-15")].Paths["/examples/hello-world"].Post.Description,
+	c.Assert(specs[vervet.MustParseVersion("2021-06-15")].Paths.Find("/examples/hello-world").Post.Description,
 		qt.Equals, "Create a single result from the hello-world example - from example 1")
 }
 

@@ -19,9 +19,9 @@ func TestCommonResponseHeaders(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Headers are not included
-	pathItem := doc.Paths["/examples/hello-world"]
+	pathItem := doc.Paths.Find("/examples/hello-world")
 	c.Assert(pathItem, qt.Not(qt.IsNil))
-	resp := pathItem.Post.Responses["201"].Value
+	resp := pathItem.Post.Responses.Status(201).Value
 	c.Assert(resp, qt.Not(qt.IsNil))
 	// There's a Location header defined outside of the common includes
 	c.Assert(resp.Headers, qt.HasLen, 1)
@@ -30,9 +30,9 @@ func TestCommonResponseHeaders(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Included header refs are resolved
-	pathItem = doc.Paths["/examples/hello-world"]
+	pathItem = doc.Paths.Find("/examples/hello-world")
 	c.Assert(pathItem, qt.Not(qt.IsNil))
-	resp = pathItem.Post.Responses["201"].Value
+	resp = pathItem.Post.Responses.Status(201).Value
 	c.Assert(resp, qt.Not(qt.IsNil))
 	// Now add 3 more common included headers
 	c.Assert(resp.Headers, qt.HasLen, 4)

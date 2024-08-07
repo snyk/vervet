@@ -20,7 +20,7 @@ func (s resourceVersionsSlice) validate() error {
 			} else if err != nil {
 				return fmt.Errorf("validation failed: %w", err)
 			}
-			for path := range ep.Paths {
+			for path := range ep.Paths.Map() {
 				if conflict, ok := resourcePaths[path]; ok {
 					return fmt.Errorf("conflict: %q %q", conflict, ep.sourcePrefix)
 				}

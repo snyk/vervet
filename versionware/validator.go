@@ -1,6 +1,7 @@
 package versionware
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -43,7 +44,8 @@ type ValidatorConfig struct {
 var defaultValidatorConfig = ValidatorConfig{
 	VersionError: DefaultVersionError,
 	Options: []openapi3filter.ValidatorOption{
-		openapi3filter.OnErr(func(w http.ResponseWriter, status int, code openapi3filter.ErrCode, _ error) {
+		openapi3filter.OnErr(func(ctx context.Context, w http.ResponseWriter, status int,
+			code openapi3filter.ErrCode, _ error) {
 			statusText := http.StatusText(http.StatusInternalServerError)
 			switch code {
 			case openapi3filter.ErrCodeCannotFindRoute:
