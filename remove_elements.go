@@ -107,9 +107,6 @@ func (ex *excluder) applyExtensions(extensions *map[string]interface{}) {
 }
 
 func (ex *excluder) applyOperation(op *openapi3.Operation) {
-	if op == nil {
-		return // nothing to do if operation is nil
-	}
 	var params []*openapi3.ParameterRef
 	for _, p := range op.Parameters {
 		if !ex.isExcludedHeaderParam(p) {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+
 	"github.com/snyk/vervet/v7"
 	"github.com/snyk/vervet/v7/config"
 	"github.com/snyk/vervet/v7/internal/files"

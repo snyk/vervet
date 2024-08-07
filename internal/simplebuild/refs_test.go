@@ -21,9 +21,7 @@ func TestResolveRefs(t *testing.T) {
 			}},
 		}
 		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &path,
-			},
+			Paths: openapi3.NewPaths(openapi3.WithPath("/foo", &path)),
 		}
 
 		rr := simplebuild.NewRefResolver(&doc)
@@ -48,10 +46,9 @@ func TestResolveRefs(t *testing.T) {
 			}},
 		}
 		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &pathA,
-				"/bar": &pathB,
-			},
+			Paths: openapi3.NewPaths(
+				openapi3.WithPath("/foo", &pathA),
+				openapi3.WithPath("/bar", &pathB)),
 		}
 
 		rr := simplebuild.NewRefResolver(&doc)
@@ -77,10 +74,10 @@ func TestResolveRefs(t *testing.T) {
 			}},
 		}
 		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &pathA,
-				"/bar": &pathB,
-			},
+			Paths: openapi3.NewPaths(
+				openapi3.WithPath("/foo", &pathA),
+				openapi3.WithPath("/bar", &pathB),
+			),
 		}
 
 		rr := simplebuild.NewRefResolver(&doc)
@@ -108,9 +105,9 @@ func TestResolveRefs(t *testing.T) {
 			}},
 		}
 		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &path,
-			},
+			Paths: openapi3.NewPaths(
+				openapi3.WithPath("/foo", &path),
+			),
 		}
 
 		rr := simplebuild.NewRefResolver(&doc)
@@ -130,9 +127,9 @@ func TestResolveRefs(t *testing.T) {
 		}
 		doc := openapi3.T{
 			Components: &openapi3.Components{},
-			Paths: openapi3.Paths{
-				"/foo": &path,
-			},
+			Paths: openapi3.NewPaths(
+				openapi3.WithPath("/foo", &path),
+			),
 		}
 
 		rr := simplebuild.NewRefResolver(&doc)

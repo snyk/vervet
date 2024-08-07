@@ -84,7 +84,7 @@ func (rv *ResourceVersion) Validate(ctx context.Context) error {
 		return err
 	}
 	// Resource path checks. There should be at least one path per resource.
-	if rv.Document.Paths == nil || rv.Document.Paths.Len() < 1 {
+	if rv.Document.Paths.Len() < 1 {
 		return fmt.Errorf("spec contains no paths")
 	}
 	return nil
@@ -313,7 +313,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 		return nil, fmt.Errorf("invalid version %q", versionStr)
 	}
 
-	if doc.Paths == nil || doc.Paths.Len() == 0 {
+	if doc.Paths.Len() == 0 {
 		return nil, nil //nolint:nilnil //acked
 	}
 

@@ -64,7 +64,7 @@ func (l *refAliasResolver) Struct(v reflect.Value) error {
 
 // StructField implements reflectwalk.StructWalker.
 func (l *refAliasResolver) StructField(sf reflect.StructField, v reflect.Value) error {
-	if !l.curRefField.IsValid() || !v.CanSet() {
+	if !l.curRefField.IsValid() {
 		return nil
 	}
 	ref := l.curRefField.String()
@@ -72,8 +72,6 @@ func (l *refAliasResolver) StructField(sf reflect.StructField, v reflect.Value) 
 		return nil
 	}
 	ref = l.resolveRefAlias(ref)
-	if l.curRefField.CanSet() {
-		l.curRefField.Set(reflect.ValueOf(ref))
-	}
+	l.curRefField.Set(reflect.ValueOf(ref))
 	return nil
 }
