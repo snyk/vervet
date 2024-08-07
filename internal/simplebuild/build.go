@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
-
 	"github.com/snyk/vervet/v7"
 	"github.com/snyk/vervet/v7/config"
 	"github.com/snyk/vervet/v7/internal/files"
@@ -140,7 +139,7 @@ func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 				return nil, fmt.Errorf("failed to localize refs: %w", err)
 			}
 
-			for pathName, pathDef := range doc.T.Paths {
+			for pathName, pathDef := range doc.T.Paths.Map() {
 				for opName, opDef := range pathDef.Operations() {
 					k := OpKey{
 						Path:   pathName,
