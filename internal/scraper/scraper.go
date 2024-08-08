@@ -152,11 +152,8 @@ func (s *Scraper) scrape(ctx context.Context, scrapeTime time.Time, svc service)
 	}
 
 	for i := range versions {
-		// TODO: we might run this concurrently per live service pod if/when
-		// we're more k8s aware, but we won't do that yet.
-
-		// Skip if it's an experimental version
-		if IsExperimentalVersion(versions[i]) {
+		// Skip if the version is not publicly documented
+		if !IsPubliclyDocumented(versions[i]) {
 			continue
 		}
 
@@ -294,6 +291,21 @@ func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string
 func isLegacyVersion(version string) bool {
 	// This default version predates vervet's creation date.
 	return version == "2021-01-01"
+}
+
+func IsPubliclyDocumented(version string) bool {
+	const publiclyDocumentedDate = "2024-09-08"
+	if !IsExperimentalVersion(version) {
+		return true
+	}
+	parts := strings.Split(version, "~")
+	if len(parts) > 0 {
+		versionDate := parts[0]
+		if versionDate <= publiclyDocumentedDate {
+			return true
+		}
+	}
+	return false
 }
 
 func IsExperimentalVersion(version string) bool {

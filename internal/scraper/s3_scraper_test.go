@@ -57,10 +57,10 @@ func TestS3Scraper(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		if scraper.IsExperimentalVersion(test.version) {
+		if !scraper.IsPubliclyDocumented(test.version) {
 			ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 			c.Assert(err, qt.IsNil)
-			c.Assert(ok, qt.IsFalse, qt.Commentf("experimental version %s should not be included", test.version))
+			c.Assert(ok, qt.IsFalse, qt.Commentf("publicly undocumented version %s should not be included", test.version))
 		} else {
 			ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 			c.Assert(err, qt.IsNil)
@@ -70,7 +70,7 @@ func TestS3Scraper(t *testing.T) {
 
 	vi, err := st.VersionIndex(ctx)
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(vi.Versions()), qt.Equals, 3)
+	c.Assert(len(vi.Versions()), qt.Equals, 4)
 	for _, version := range vi.Versions() {
 		specData, err := st.Version(ctx, version.String())
 		c.Assert(err, qt.IsNil)
@@ -123,10 +123,10 @@ func TestS3ScraperCollation(t *testing.T) {
 
 	// Version digests now known to storage
 	for _, test := range tests {
-		if scraper.IsExperimentalVersion(test.version) {
+		if !scraper.IsPubliclyDocumented(test.version) {
 			ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 			c.Assert(err, qt.IsNil)
-			c.Assert(ok, qt.IsFalse, qt.Commentf("experimental version %s should not be included", test.version))
+			c.Assert(ok, qt.IsFalse, qt.Commentf("publicly undocumented version %s should not be included", test.version))
 		} else {
 			ok, err := st.HasVersion(ctx, test.name, test.version, test.digest)
 			c.Assert(err, qt.IsNil)
@@ -136,7 +136,7 @@ func TestS3ScraperCollation(t *testing.T) {
 
 	vi, err := st.VersionIndex(ctx)
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(vi.Versions()), qt.Equals, 3)
+	c.Assert(len(vi.Versions()), qt.Equals, 4)
 	for _, version := range vi.Versions() {
 		specData, err := st.Version(ctx, version.String())
 		c.Assert(err, qt.IsNil)
