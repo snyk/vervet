@@ -11,6 +11,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
+	"github.com/snyk/vervet/v7"
 	"github.com/snyk/vervet/v7/config"
 	"github.com/snyk/vervet/v7/testdata"
 )
@@ -105,7 +106,7 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(restApi.output, qt.Not(qt.IsNil))
 
 	// Build stage
-	err = compiler.BuildAll(ctx)
+	err = compiler.BuildAll(ctx, vervet.MustParseVersion("2024-06-01"))
 	c.Assert(err, qt.IsNil)
 
 	// Verify created files/folders are as expected
@@ -141,7 +142,7 @@ func TestCompilerSmokePaths(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Build stage
-	err = compiler.BuildAll(ctx)
+	err = compiler.BuildAll(ctx, vervet.MustParseVersion("2024-06-01"))
 	c.Assert(err, qt.IsNil)
 
 	refOutputPath := testdata.Path("output")

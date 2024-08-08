@@ -122,20 +122,9 @@ func ResourceSpecFiles(rcConfig *config.ResourceSet) ([]string, error) {
 	return files.LocalFSSource{}.Match(rcConfig)
 }
 
-func (c *Compiler) apisEach(ctx context.Context, f func(ctx context.Context, apiName string) error) error {
-	var errs error
-	for apiName := range c.apis {
-		err := f(ctx, apiName)
-		if err != nil {
-			errs = multierr.Append(errs, err)
-		}
-	}
-	return errs
-}
-
 // Build builds an aggregate versioned OpenAPI spec for a specific API by name
 // in the project.
-func (c *Compiler) Build(ctx context.Context, apiName string) error {
+func (c *Compiler) Build(apiName string, stopVersion vervet.Version) error {
 	api, ok := c.apis[apiName]
 	if !ok {
 		return fmt.Errorf("api not found (apis.%s)", apiName)
@@ -156,7 +145,7 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 	log.Printf("compiling API %s to output versions", apiName)
 	var versionSpecFiles []string
 	for rcIndex, rc := range api.resources {
-		specVersions, err := vervet.LoadSpecVersionsFileset(rc.sourceFiles) //nolint:contextcheck //acked
+		specVersions, err := vervet.LoadSpecVersionsFileset(rc.sourceFiles)
 		if err != nil {
 			return fmt.Errorf("failed to load spec versions: %+v (apis.%s.resources[%d])",
 				err, apiName, rcIndex)
@@ -171,6 +160,9 @@ func (c *Compiler) Build(ctx context.Context, apiName string) error {
 					"API spec with version %s is in the future. This is not supported as it may cause breakage",
 					version,
 				))
+			}
+			if version.Compare(stopVersion) >= 0 {
+				continue
 			}
 
 			spec, err := specVersions.At(version)
@@ -298,7 +290,14 @@ import "embed"
 var Versions embed.FS
 `[1:]))
 
-// BuildAll builds all APIs in the project.
-func (c *Compiler) BuildAll(ctx context.Context) error {
-	return c.apisEach(ctx, c.Build)
+// BuildAll builds all APIs in the project, before the stop version.
+func (c *Compiler) BuildAll(ctx context.Context, stopVersion vervet.Version) error {
+	var errs error
+	for apiName := range c.apis {
+		err := c.Build(apiName, stopVersion) //nolint:contextcheck // TODO: fix contextcheck in separate PR
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	return errs
 }
