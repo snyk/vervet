@@ -75,6 +75,7 @@ var CLIApp = cli.App{
 	Commands: []*cli.Command{
 		&BackstageCommand,
 		&BuildCommand,
+		&RetroBuildCommand,
 		&SimpleBuildCommand,
 		&FilterCommand,
 		&GenerateCommand,
