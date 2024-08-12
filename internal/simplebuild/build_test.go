@@ -339,12 +339,12 @@ func TestBuild(t *testing.T) {
 		c.Assert(len(output), qt.Equals, 2)
 
 		c.Assert(output[0].VersionDate, qt.Equals, versionB.Date)
-		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.Equals, getFooOld)
-		c.Assert(output[0].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[0].Doc.Paths.Find("/foo").Get, qt.Equals, getFooOld)
+		c.Assert(output[0].Doc.Paths.Find("/bar").Get, qt.Equals, getBar)
 
 		c.Assert(output[1].VersionDate, qt.Equals, versionC.Date)
-		c.Assert(output[1].Doc.Paths["/foo"].Get, qt.Equals, getFooNew)
-		c.Assert(output[1].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[1].Doc.Paths.Find("/foo").Get, qt.Equals, getFooNew)
+		c.Assert(output[1].Doc.Paths.Find("/bar").Get, qt.Equals, getBar)
 	})
 
 	c.Run("lower stabilities are merged into higher", func(c *qt.C) {

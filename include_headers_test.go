@@ -38,6 +38,6 @@ func TestCommonResponseHeaders(t *testing.T) {
 	c.Assert(resp.Headers, qt.HasLen, 4)
 	for _, name := range []string{"snyk-version-requested", "snyk-version-served", "snyk-request-id"} {
 		// All of these headers are string type
-		c.Assert(resp.Headers[name].Value.Schema.Value.Type, qt.Equals, "string")
+		c.Assert(resp.Headers[name].Value.Schema.Value.Type.Permits("string"), qt.Equals, true)
 	}
 }

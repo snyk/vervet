@@ -1,11 +1,9 @@
 package vervet
 
 import (
-	"reflect"
 	"regexp"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mitchellh/reflectwalk"
 )
 
 // ExcludePatterns defines patterns matching elements to be removed from an
@@ -57,53 +55,35 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 	for path := range excludedPaths {
 		doc.Paths.Delete(path)
 	}
-	// Remove excluded elements
-	if err := ex.apply(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (ex *excluder) apply() error {
-	return reflectwalk.Walk(ex.doc, ex)
-}
-
-// Struct implements reflectwalk.StructWalker.
-func (ex *excluder) Struct(v reflect.Value) error {
-	if !v.CanInterface() {
-		return nil
-	}
-
-	switch v.Interface().(type) {
-	case openapi3.Operation:
-		ex.applyOperation(v.Addr().Interface().(*openapi3.Operation))
-	}
+	ex.filterExtensions()
 
 	return nil
 }
 
-// StructField implements reflectwalk.StructWalker.
-func (ex *excluder) StructField(field reflect.StructField, v reflect.Value) error {
-	if field.Name != "Extensions" || !v.CanInterface() {
-		return nil
-	}
-
-	switch v.Interface().(type) {
-	case map[string]interface{}:
-		ex.applyExtensions(v.Addr().Interface().(*map[string]interface{}))
-	}
-
-	return nil
-}
-
-func (ex *excluder) applyExtensions(extensions *map[string]interface{}) {
-	exts := make(map[string]interface{}, len(*extensions))
-	for k, v := range *extensions {
-		if !ex.isExcludedExtension(k) {
-			exts[k] = v
+func (ex *excluder) filterExtensions() {
+	for _, pathItem := range ex.doc.Paths.Map() {
+		ex.removeExcludedExtensions(pathItem.Extensions)
+		for _, operation := range pathItem.Operations() {
+			ex.removeExcludedExtensions(operation.Extensions)
+			if operation.Responses != nil {
+				ex.removeExcludedExtensions(operation.Responses.Extensions)
+			}
+			for _, responseRef := range operation.Responses.Map() {
+				ex.removeExcludedExtensions(responseRef.Extensions)
+				if responseRef.Value != nil {
+					ex.removeExcludedExtensions(responseRef.Value.Extensions)
+				}
+			}
 		}
 	}
-	*extensions = exts
+}
+
+func (ex *excluder) removeExcludedExtensions(extensions map[string]any) {
+	for k := range extensions {
+		if ex.isExcludedExtension(k) {
+			delete(extensions, k)
+		}
+	}
 }
 
 func (ex *excluder) applyOperation(op *openapi3.Operation) {

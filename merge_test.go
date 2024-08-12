@@ -159,15 +159,15 @@ tags:
 		err := vervet.Merge(dst, src, false)
 		c.Assert(err, qt.IsNil)
 		c.Assert(dst.Tags, qt.DeepEquals, openapi3.Tags{{
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			Name:        "bar",
 			Description: "bar resource (src)",
 		}, {
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			Name:        "baz",
 			Description: "baz resource (dst)",
 		}, {
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			Name:        "foo",
 			Description: "foo resource (dst)",
 		}})
@@ -178,15 +178,15 @@ tags:
 		err := vervet.Merge(dst, src, true)
 		c.Assert(err, qt.IsNil)
 		c.Assert(dst.Tags, qt.DeepEquals, openapi3.Tags{{
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			Name:        "bar",
 			Description: "bar resource (src)",
 		}, {
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			Name:        "baz",
 			Description: "baz resource (dst)",
 		}, {
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			Name:        "foo",
 			Description: "foo resource (src)",
 		}})
@@ -239,7 +239,7 @@ x-extension:
 		err := vervet.Merge(dst, src, false)
 		c.Assert(err, qt.IsNil)
 		c.Assert(dst.Info, qt.DeepEquals, &openapi3.Info{
-			Extensions: map[string]interface{}{},
+			Extensions: nil,
 			Title:      "Dst",
 			Version:    "dst",
 		})
@@ -249,11 +249,11 @@ x-extension:
 			"Baz": []string{"strange", "crunchy"},
 		}})
 		c.Assert(dst.Servers, qt.DeepEquals, openapi3.Servers{{
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			URL:         "https://example.com/foo",
 			Description: "Foo (dst)",
 		}, {
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			URL:         "https://example.com/baz",
 			Description: "Baz (dst)",
 		}})
@@ -270,7 +270,7 @@ x-extension:
 		err := vervet.Merge(dst, src, true)
 		c.Assert(err, qt.IsNil)
 		c.Assert(dst.Info, qt.DeepEquals, &openapi3.Info{
-			Extensions: map[string]interface{}{},
+			Extensions: nil,
 			Title:      "Src",
 			Version:    "src",
 		})
@@ -280,11 +280,11 @@ x-extension:
 			"Bar": []string{"read", "write"},
 		}})
 		c.Assert(dst.Servers, qt.DeepEquals, openapi3.Servers{{
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			URL:         "https://example.com/foo",
 			Description: "Foo (src)",
 		}, {
-			Extensions:  map[string]interface{}{},
+			Extensions:  nil,
 			URL:         "https://example.com/bar",
 			Description: "Bar (src)",
 		}})
@@ -318,7 +318,7 @@ paths:
 	dst := &openapi3.T{}
 	err := vervet.Merge(dst, src, false)
 	c.Assert(err, qt.IsNil)
-	c.Assert(dst.Paths, qt.HasLen, 1)
+	c.Assert(dst.Paths.Len(), qt.Equals, 1)
 }
 
 func mustLoadFile(c *qt.C, path string) *openapi3.T {

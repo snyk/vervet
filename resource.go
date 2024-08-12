@@ -232,6 +232,9 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 			for _, opName := range operationNames {
 				op := getOperationByName(pathItem, opName)
 				if op != nil {
+					if op.Extensions == nil {
+						op.Extensions = make(map[string]any)
+					}
 					op.Extensions[ExtSnykApiVersion] = rc.Version.String()
 					opKey := operationKey{path, opName}
 					opReleases[opKey] = append(opReleases[opKey], rc.Version)
@@ -332,6 +335,9 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 
 	ep := &ResourceVersion{Name: name, Document: doc, Version: version}
 	for path := range doc.Paths.Map() {
+		if doc.Paths.Find(path).Extensions == nil {
+			doc.Paths.Find(path).Extensions = make(map[string]any)
+		}
 		doc.Paths.Find(path).Extensions[ExtSnykApiResource] = name
 	}
 	return ep, nil

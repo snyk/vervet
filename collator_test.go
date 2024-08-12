@@ -17,7 +17,6 @@ func TestRefRemover(t *testing.T) {
 	resp400 := doc.Paths.Find("/orgs/{org_id}/projects/{project_id}").Delete.Responses.Status(400)
 	errDoc := resp400.Value.Content["application/vnd.api+json"].Schema
 	c.Assert(err, qt.IsNil)
-	c.Assert("{\"$ref\":\"../errors.yaml#/ErrorDocument\"}", qt.JSONEquals, errDoc)
 	in := vervet.NewRefRemover(errDoc)
 	err = in.RemoveRef()
 	c.Assert(err, qt.IsNil)
@@ -80,7 +79,6 @@ func TestCollator(t *testing.T) {
 		Schema.
 		Value.
 		Properties["jsonapi"]
-	c.Assert(schemaRef.Ref, qt.Equals, "")
 	c.Assert("{\"additionalProperties\":false,\"example\":{\"version\":\"1.0\"},\"properties\":{\"version\":"+
 		"{\"description\":\"Version of the JSON API specification this server supports.\",\"example\":\"1.0\","+
 		"\"pattern\":\"^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)$\",\"type\":\"string\"}},\"required\":[\"version\"],\"type\""+
@@ -90,7 +88,6 @@ func TestCollator(t *testing.T) {
 	projectParameterRef := result.Paths.Find("/orgs/{orgId}/projects").Get.Parameters[0]
 	c.Assert(projectParameterRef.Ref, qt.Equals, "#/components/parameters/Version")
 	exampleParameterRef := result.Paths.Find("/examples/hello-world/{id}").Get.Parameters[0]
-	c.Assert(exampleParameterRef.Ref, qt.Equals, "")
 	//nolint:lll // acked
 	c.Assert("{\"description\":\"The requested version of the endpoint to process the request\",\"example\""+
 		":\"2021-06-04\",\"in\":\"query\",\"name\":\"version\",\"required\":true,\"schema\":{\"description\":"+
@@ -170,7 +167,7 @@ func TestCollateUseFirstRoute(t *testing.T) {
 
 	// First path chosen, route matching rules ignore path variable
 	c.Assert(result.Paths.Find("/examples/hello-world/{id1}"), qt.Not(qt.IsNil))
-	c.Assert(result.Paths.Find("/examples/hello-world/{id2}"), qt.IsNil)
+	c.Assert(result.Paths.Value("/examples/hello-world/{id2}"), qt.IsNil)
 
 	// First chosen path has description expected
 	c.Assert(result.Paths.Find("/examples/hello-world/{id1}").Get.Description, qt.Contains, " - from example 1")

@@ -1,6 +1,7 @@
 package vervet
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -69,33 +70,21 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 		return nil, err
 	}
 
-	var t openapi3.T
-	contents, err := os.ReadFile(specFile)
-	if err != nil {
-		return nil, err
-	}
-	err = yaml.Unmarshal(contents, &t)
-	if err != nil {
-		return nil, err
-	}
-	err = newRefAliasResolver(&t).resolve()
-	if err != nil {
-		return nil, err
-	}
-
-	l := openapi3.NewLoader()
-	l.IsExternalRefsAllowed = true
-	err = l.ResolveRefsIn(&t, specURL)
+	//var t openapi3.T
+	loader := openapi3.NewLoader()
+	loader.IsExternalRefsAllowed = true
+	t, err := loader.LoadFromURI(specURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load %q: %w", specBase, err)
 	}
+	t.InternalizeRefs(context.Background(), nil)
 
 	if t.Components == nil {
 		t.Components = &openapi3.Components{}
 	}
 
 	return &Document{
-		T:    &t,
+		T:    t,
 		path: specFile,
 		url:  specURL,
 	}, nil
