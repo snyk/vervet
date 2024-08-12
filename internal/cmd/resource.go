@@ -82,13 +82,11 @@ func ResourceShow(ctx *cli.Context) error {
 				if rcArg := ctx.Args().Get(1); rcArg != "" && rcArg != rc.Name {
 					continue
 				}
-				var pathNames []string
-				for k := range rc.Paths {
-					pathNames = append(pathNames, k)
-				}
+
+				pathNames := rc.Paths.InMatchingOrder()
 				sort.Strings(pathNames)
 				for _, pathName := range pathNames {
-					pathSpec := rc.Paths[pathName]
+					pathSpec := rc.Paths.Value(pathName)
 					if pathSpec.Get != nil {
 						table.Append([]string{apiName, rc.Name, version.String(), pathName, "GET", pathSpec.Get.OperationID})
 					}

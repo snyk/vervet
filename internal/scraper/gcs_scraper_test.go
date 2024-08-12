@@ -76,7 +76,7 @@ func TestGCSScraper(t *testing.T) {
 		spec, err := l.LoadFromData(specData)
 		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
-		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version.String()])
+		c.Assert(spec.Paths.Len(), qt.Equals, collatedPaths[version.String()])
 	}
 }
 
@@ -140,6 +140,6 @@ func TestGCSScraperCollation(t *testing.T) {
 		spec, err := l.LoadFromData(specData)
 		c.Assert(err, qt.IsNil)
 		c.Assert(spec, qt.IsNotNil)
-		c.Assert(len(spec.Paths), qt.Equals, collatedPaths[version.String()])
+		c.Assert(spec.Paths.Len(), qt.Equals, collatedPaths[version.String()])
 	}
 }

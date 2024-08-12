@@ -42,7 +42,7 @@ func TestBuild(t *testing.T) {
 			c.Assert(err, qt.IsNil)
 			c.Assert(doc.Validate(context.TODO()), qt.IsNil)
 			for _, path := range test.paths {
-				c.Assert(doc.Paths[path], qt.Not(qt.IsNil))
+				c.Assert(doc.Paths.Value(path), qt.Not(qt.IsNil))
 			}
 		})
 	}

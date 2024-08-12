@@ -164,13 +164,13 @@ func mergeRevisions(revisions ContentRevisions) (*openapi3.T, error) {
 		// first instances of these paths and remove them from subsequent specs
 		// to prevent failing the collate on conflicting paths.
 		if haveOpenAPI {
-			delete(src.Paths, "/openapi")
-		} else if _, ok := src.Paths["/openapi"]; ok {
+			src.Paths.Delete("/openapi")
+		} else if pathItem := src.Paths.Value("/openapi"); pathItem != nil {
 			haveOpenAPI = true
 		}
 		if haveOpenAPIVersion {
-			delete(src.Paths, "/openapi/{version}")
-		} else if _, ok := src.Paths["/openapi/{version}"]; ok {
+			src.Paths.Delete("/openapi/{version}")
+		} else if pathItem := src.Paths.Value("/openapi/{version}"); pathItem != nil {
 			haveOpenAPIVersion = true
 		}
 

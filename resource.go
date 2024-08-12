@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -84,7 +85,7 @@ func (rv *ResourceVersion) Validate(ctx context.Context) error {
 		return err
 	}
 	// Resource path checks. There should be at least one path per resource.
-	if len(rv.Paths) < 1 {
+	if rv.Paths.Len() < 1 {
 		return fmt.Errorf("spec contains no paths")
 	}
 	return nil
@@ -228,10 +229,14 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 			return nil, err
 		}
 		// Map release versions per operation
-		for path, pathItem := range rc.Paths {
+		for _, path := range rc.Paths.InMatchingOrder() {
+			pathItem := rc.Paths.Value(path)
 			for _, opName := range operationNames {
 				op := getOperationByName(pathItem, opName)
 				if op != nil {
+					if op.Extensions == nil {
+						op.Extensions = make(map[string]any)
+					}
 					op.Extensions[ExtSnykApiVersion] = rc.Version.String()
 					opKey := operationKey{path, opName}
 					opReleases[opKey] = append(opReleases[opKey], rc.Version)
@@ -248,7 +253,8 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 	// Annotate each path in each resource version with the other change
 	// versions affecting the path. This supports navigation across versions.
 	for _, rc := range resourceVersions.versions {
-		for path, pathItem := range rc.Paths {
+		for _, path := range rc.Paths.InMatchingOrder() {
+			pathItem := rc.Paths.Value(path)
 			for _, opName := range operationNames {
 				op := getOperationByName(pathItem, opName)
 				if op == nil {
@@ -313,7 +319,7 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 		return nil, fmt.Errorf("invalid version %q", versionStr)
 	}
 
-	if len(doc.Paths) == 0 {
+	if doc.Paths.Len() == 0 {
 		return nil, nil //nolint:nilnil //acked
 	}
 
@@ -331,14 +337,31 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 	}
 
 	ep := &ResourceVersion{Name: name, Document: doc, Version: version}
-	for path := range doc.T.Paths {
-		doc.T.Paths[path].Extensions[ExtSnykApiResource] = name
+	for _, path := range doc.T.Paths.InMatchingOrder() {
+		if doc.T.Paths.Value(path).Extensions == nil {
+			doc.T.Paths.Value(path).Extensions = make(map[string]any)
+		}
+		doc.T.Paths.Value(path).Extensions[ExtSnykApiResource] = name
 	}
 	return ep, nil
 }
 
 // Localize rewrites all references in an OpenAPI document to local references.
 func Localize(ctx context.Context, doc *Document) error {
-	doc.InternalizeRefs(ctx, nil)
+	doc.InternalizeRefs(ctx, func(t *openapi3.T, componentRef openapi3.ComponentRef) string {
+		ref := componentRef.RefString()
+		if ref == "" {
+			return ""
+		}
+		split := strings.SplitN(ref, "#", 2)
+		if len(split) == 2 {
+			return filepath.Base(split[1])
+		}
+		ref = split[0]
+		for ext := filepath.Ext(ref); len(ext) > 0; ext = filepath.Ext(ref) {
+			ref = strings.TrimSuffix(ref, ext)
+		}
+		return filepath.Base(ref)
+	})
 	return doc.ResolveRefs()
 }

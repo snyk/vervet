@@ -70,18 +70,17 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 	}
 
 	var t openapi3.T
+
 	contents, err := os.ReadFile(specFile)
 	if err != nil {
 		return nil, err
 	}
+
 	err = yaml.Unmarshal(contents, &t)
 	if err != nil {
 		return nil, err
 	}
-	err = newRefAliasResolver(&t).resolve()
-	if err != nil {
-		return nil, err
-	}
+	newRefAliasResolver(&t).resolve()
 
 	l := openapi3.NewLoader()
 	l.IsExternalRefsAllowed = true

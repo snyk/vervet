@@ -260,11 +260,11 @@ function tsType(oasType) {
   [key: string]: object;
 }
 
-{{- else if eq .Type "object" }}{
+{{- else if .Type.Is "object" }}{
 {{- include "interfaceProperties" . | indent 2 }}
 }
 
-{{- else if eq .Type "array" }}Array<{{ template "resolveSchemaRef" .Items }}>
+{{- else if .Type.Is "array" }}Array<{{ template "resolveSchemaRef" .Items }}>
 
 {{- else }}{{ .Type | tsType }}
 
@@ -282,7 +282,7 @@ function tsType(oasType) {
 {{- if isAssociativeArray .Schema.Value }}
 export interface {{ .Name }} {{ template "schemaTypeDef" .Schema.Value }};
 
-{{- else if eq .Schema.Value.Type "object" }}
+{{- else if .Schema.Value.Type.Is "object" }}
 export interface {{ .Name }} {{ template "schemaTypeDef" .Schema.Value }};
 
 {{- else }}

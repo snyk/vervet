@@ -13,7 +13,7 @@ func TestRefRemover(t *testing.T) {
 	c := qt.New(t)
 	doc, err := vervet.NewDocumentFile(testdata.Path("resources/projects/2021-08-20/spec.yaml"))
 	c.Assert(err, qt.IsNil)
-	resp400 := doc.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Responses["400"]
+	resp400 := doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").Delete.Responses.Status(400)
 	errDoc := resp400.Value.Content["application/vnd.api+json"].Schema
 	c.Assert(err, qt.IsNil)
 	c.Assert("{\"$ref\":\"../errors.yaml#/ErrorDocument\"}", qt.JSONEquals, errDoc)
@@ -62,8 +62,8 @@ func TestCollator(t *testing.T) {
 
 	result := collator.Result()
 	c.Assert(
-		result.Paths["/orgs/{orgId}/projects"].
-			Get.Responses["200"].
+		result.Paths.Value("/orgs/{orgId}/projects").
+			Get.Responses.Status(200).
 			Value.
 			Content["application/vnd.api+json"].
 			Schema.Value.Properties["jsonapi"].Ref,
@@ -71,9 +71,9 @@ func TestCollator(t *testing.T) {
 		"#/components/schemas/JsonApi",
 	)
 	schemaRef := result.
-		Paths["/examples/hello-world/{id}"].
+		Paths.Value("/examples/hello-world/{id}").
 		Get.
-		Responses["200"].
+		Responses.Status(200).
 		Value.
 		Content["application/vnd.api+json"].
 		Schema.
@@ -86,9 +86,9 @@ func TestCollator(t *testing.T) {
 		":\"object\"}\n", qt.JSONEquals, schemaRef.Value)
 	c.Assert(result.Components.Schemas["JsonApi"], qt.IsNotNil)
 
-	projectParameterRef := result.Paths["/orgs/{orgId}/projects"].Get.Parameters[0]
+	projectParameterRef := result.Paths.Value("/orgs/{orgId}/projects").Get.Parameters[0]
 	c.Assert(projectParameterRef.Ref, qt.Equals, "#/components/parameters/Version")
-	exampleParameterRef := result.Paths["/examples/hello-world/{id}"].Get.Parameters[0]
+	exampleParameterRef := result.Paths.Value("/examples/hello-world/{id}").Get.Parameters[0]
 	c.Assert(exampleParameterRef.Ref, qt.Equals, "")
 	//nolint:lll // acked
 	c.Assert("{\"description\":\"The requested version of the endpoint to process the request\",\"example\""+
@@ -96,13 +96,13 @@ func TestCollator(t *testing.T) {
 		"\"Requested API version\",\"pattern\":\"^(wip|work-in-progress|experimental|beta|((([0-9]{4})-([0-1][0-9]))"+
 		"-((3[01])|(0[1-9])|([12][0-9]))(~(wip|work-in-progress|experimental|beta))?))$\",\"type\":\"string\"}}\n", qt.JSONEquals, exampleParameterRef.Value)
 
-	projectConflictRef := result.Paths["/orgs/{orgId}/projects"].Get.Parameters[6]
-	exampleConflictRef := result.Paths["/examples/hello-world/{id}"].Get.Parameters[3]
+	projectConflictRef := result.Paths.Value("/orgs/{orgId}/projects").Get.Parameters[6]
+	exampleConflictRef := result.Paths.Value("/examples/hello-world/{id}").Get.Parameters[3]
 	c.Assert(projectConflictRef.Ref, qt.Not(qt.Equals), exampleConflictRef.Ref)
 
-	projectResp400Ref := result.Paths["/orgs/{orgId}/projects"].Get.Responses["400"]
+	projectResp400Ref := result.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(400)
 	c.Assert(projectResp400Ref.Ref, qt.Equals, "#/components/responses/400")
-	exampleResp400Ref := result.Paths["/examples/hello-world/{id}"].Get.Responses["400"]
+	exampleResp400Ref := result.Paths.Value("/examples/hello-world/{id}").Get.Responses.Status(400)
 	c.Assert(exampleResp400Ref.Ref, qt.Equals, "")
 	c.Assert("{\"content\":{\"application/vnd.api+json\":{\"schema\":{\"additionalProperties\":false,\"example\":{"+
 		"\"errors\":[{\"detail\":\"Permission denied for this resource\",\"status\":\"403\"}],\"jsonapi\":{\"version\":"+
@@ -168,11 +168,11 @@ func TestCollateUseFirstRoute(t *testing.T) {
 	result := collator.Result()
 
 	// First path chosen, route matching rules ignore path variable
-	c.Assert(result.Paths["/examples/hello-world/{id1}"], qt.Not(qt.IsNil))
-	c.Assert(result.Paths["/examples/hello-world/{id2}"], qt.IsNil)
+	c.Assert(result.Paths.Value("/examples/hello-world/{id1}"), qt.Not(qt.IsNil))
+	c.Assert(result.Paths.Value("/examples/hello-world/{id2}"), qt.IsNil)
 
 	// First chosen path has description expected
-	c.Assert(result.Paths["/examples/hello-world/{id1}"].Get.Description, qt.Contains, " - from example 1")
+	c.Assert(result.Paths.Value("/examples/hello-world/{id1}").Get.Description, qt.Contains, " - from example 1")
 }
 
 func TestCollatePathConflict(t *testing.T) {
@@ -215,7 +215,7 @@ func TestCollateMergingResources(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	result := collator.Result()
-	c.Assert(result.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Responses["204"], qt.IsNotNil)
+	c.Assert(result.Paths.Value("/orgs/{org_id}/projects/{project_id}").Delete.Responses.Status(204), qt.IsNotNil)
 }
 
 func TestCollateOperationsOnSamePath(t *testing.T) {
@@ -238,10 +238,10 @@ func TestCollateOperationsOnSamePath(t *testing.T) {
 
 	result := collator.Result()
 
-	c.Assert(result.Paths["/examples/hello-world"].Get, qt.Not(qt.IsNil))
-	c.Assert(result.Paths["/examples/hello-world"].Get.Description, qt.Contains, " - from example 1")
-	c.Assert(result.Paths["/examples/hello-world"].Post, qt.Not(qt.IsNil))
-	c.Assert(result.Paths["/examples/hello-world"].Post.Description, qt.Contains, " - from example 1")
-	c.Assert(result.Paths["/examples/hello-world"].Put, qt.Not(qt.IsNil))
-	c.Assert(result.Paths["/examples/hello-world"].Put.Description, qt.Contains, " - from example 2")
+	c.Assert(result.Paths.Value("/examples/hello-world").Get, qt.Not(qt.IsNil))
+	c.Assert(result.Paths.Value("/examples/hello-world").Get.Description, qt.Contains, " - from example 1")
+	c.Assert(result.Paths.Value("/examples/hello-world").Post, qt.Not(qt.IsNil))
+	c.Assert(result.Paths.Value("/examples/hello-world").Post.Description, qt.Contains, " - from example 1")
+	c.Assert(result.Paths.Value("/examples/hello-world").Put, qt.Not(qt.IsNil))
+	c.Assert(result.Paths.Value("/examples/hello-world").Put.Description, qt.Contains, " - from example 2")
 }

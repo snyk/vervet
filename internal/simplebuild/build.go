@@ -157,7 +157,8 @@ func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 				return nil, fmt.Errorf("failed to localize refs: %w", err)
 			}
 
-			for pathName, pathDef := range doc.T.Paths {
+			for _, pathName := range doc.T.Paths.InMatchingOrder() {
+				pathDef := doc.T.Paths.Value(pathName)
 				for opName, opDef := range pathDef.Operations() {
 					k := OpKey{
 						Path:   pathName,

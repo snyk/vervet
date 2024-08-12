@@ -115,7 +115,8 @@ func (sv *SpecVersions) resolveOperations() error {
 		// Operations declared in this spec become active for the next version
 		// at this stability.
 		nextActiveOps := operationVersionMap{}
-		for path, pathItem := range doc.Paths {
+		for _, path := range doc.Paths.InMatchingOrder() {
+			pathItem := doc.Paths.Value(path)
 			for _, opName := range operationNames {
 				op := getOperationByName(pathItem, opName)
 				if op != nil {
@@ -129,7 +130,7 @@ func (sv *SpecVersions) resolveOperations() error {
 		// Operations currently active for this versions's stability get
 		// carried forward and remain active.
 		for opKey, opValue := range currentActiveOps {
-			currentPathItem := doc.Paths[opKey.path]
+			currentPathItem := doc.Paths.Value(opKey.path)
 
 			// skip promoting sunset operations into current document
 			lc, ok := opValue.operation.Extensions[ExtSnykApiLifecycle].(string)
@@ -145,7 +146,7 @@ func (sv *SpecVersions) resolveOperations() error {
 					Servers:     opValue.pathItem.Servers,
 					Parameters:  opValue.pathItem.Parameters,
 				}
-				doc.Paths[opKey.path] = currentPathItem
+				doc.Paths.Set(opKey.path, currentPathItem)
 			}
 			currentOp := getOperationByName(currentPathItem, opKey.operation)
 			if currentOp == nil {

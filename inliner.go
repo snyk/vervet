@@ -25,7 +25,46 @@ func (in *Inliner) AddRef(ref string) {
 // Inline inlines all the JSON References previously indicated with AddRef in
 // the given OpenAPI document.
 func (in *Inliner) Inline(doc *openapi3.T) error {
-	return reflectwalk.Walk(doc, in)
+	for _, path := range doc.Paths.InMatchingOrder() {
+		for _, operation := range doc.Paths.Value(path).Operations() {
+			for _, parameter := range operation.Parameters {
+				parameter.Ref = in.removeIfMatched(parameter.Ref)
+				in.checkSchemaRef(parameter.Value.Schema)
+				for _, exampleRef := range parameter.Value.Examples {
+					exampleRef.Ref = in.removeIfMatched(exampleRef.Ref)
+				}
+			}
+			if operation.RequestBody != nil {
+				operation.RequestBody.Ref = in.removeIfMatched(operation.RequestBody.Ref)
+			}
+			for _, response := range operation.Responses.Map() {
+				response.Ref = in.removeIfMatched(response.Ref)
+				if response.Value != nil {
+					for _, mediaType := range response.Value.Content {
+						in.checkSchemaRef(mediaType.Schema)
+						for _, example := range mediaType.Examples {
+							example.Ref = in.removeIfMatched(example.Ref)
+						}
+					}
+				}
+			}
+		}
+
+	}
+	return nil
+}
+
+func (in *Inliner) checkSchemaRef(schema *openapi3.SchemaRef) {
+	schema.Ref = in.removeIfMatched(schema.Ref)
+	for _, properties := range schema.Value.Properties {
+		properties.Ref = in.removeIfMatched(properties.Ref)
+	}
+}
+func (in *Inliner) removeIfMatched(ref string) string {
+	if _, match := in.refs[ref]; match {
+		return ""
+	}
+	return ref
 }
 
 // Struct implements reflectwalk.StructWalker.

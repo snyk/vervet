@@ -268,11 +268,11 @@ func tagsEqual(x, y interface{}) bool {
 
 func (c *Collator) mergePaths(rv *ResourceVersion) error {
 	if rv.T.Paths != nil && c.result.Paths == nil {
-		c.result.Paths = make(openapi3.Paths)
+		c.result.Paths = openapi3.NewPaths()
 	}
 	var errs error
-	for k, v := range rv.T.Paths {
-		for opName, opValue := range v.Operations() {
+	for k, v := range rv.T.Paths.Map() {
+		for opName, opValue := range rv.T.Paths.Value(k).Operations() {
 			route := routeForPath(k, opName)
 			if _, ok := c.seenRoutes[route]; ok {
 				if c.useFirstRoute {
@@ -285,13 +285,13 @@ func (c *Collator) mergePaths(rv *ResourceVersion) error {
 				}
 			} else {
 				c.seenRoutes[route] = struct{}{}
-				if c.result.Paths[k] == nil {
+				if c.result.Paths.Value(k) == nil {
 					// Path doesn't exist in output
-					c.result.Paths[k] = v
+					c.result.Paths.Set(k, v)
 				} else {
 					// There is another operation on this path, merge the
 					// current operation into that one
-					c.result.Paths[k].SetOperation(opName, opValue)
+					c.result.Paths.Value(k).SetOperation(opName, opValue)
 				}
 				c.pathSources[k] = rv.path
 			}
