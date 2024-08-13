@@ -1,6 +1,7 @@
 package simplebuild_test
 
 import (
+	"fmt"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -140,5 +141,82 @@ func TestResolveRefs(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 
 		c.Assert(doc.Components.Parameters["foo"], qt.IsNil)
+	})
+
+	c.Run("conflicting components get renamed", func(c *qt.C) {
+		paramA := &openapi3.Parameter{
+			Name: "fooname",
+		}
+		pathA := openapi3.PathItem{
+			Parameters: []*openapi3.ParameterRef{{
+				Ref:   "#/components/parameters/fooo",
+				Value: paramA,
+			}},
+		}
+		paramB := &openapi3.Parameter{
+			Name: "barname",
+		}
+		pathB := openapi3.PathItem{
+			Parameters: []*openapi3.ParameterRef{{
+				Ref:   "#/components/parameters/fooo",
+				Value: paramB,
+			}},
+		}
+		doc := openapi3.T{
+			Paths: openapi3.Paths{
+				"/foo": &pathA,
+				"/bar": &pathB,
+			},
+		}
+
+		rr := simplebuild.NewRefResolver(&doc)
+		err := rr.Resolve(pathA)
+		c.Assert(err, qt.IsNil)
+		err = rr.Resolve(pathB)
+		c.Assert(err, qt.IsNil)
+
+		c.Assert(doc.Paths["/foo"].Parameters[0].Ref, qt.Not(qt.Equals), doc.Paths["/bar"].Parameters[0].Ref)
+		c.Assert(doc.Components.Parameters, qt.HasLen, 2)
+	})
+
+	c.Run("comparable components get merged", func(c *qt.C) {
+		paramA := &openapi3.Parameter{
+			Name: "fooname",
+		}
+		pathA := openapi3.PathItem{
+			Parameters: []*openapi3.ParameterRef{{
+				Ref:   "#/components/parameters/fooo",
+				Value: paramA,
+			}},
+		}
+		paramB := &openapi3.Parameter{
+			Name: "fooname",
+		}
+		pathB := openapi3.PathItem{
+			Parameters: []*openapi3.ParameterRef{{
+				Ref:   "#/components/parameters/fooo",
+				Value: paramB,
+			}},
+		}
+		doc := openapi3.T{
+			Paths: openapi3.Paths{
+				"/foo": &pathA,
+				"/bar": &pathB,
+			},
+		}
+
+		rr := simplebuild.NewRefResolver(&doc)
+		err := rr.Resolve(pathA)
+		c.Assert(err, qt.IsNil)
+		err = rr.Resolve(pathB)
+		c.Assert(err, qt.IsNil)
+
+		out, _ := doc.MarshalJSON()
+		fmt.Println()
+		fmt.Println(string(out))
+		fmt.Println()
+
+		c.Assert(doc.Paths["/foo"].Parameters[0].Ref, qt.Equals, doc.Paths["/bar"].Parameters[0].Ref)
+		c.Assert(doc.Components.Parameters, qt.HasLen, 1)
 	})
 }

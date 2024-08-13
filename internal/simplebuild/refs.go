@@ -3,10 +3,14 @@ package simplebuild
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/mitchellh/reflectwalk"
+
+	"github.com/snyk/vervet/v7"
 )
 
 // Refs are an OpenAPI concept where you can define part of a spec then use a
@@ -70,10 +74,20 @@ func (rr *refResolver) Struct(v reflect.Value) error {
 		return nil
 	}
 	// Create a new *Ref object to avoid mutating the original
-	derefed := reflect.New(v.Type())
-	reflect.Indirect(derefed).FieldByName("Value").Set(value)
+	component := reflect.New(v.Type())
+	reflect.Indirect(component).FieldByName("Value").Set(value)
+	newRef, err := rr.deref(refLoc, component)
+	if err != nil {
+		return err
+	}
 
-	return rr.deref(refLoc, derefed)
+	if newRef != refLoc {
+		// TODO: other documents have references to this same object which we
+		// are mutating. Any previously generated document is now wrong.
+		ref.Set(reflect.ValueOf(newRef))
+	}
+
+	return nil
 }
 
 // Implements reflectwalk.StructWalker. We work on whole structs so there is
@@ -82,69 +96,106 @@ func (rr *refResolver) StructField(sf reflect.StructField, v reflect.Value) erro
 	return nil
 }
 
-func (rr *refResolver) deref(ref string, value reflect.Value) error {
+func (rr *refResolver) deref(ref string, value reflect.Value) (string, error) {
 	path := strings.Split(ref, "/")
 	if path[0] != "#" {
 		// All refs should have been resolved to the local document when
 		// loading so if we hit this case then we have not loaded the document
 		// correctly.
-		return fmt.Errorf("external ref %s", ref)
+		return "", fmt.Errorf("external ref %s", ref)
 	}
 
 	field := reflect.ValueOf(rr.doc)
-	return deref(path[1:], field, value)
+	newRef, err := deref(path[1:], field, value)
+	if err != nil {
+		return "", err
+	}
+	slices.Reverse(newRef)
+	newRefStr := fmt.Sprintf("#/%s", strings.Join(newRef, "/"))
+	return newRefStr, nil
 }
 
-func deref(path []string, field, value reflect.Value) error {
+func deref(path []string, field, value reflect.Value) ([]string, error) {
 	if len(path) == 0 {
 		field.Set(value.Elem())
-		return nil
-	}
-	if len(path) == 1 {
-		fmt.Println("setting last value", path[0])
-		//return trySetField(path[0], field, value)
+		return []string{}, nil
 	}
 
-	// Maps are a special case since the key also needs to be created.
-	if field.Kind() == reflect.Map {
-		newValue := reflect.New(field.Type().Elem().Elem())
-		fieldName := reflect.ValueOf(path[0])
-		oldVal := field.MapIndex(fieldName)
-		fmt.Println("setting map key", oldVal, oldVal.IsValid())
-		if oldVal.IsValid() {
-			// Value already exists
-			return deref(path[1:], oldVal.Elem(), value)
-		}
-		field.SetMapIndex(fieldName, newValue)
-		return deref(path[1:], newValue.Elem(), value)
-	}
-	// else we assume we are working on a struct
-	field, err := getField(path[0], field)
+	newName := path[0]
+	nextField, err := getField(newName, field)
 	if err != nil {
-		return fmt.Errorf("invalid ref: %w", err)
+		return nil, fmt.Errorf("invalid ref: %w", err)
 	}
 
-	// A lot of the openapi3.T fields are pointers so if this is the first
-	// time we have encountered an object of this type we need to create
-	// the container.
-	if field.Kind() == reflect.Map && field.IsZero() {
-		newValue := reflect.MakeMap(field.Type())
-		field.Set(newValue)
-	} else if field.IsNil() {
-		newValue := reflect.New(field.Type().Elem())
-		field.Set(newValue)
+	// Lookup if we already have a component in the same document with the same
+	// name, if they conflict then we need to rename the current component
+	if len(path) == 1 {
+		// Name might have changed on previous documents but previous
+		// collisions are no longer present. Always start from 0 to make sure
+		// we aren't leaving unessisary gaps. Some components are already
+		// numbers, eg "400" responses, in which case assume they don't
+		// conflict. TODO: fix that
+		if !unicode.IsDigit(rune(newName[0])) {
+			newName = strings.TrimRightFunc(newName, unicode.IsDigit)
+			nextField, err = getField(newName, field)
+			if err != nil {
+				return nil, fmt.Errorf("invalid ref: %w", err)
+			}
+		}
+		suffix := 0
+		prevName := newName
+		// If the component is the same as the one we have already then it
+		// isn't a problem, we can merge them.
+		for !isZero(nextField) && !vervet.ComponentsEqual(nextField.Interface(), value.Interface()) {
+			newName = fmt.Sprintf("%s%d", prevName, suffix)
+			nextField, err = getField(newName, field)
+			if err != nil {
+				return nil, fmt.Errorf("renaming ref: %w", err)
+			}
+			suffix += 1
+		}
 	}
 
-	return deref(path[1:], field, value)
+	// If the container for the next layer doesn't exist then we have to create
+	// it.
+	if isZero(nextField) {
+		if field.Kind() == reflect.Map {
+			nextField = reflect.New(field.Type().Elem().Elem())
+			field.SetMapIndex(reflect.ValueOf(newName), nextField)
+		} else {
+			var newValue reflect.Value
+			if nextField.Kind() == reflect.Map {
+				newValue = reflect.MakeMap(nextField.Type())
+			} else {
+				newValue = reflect.New(nextField.Type().Elem())
+			}
+			nextField.Set(newValue)
+		}
+	}
+	if field.Kind() == reflect.Map {
+		nextField = nextField.Elem()
+	}
+
+	newRef, err := deref(path[1:], nextField, value)
+	return append(newRef, newName), err
 }
 
-/*
- *func trySetField(name string, field, value reflect.Value) error {
- *    return nil
- *}
- */
+func isZero(field reflect.Value) bool {
+	if !field.IsValid() {
+		return true
+	}
+	if field.Kind() == reflect.Pointer {
+		return field.IsNil()
+	}
+	return field.IsZero()
+}
 
 func getField(tag string, object reflect.Value) (reflect.Value, error) {
+	if object.Kind() == reflect.Map {
+		fieldName := reflect.ValueOf(tag)
+		return object.MapIndex(fieldName), nil
+	}
+
 	reflectedObject := object.Type().Elem()
 	if reflectedObject.Kind() != reflect.Struct {
 		return reflect.Value{}, fmt.Errorf("object is not a struct")

@@ -150,7 +150,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	inliner := NewInliner()
 	for k, v := range rv.T.Components.Schemas {
 		ref := "#/components/schemas/" + k
-		if current, ok := c.result.Components.Schemas[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.Schemas[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.Schemas[k] = v
@@ -159,7 +159,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Parameters {
 		ref := "#/components/parameters/" + k
-		if current, ok := c.result.Components.Parameters[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.Parameters[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.Parameters[k] = v
@@ -168,7 +168,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Headers {
 		ref := "#/components/headers/" + k
-		if current, ok := c.result.Components.Headers[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.Headers[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.Headers[k] = v
@@ -177,7 +177,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.RequestBodies {
 		ref := "#/components/requestBodies/" + k
-		if current, ok := c.result.Components.RequestBodies[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.RequestBodies[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.RequestBodies[k] = v
@@ -186,7 +186,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Responses {
 		ref := "#/components/responses/" + k
-		if current, ok := c.result.Components.Responses[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.Responses[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.Responses[k] = v
@@ -195,7 +195,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.SecuritySchemes {
 		ref := "#/components/securitySchemas/" + k
-		if current, ok := c.result.Components.SecuritySchemes[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.SecuritySchemes[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.SecuritySchemes[k] = v
@@ -204,7 +204,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Examples {
 		ref := "#/components/examples/" + k
-		if current, ok := c.result.Components.Examples[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.Examples[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.Examples[k] = v
@@ -213,7 +213,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Links {
 		ref := "#/components/links/" + k
-		if current, ok := c.result.Components.Links[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.Links[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.Links[k] = v
@@ -222,7 +222,7 @@ func (c *Collator) mergeComponents(rv *ResourceVersion) error {
 	}
 	for k, v := range rv.T.Components.Callbacks {
 		ref := "#/components/callbacks/" + k
-		if current, ok := c.result.Components.Callbacks[k]; ok && !componentsEqual(current, v) {
+		if current, ok := c.result.Components.Callbacks[k]; ok && !ComponentsEqual(current, v) {
 			inliner.AddRef(ref)
 		} else {
 			c.result.Components.Callbacks[k] = v
@@ -258,7 +258,7 @@ var cmpComponents = cmp.Options{
 	}, cmp.Ignore()),
 }
 
-func componentsEqual(x, y interface{}) bool {
+func ComponentsEqual(x, y interface{}) bool {
 	return cmp.Equal(x, y, cmpComponents)
 }
 

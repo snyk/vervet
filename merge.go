@@ -142,7 +142,7 @@ func mergeComponents(dst, src *openapi3.T, replace bool) error {
 func mergeMap[T any](dst, src map[string]T, replace bool) error {
 	for k, v := range src {
 		existing, exists := dst[k]
-		if exists && !replace && !componentsEqual(v, existing) {
+		if exists && !replace && !ComponentsEqual(v, existing) {
 			return errors.New("conflicting component: " + k)
 		}
 		dst[k] = v
