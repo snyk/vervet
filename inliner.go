@@ -25,142 +25,168 @@ func (in *Inliner) AddRef(ref string) {
 // Inline inlines all the JSON References previously indicated with AddRef in
 // the given OpenAPI document.
 func (in *Inliner) Inline(doc *openapi3.T) error {
-	for _, path := range doc.Paths.InMatchingOrder() {
-		for _, operation := range doc.Paths.Value(path).Operations() {
-			for _, parameter := range operation.Parameters {
-				parameter.Ref = in.removeIfMatched(parameter.Ref)
-				in.checkSchemaRef(parameter.Value.Schema)
-				for _, exampleRef := range parameter.Value.Examples {
-					exampleRef.Ref = in.removeIfMatched(exampleRef.Ref)
-				}
-			}
-			if operation.RequestBody != nil {
-				operation.RequestBody.Ref = in.removeIfMatched(operation.RequestBody.Ref)
-			}
+	if len(in.refs) == 0 {
+		return nil
+	}
+
+	for _, pathItem := range doc.Paths.Map() {
+		in.checkParameters(pathItem.Parameters)
+
+		for _, operation := range pathItem.Operations() {
+			in.checkParameters(operation.Parameters)
+			in.checkResponseBody(operation.RequestBody)
 			for _, response := range operation.Responses.Map() {
-				response.Ref = in.removeIfMatched(response.Ref)
+				if in.matched(response.Ref) {
+					removeRefsResponseAndChildren(response)
+				}
 				if response.Value != nil {
-					for _, mediaType := range response.Value.Content {
-						in.checkSchemaRef(mediaType.Schema)
-						for _, example := range mediaType.Examples {
-							example.Ref = in.removeIfMatched(example.Ref)
-						}
+					for _, headerRef := range response.Value.Headers {
+						in.checkHeaderRefMatch(headerRef)
 					}
+					in.checkContent(response.Value.Content)
 				}
 			}
 		}
-
 	}
 	return nil
 }
 
-func (in *Inliner) checkSchemaRef(schema *openapi3.SchemaRef) {
-	schema.Ref = in.removeIfMatched(schema.Ref)
-	for _, properties := range schema.Value.Properties {
-		properties.Ref = in.removeIfMatched(properties.Ref)
-	}
+func (in *Inliner) matched(ref string) bool {
+	_, match := in.refs[ref]
+	return match
 }
+
 func (in *Inliner) removeIfMatched(ref string) string {
-	if _, match := in.refs[ref]; match {
+	if in.matched(ref) {
 		return ""
 	}
 	return ref
 }
 
-// Struct implements reflectwalk.StructWalker.
-func (in *Inliner) Struct(v reflect.Value) error {
-	if !v.CanInterface() {
-		return nil
-	}
-	switch val := v.Interface().(type) {
-	case openapi3.SchemaRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.SchemaRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ParameterRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ParameterRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.HeaderRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.HeaderRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.RequestBodyRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.RequestBodyRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ResponseRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ResponseRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.SecuritySchemeRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.SecuritySchemeRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ExampleRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ExampleRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.LinkRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.LinkRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.CallbackRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.CallbackRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
+func (in *Inliner) checkContent(content openapi3.Content) {
+	for _, mediaType := range content {
+		in.checkSchemaRef(mediaType.Schema)
+		for _, example := range mediaType.Examples {
+			example.Ref = in.removeIfMatched(example.Ref)
 		}
 	}
-	return nil
 }
 
-// StructField implements reflectwalk.StructWalker.
-func (in *Inliner) StructField(field reflect.StructField, v reflect.Value) error {
-	return nil
+func (in *Inliner) checkHeaderRefMatch(headerRef *openapi3.HeaderRef) {
+	if in.matched(headerRef.Ref) {
+		removeHeaderRefsAndChildren(headerRef)
+	}
+	if headerRef.Value != nil {
+		in.checkSchemaRef(headerRef.Value.Schema)
+	}
+}
+
+func removeHeaderRefsAndChildren(headerRef *openapi3.HeaderRef) {
+	headerRef.Ref = ""
+	if headerRef.Value != nil {
+		removeRefsForSchemaAndChildren(headerRef.Value.Schema)
+		removeRefsForExamples(headerRef.Value.Examples)
+	}
+}
+
+func (in *Inliner) checkParameters(parameters openapi3.Parameters) {
+	for _, parameterRef := range parameters {
+		in.checkParameterRef(parameterRef)
+	}
+}
+
+func (in *Inliner) checkParameterRef(parameterRef *openapi3.ParameterRef) {
+	if in.matched(parameterRef.Ref) {
+		removeParameterRefsAndChildren(parameterRef)
+	}
+	in.checkSchemaRef(parameterRef.Value.Schema)
+}
+
+func (in *Inliner) checkSchemaRef(schemas ...*openapi3.SchemaRef) {
+	if schemas == nil {
+		return
+	}
+	for _, schema := range schemas {
+		if schema == nil {
+			return
+		}
+		if in.matched(schema.Ref) {
+			removeRefsForSchemaAndChildren(schema)
+		}
+		if schema.Value != nil {
+			in.checkSchemaRef(schemaRefsFromSchemas(schema.Value.Properties)...)
+			in.checkSchemaRef(schema.Value.Items)
+			in.checkSchemaRef(schema.Value.AllOf...)
+			in.checkSchemaRef(schema.Value.AnyOf...)
+			in.checkSchemaRef(schema.Value.OneOf...)
+			in.checkSchemaRef(schema.Value.Not)
+		}
+	}
+}
+
+func (in *Inliner) checkResponseBody(body *openapi3.RequestBodyRef) {
+	if body != nil {
+		if in.matched(body.Ref) {
+			body.Ref = ""
+			removeRefsContentAndChildren(body.Value.Content)
+		}
+		in.checkContent(body.Value.Content)
+	}
+}
+
+func removeRefsForSchemaAndChildren(schemas ...*openapi3.SchemaRef) {
+	if schemas == nil {
+		return
+	}
+	for _, schema := range schemas {
+		if schema == nil {
+			return
+		}
+		schema.Ref = ""
+		if schema.Value != nil {
+			removeRefsForSchemaAndChildren(schemaRefsFromSchemas(schema.Value.Properties)...)
+			removeRefsForSchemaAndChildren(schema.Value.Items)
+			removeRefsForSchemaAndChildren(schema.Value.AllOf...)
+			removeRefsForSchemaAndChildren(schema.Value.AnyOf...)
+			removeRefsForSchemaAndChildren(schema.Value.OneOf...)
+			removeRefsForSchemaAndChildren(schema.Value.Not)
+		}
+	}
+}
+
+func schemaRefsFromSchemas(properties openapi3.Schemas) []*openapi3.SchemaRef {
+	refs := make([]*openapi3.SchemaRef, 0, len(properties))
+	for _, ref := range properties {
+		refs = append(refs, ref)
+	}
+	return refs
+}
+
+func removeParameterRefsAndChildren(parameter *openapi3.ParameterRef) {
+	parameter.Ref = ""
+	removeRefsForSchemaAndChildren(parameter.Value.Schema)
+	removeRefsForExamples(parameter.Value.Examples)
+}
+
+func removeRefsForExamples(examples openapi3.Examples) {
+	for _, example := range examples {
+		example.Ref = ""
+	}
+}
+
+func removeRefsResponseAndChildren(response *openapi3.ResponseRef) {
+	response.Ref = ""
+	removeRefsContentAndChildren(response.Value.Content)
+	for _, ref := range response.Value.Headers {
+		removeHeaderRefsAndChildren(ref)
+	}
+}
+
+func removeRefsContentAndChildren(content openapi3.Content) {
+	for _, mediaType := range content {
+		removeRefsForSchemaAndChildren(mediaType.Schema)
+		removeRefsForExamples(mediaType.Examples)
+	}
 }
 
 // RefRemover removes the ref from the component.
@@ -168,7 +194,6 @@ type RefRemover struct {
 	target interface{}
 }
 
-// NewRefRemover returns a new RefRemover instance.
 func NewRefRemover(target interface{}) *RefRemover {
 	return &RefRemover{target: target}
 }

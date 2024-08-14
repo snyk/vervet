@@ -272,7 +272,7 @@ func (c *Collator) mergePaths(rv *ResourceVersion) error {
 	}
 	var errs error
 	for k, v := range rv.T.Paths.Map() {
-		for opName, opValue := range rv.T.Paths.Value(k).Operations() {
+		for opName, opValue := range v.Operations() {
 			route := routeForPath(k, opName)
 			if _, ok := c.seenRoutes[route]; ok {
 				if c.useFirstRoute {
