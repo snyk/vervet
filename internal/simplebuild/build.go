@@ -151,7 +151,7 @@ func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 				return nil, fmt.Errorf("invalid version %q", versionStr)
 			}
 
-			doc.InternalizeRefs(ctx, nil)
+			doc.InternalizeRefs(ctx, vervet.ResolveRefsWithoutSourceName)
 			err = doc.ResolveRefs()
 			if err != nil {
 				return nil, fmt.Errorf("failed to localize refs: %w", err)

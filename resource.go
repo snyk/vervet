@@ -348,20 +348,26 @@ func loadResource(specPath string, versionStr string) (*ResourceVersion, error) 
 
 // Localize rewrites all references in an OpenAPI document to local references.
 func Localize(ctx context.Context, doc *Document) error {
-	doc.InternalizeRefs(ctx, func(t *openapi3.T, componentRef openapi3.ComponentRef) string {
-		ref := componentRef.RefString()
-		if ref == "" {
-			return ""
-		}
-		split := strings.SplitN(ref, "#", 2)
-		if len(split) == 2 {
-			return filepath.Base(split[1])
-		}
-		ref = split[0]
-		for ext := filepath.Ext(ref); len(ext) > 0; ext = filepath.Ext(ref) {
-			ref = strings.TrimSuffix(ref, ext)
-		}
-		return filepath.Base(ref)
-	})
+	doc.InternalizeRefs(ctx, ResolveRefsWithoutSourceName)
 	return doc.ResolveRefs()
+}
+
+// ResolveRefsWithoutSourceName resolves references without the source url/file name in ref
+// background: this was the way kin-openapi used to resolve references, but it was changed
+// in the recent versions(v0.127.0) to include the filename in the ref name. Although this
+// method prevents conflicts, it causes existing specs to break.
+func ResolveRefsWithoutSourceName(t *openapi3.T, componentRef openapi3.ComponentRef) string {
+	ref := componentRef.RefString()
+	if ref == "" {
+		return ""
+	}
+	split := strings.SplitN(ref, "#", 2)
+	if len(split) == 2 {
+		return filepath.Base(split[1])
+	}
+	ref = split[0]
+	for ext := filepath.Ext(ref); len(ext) > 0; ext = filepath.Ext(ref) {
+		ref = strings.TrimSuffix(ref, ext)
+	}
+	return filepath.Base(ref)
 }

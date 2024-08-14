@@ -1,10 +1,8 @@
 package vervet
 
 import (
-	"reflect"
-
+	"fmt"
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mitchellh/reflectwalk"
 )
 
 // Inliner inlines the component.
@@ -37,7 +35,7 @@ func (in *Inliner) Inline(doc *openapi3.T) error {
 			in.checkResponseBody(operation.RequestBody)
 			for _, response := range operation.Responses.Map() {
 				if in.matched(response.Ref) {
-					removeRefsResponseAndChildren(response)
+					RemoveRefs(response)
 				}
 				if response.Value != nil {
 					for _, headerRef := range response.Value.Headers {
@@ -74,18 +72,10 @@ func (in *Inliner) checkContent(content openapi3.Content) {
 
 func (in *Inliner) checkHeaderRefMatch(headerRef *openapi3.HeaderRef) {
 	if in.matched(headerRef.Ref) {
-		removeHeaderRefsAndChildren(headerRef)
+		RemoveRefs(headerRef)
 	}
 	if headerRef.Value != nil {
 		in.checkSchemaRef(headerRef.Value.Schema)
-	}
-}
-
-func removeHeaderRefsAndChildren(headerRef *openapi3.HeaderRef) {
-	headerRef.Ref = ""
-	if headerRef.Value != nil {
-		removeRefsForSchemaAndChildren(headerRef.Value.Schema)
-		removeRefsForExamples(headerRef.Value.Examples)
 	}
 }
 
@@ -97,7 +87,7 @@ func (in *Inliner) checkParameters(parameters openapi3.Parameters) {
 
 func (in *Inliner) checkParameterRef(parameterRef *openapi3.ParameterRef) {
 	if in.matched(parameterRef.Ref) {
-		removeParameterRefsAndChildren(parameterRef)
+		RemoveRefs(parameterRef)
 	}
 	in.checkSchemaRef(parameterRef.Value.Schema)
 }
@@ -111,7 +101,7 @@ func (in *Inliner) checkSchemaRef(schemas ...*openapi3.SchemaRef) {
 			return
 		}
 		if in.matched(schema.Ref) {
-			removeRefsForSchemaAndChildren(schema)
+			RemoveRefs(schema)
 		}
 		if schema.Value != nil {
 			in.checkSchemaRef(schemaRefsFromSchemas(schema.Value.Properties)...)
@@ -124,127 +114,104 @@ func (in *Inliner) checkSchemaRef(schemas ...*openapi3.SchemaRef) {
 	}
 }
 
-func (in *Inliner) checkResponseBody(body *openapi3.RequestBodyRef) {
-	if body != nil {
-		if in.matched(body.Ref) {
-			body.Ref = ""
-			removeRefsContentAndChildren(body.Value.Content)
-		}
-		in.checkContent(body.Value.Content)
-	}
-}
-
-func removeRefsForSchemaAndChildren(schemas ...*openapi3.SchemaRef) {
-	if schemas == nil {
-		return
-	}
-	for _, schema := range schemas {
-		if schema == nil {
-			return
-		}
-		schema.Ref = ""
-		if schema.Value != nil {
-			removeRefsForSchemaAndChildren(schemaRefsFromSchemas(schema.Value.Properties)...)
-			removeRefsForSchemaAndChildren(schema.Value.Items)
-			removeRefsForSchemaAndChildren(schema.Value.AllOf...)
-			removeRefsForSchemaAndChildren(schema.Value.AnyOf...)
-			removeRefsForSchemaAndChildren(schema.Value.OneOf...)
-			removeRefsForSchemaAndChildren(schema.Value.Not)
-		}
-	}
-}
-
 func schemaRefsFromSchemas(properties openapi3.Schemas) []*openapi3.SchemaRef {
-	refs := make([]*openapi3.SchemaRef, 0, len(properties))
+	refs := []*openapi3.SchemaRef{}
 	for _, ref := range properties {
 		refs = append(refs, ref)
 	}
 	return refs
 }
 
-func removeParameterRefsAndChildren(parameter *openapi3.ParameterRef) {
-	parameter.Ref = ""
-	removeRefsForSchemaAndChildren(parameter.Value.Schema)
-	removeRefsForExamples(parameter.Value.Examples)
-}
-
-func removeRefsForExamples(examples openapi3.Examples) {
-	for _, example := range examples {
-		example.Ref = ""
+func (in *Inliner) checkResponseBody(body *openapi3.RequestBodyRef) {
+	if body != nil {
+		if in.matched(body.Ref) {
+			body.Ref = ""
+			RemoveRefs(body.Value.Content)
+		}
+		in.checkContent(body.Value.Content)
 	}
 }
 
-func removeRefsResponseAndChildren(response *openapi3.ResponseRef) {
-	response.Ref = ""
-	removeRefsContentAndChildren(response.Value.Content)
-	for _, ref := range response.Value.Headers {
-		removeHeaderRefsAndChildren(ref)
-	}
-}
-
-func removeRefsContentAndChildren(content openapi3.Content) {
-	for _, mediaType := range content {
-		removeRefsForSchemaAndChildren(mediaType.Schema)
-		removeRefsForExamples(mediaType.Examples)
-	}
-}
-
-// RefRemover removes the ref from the component.
-type RefRemover struct {
-	target interface{}
-}
-
-func NewRefRemover(target interface{}) *RefRemover {
-	return &RefRemover{target: target}
-}
-
-// RemoveRef removes all $ref locations from an OpenAPI document object
+// RemoveRefs removes all $ref locations from an OpenAPI document object
 // fragment. If the reference has already been resolved, this has the effect of
 // "inlining" the formerly referenced object when serializing the OpenAPI
 // document.
-func (rr *RefRemover) RemoveRef() error {
-	return reflectwalk.Walk(rr.target, rr)
-}
+func RemoveRefs(target interface{}) {
+	switch v := target.(type) {
+	case nil:
+		return
+	case openapi3.Content:
+		for _, mediaType := range v {
+			RemoveRefs(mediaType.Schema)
+			RemoveRefs(mediaType.Examples)
+		}
 
-// Struct implements reflectwalk.StructWalker.
-func (rr *RefRemover) Struct(v reflect.Value) error {
-	if !v.CanInterface() {
-		return nil
+	case openapi3.Schemas:
+		for _, schema := range v {
+			RemoveRefs(schema)
+		}
+	case openapi3.SchemaRefs:
+		for _, schema := range v {
+			RemoveRefs(schema)
+		}
+	case openapi3.Headers:
+		for _, header := range v {
+			RemoveRefs(header)
+		}
+	case openapi3.Parameter:
+		RemoveRefs(v.Schema)
+
+	case openapi3.Examples:
+		for _, example := range v {
+			RemoveRefs(example)
+		}
+
+	case *openapi3.ExampleRef:
+		v.Ref = ""
+
+	case *openapi3.ParameterRef:
+		if v == nil {
+			return
+		}
+		v.Ref = ""
+		if v.Value != nil {
+			RemoveRefs(v.Value.Schema)
+			RemoveRefs(v.Value.Content)
+			RemoveRefs(v.Value.Examples)
+		}
+	case *openapi3.ResponseRef:
+		if v == nil {
+			return
+		}
+		v.Ref = ""
+		if v.Value != nil {
+			RemoveRefs(v.Value.Content)
+			RemoveRefs(v.Value.Headers)
+		}
+	case *openapi3.SchemaRef:
+		if v == nil {
+			return
+		}
+		v.Ref = ""
+		if v.Value != nil {
+			RemoveRefs(v.Value.Properties)
+			RemoveRefs(v.Value.Items)
+			RemoveRefs(v.Value.AllOf)
+			RemoveRefs(v.Value.AnyOf)
+			RemoveRefs(v.Value.OneOf)
+			RemoveRefs(v.Value.Not)
+		}
+	case *openapi3.HeaderRef:
+		if v == nil {
+			return
+		}
+		v.Ref = ""
+		if v.Value != nil {
+			RemoveRefs(v.Value.Parameter)
+		}
+	default:
+		//intentional panic, have covered all the types in kin-openapi v0.127.0
+		//might fail in the future if new types are added, should be caught in tests
+		panic(fmt.Sprintf("unhandled type %v", target))
 	}
-	switch v.Interface().(type) {
-	case openapi3.SchemaRef:
-		valPointer := v.Addr().Interface().(*openapi3.SchemaRef)
-		valPointer.Ref = ""
-	case openapi3.ParameterRef:
-		valPointer := v.Addr().Interface().(*openapi3.ParameterRef)
-		valPointer.Ref = ""
-	case openapi3.HeaderRef:
-		valPointer := v.Addr().Interface().(*openapi3.HeaderRef)
-		valPointer.Ref = ""
-	case openapi3.RequestBodyRef:
-		valPointer := v.Addr().Interface().(*openapi3.RequestBodyRef)
-		valPointer.Ref = ""
-	case openapi3.ResponseRef:
-		valPointer := v.Addr().Interface().(*openapi3.ResponseRef)
-		valPointer.Ref = ""
-	case openapi3.SecuritySchemeRef:
-		valPointer := v.Addr().Interface().(*openapi3.SecuritySchemeRef)
-		valPointer.Ref = ""
-	case openapi3.ExampleRef:
-		valPointer := v.Addr().Interface().(*openapi3.ExampleRef)
-		valPointer.Ref = ""
-	case openapi3.LinkRef:
-		valPointer := v.Addr().Interface().(*openapi3.LinkRef)
-		valPointer.Ref = ""
-	case openapi3.CallbackRef:
-		valPointer := v.Addr().Interface().(*openapi3.CallbackRef)
-		valPointer.Ref = ""
-	}
-
-	return nil
-}
-
-// StructField implements reflectwalk.StructWalker.
-func (rr *RefRemover) StructField(field reflect.StructField, v reflect.Value) error {
-	return nil
 }

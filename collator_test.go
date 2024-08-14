@@ -17,10 +17,7 @@ func TestRefRemover(t *testing.T) {
 	errDoc := resp400.Value.Content["application/vnd.api+json"].Schema
 	c.Assert(err, qt.IsNil)
 	c.Assert("{\"$ref\":\"../errors.yaml#/ErrorDocument\"}", qt.JSONEquals, errDoc)
-	in := vervet.NewRefRemover(errDoc)
-	err = in.RemoveRef()
-	c.Assert(err, qt.IsNil)
-	c.Assert(err, qt.IsNil)
+	vervet.RemoveRefs(errDoc)
 	//nolint:lll // acked
 	c.Assert("{\"additionalProperties\":false,\"example\":{\"errors\":[{\"detail\":\"Permission denied for this "+
 		"resource\",\"status\":\"403\"}],\"jsonapi\":{\"version\":\"1.0\"}},\"properties\":{\"errors\":{\"example\":"+
