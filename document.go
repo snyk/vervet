@@ -84,6 +84,7 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 
 	l := openapi3.NewLoader()
 	l.IsExternalRefsAllowed = true
+
 	err = l.ResolveRefsIn(&t, specURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load %q: %w", specBase, err)

@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
+
+	"github.com/snyk/vervet/v7/internal/openapiwalker"
 )
 
 // refAliasResolver rewrites references in an OpenAPI document object to local
@@ -11,6 +13,42 @@ import (
 type refAliasResolver struct {
 	doc        *openapi3.T
 	refAliases map[string]string
+}
+
+func (l *refAliasResolver) ProcessCallbackRef(ref *openapi3.CallbackRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessExampleRef(ref *openapi3.ExampleRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessHeaderRef(ref *openapi3.HeaderRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessLinkRef(ref *openapi3.LinkRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessParameterRef(ref *openapi3.ParameterRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessResponseRef(ref *openapi3.ResponseRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessSchemaRef(ref *openapi3.SchemaRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
 }
 
 // newRefAliasResolver returns a new refAliasResolver.
@@ -49,25 +87,5 @@ func (l *refAliasResolver) resolveRefAlias(ref string) string {
 
 // resolve rewrites all references in the OpenAPI document to local references.
 func (l *refAliasResolver) resolve() {
-	for _, path := range l.doc.Paths.InMatchingOrder() {
-		for _, operation := range l.doc.Paths.Value(path).Operations() {
-			for _, parameter := range operation.Parameters {
-				parameter.Ref = l.resolveRefAlias(parameter.Ref)
-			}
-			if operation.RequestBody != nil {
-				operation.RequestBody.Ref = l.resolveRefAlias(operation.RequestBody.Ref)
-			}
-			for _, response := range operation.Responses.Map() {
-				response.Ref = l.resolveRefAlias(response.Ref)
-				if response.Value != nil {
-					for _, mediaType := range response.Value.Content {
-						mediaType.Schema.Ref = l.resolveRefAlias(mediaType.Schema.Ref)
-						for _, properties := range mediaType.Schema.Value.Properties {
-							properties.Ref = l.resolveRefAlias(properties.Ref)
-						}
-					}
-				}
-			}
-		}
-	}
+	openapiwalker.ProcessRefs(l.doc, l)
 }
