@@ -51,12 +51,24 @@ type refResolver struct {
 	doc *openapi3.T
 }
 
+// TODO: Clean up public API.
 func NewRefResolver(doc *openapi3.T) refResolver {
 	return refResolver{doc: doc}
 }
 
 func (rr *refResolver) Resolve(from any) error {
 	return reflectwalk.Walk(from, rr)
+}
+
+// ResolveRefs recursively finds all ref objects in the current documents paths
+// and makes sure they are valid by copying the referenced component to the
+// documents components section.
+//
+// WARNING: this will mutate references so if references are shared between
+// documents make sure that any other documents are serialised before resolving
+// refs. This method only ensures the current document is correct.
+func (doc VersionedDoc) ResolveRefs(rr refResolver) error {
+	return rr.Resolve(doc.Doc.Paths)
 }
 
 // Implements reflectwalk.StructWalker. This function is called for every
@@ -82,8 +94,10 @@ func (rr *refResolver) Struct(v reflect.Value) error {
 	}
 
 	if newRef != refLoc {
-		// TODO: other documents have references to this same object which we
-		// are mutating. Any previously generated document is now wrong.
+		// WARNING: this mutates other documents that have references to this
+		// component. Any existing generated document is now invalid. Ensure a
+		// document is serialised before resolving references on a different
+		// document which could share references.
 		ref.Set(reflect.ValueOf(newRef))
 	}
 

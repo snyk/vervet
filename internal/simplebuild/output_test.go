@@ -25,12 +25,11 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 		appendOutputFiles bool
 	}
 	tests := []struct {
-		name    string
-		docs    DocSet
-		args    args
-		wantErr bool
-		assert  func(*testing.T, args)
-		setup   func(*testing.T, args)
+		name   string
+		docs   DocSet
+		args   args
+		assert func(*testing.T, args)
+		setup  func(*testing.T, args)
 	}{
 		{
 			name: "write the doc sets to outputs",
@@ -45,7 +44,6 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 					Doc:         testDoc,
 				},
 			},
-			wantErr: false,
 			assert: func(t *testing.T, args args) {
 				t.Helper()
 				files, err := filepath.Glob(filepath.Join(args.cfg.Path, "*"))
@@ -70,7 +68,6 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 					Doc:         testDoc,
 				},
 			},
-			wantErr: false,
 			setup: func(t *testing.T, args args) {
 				t.Helper()
 				err = os.WriteFile(path.Join(args.cfg.Path, "existing-file"), []byte("existing"), 0644)
@@ -101,7 +98,6 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 					Doc:         testDoc,
 				},
 			},
-			wantErr: false,
 			setup: func(t *testing.T, args args) {
 				t.Helper()
 				err = os.WriteFile(path.Join(args.cfg.Path, "2024-02-01"), []byte("existing"), 0644)
@@ -130,12 +126,17 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 			if tt.setup != nil {
 				tt.setup(t, tt.args)
 			}
-			if err := tt.docs.WriteOutputs(tt.args.cfg, tt.args.appendOutputFiles); (err != nil) != tt.wantErr {
-				t.Errorf("WriteOutputs() error = %v, wantErr %v", err, tt.wantErr)
+
+			writer, err := NewWriter(tt.args.cfg, tt.args.appendOutputFiles)
+			c.Assert(err, qt.IsNil)
+			for _, doc := range tt.docs {
+				err = writer.Write(doc)
+				c.Assert(err, qt.IsNil)
 			}
-			if tt.assert != nil {
-				tt.assert(t, tt.args)
-			}
+			err = writer.Finalize()
+			c.Assert(err, qt.IsNil)
+
+			tt.assert(t, tt.args)
 		})
 	}
 }

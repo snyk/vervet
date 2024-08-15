@@ -17,6 +17,111 @@ import (
 	"github.com/snyk/vervet/v7/internal/files"
 )
 
+type DocWriter struct {
+	cfg              config.Output
+	paths            []string
+	versionSpecFiles []string
+}
+
+// NewWriter initialises any output paths, removing existing files and
+// directories if they are present.
+func NewWriter(cfg config.Output, appendOutputFiles bool) (*DocWriter, error) {
+	paths := getOutputPaths(cfg)
+	toClear := paths
+	if appendOutputFiles {
+		// We treat the first path as the source of truth and copy the whole
+		// directory to the other paths in Finalize.
+		toClear = toClear[1:]
+	}
+
+	for _, dir := range toClear {
+		err := os.RemoveAll(dir)
+		if err != nil {
+			return nil, fmt.Errorf("clear output directory: %w", err)
+		}
+	}
+	err := os.MkdirAll(paths[0], 0777)
+	if err != nil {
+		return nil, fmt.Errorf("make output directory: %w", err)
+	}
+
+	versionSpecFiles, err := getExisingSpecFiles(paths[0])
+	if err != nil {
+		return nil, fmt.Errorf("list existing files: %w", err)
+	}
+
+	return &DocWriter{
+		cfg:              cfg,
+		paths:            paths,
+		versionSpecFiles: versionSpecFiles,
+	}, nil
+}
+
+// Write writes compiled specs to a single directory in YAML and JSON formats.
+// Call Finalize after to populate other directories.
+func (out *DocWriter) Write(doc VersionedDoc) error {
+	// We write to the first directory then copy the entire directory
+	// afterwards
+	dir := out.paths[0]
+
+	versionDir := path.Join(dir, doc.VersionDate.Format(time.DateOnly))
+	err := os.MkdirAll(versionDir, 0755)
+	if err != nil {
+		return fmt.Errorf("make output directory: %w", err)
+	}
+
+	jsonBuf, err := vervet.ToSpecJSON(doc.Doc)
+	if err != nil {
+		return fmt.Errorf("serialise spec to json: %w", err)
+	}
+	jsonSpecPath := path.Join(versionDir, "spec.json")
+	jsonEmbedPath, err := filepath.Rel(dir, jsonSpecPath)
+	if err != nil {
+		return fmt.Errorf("get relative output path: %w", err)
+	}
+	out.versionSpecFiles = append(out.versionSpecFiles, jsonEmbedPath)
+	err = os.WriteFile(jsonSpecPath, jsonBuf, 0644)
+	if err != nil {
+		return fmt.Errorf("write json file: %w", err)
+	}
+	fmt.Println(jsonSpecPath)
+
+	yamlBuf, err := yaml.JSONToYAML(jsonBuf)
+	if err != nil {
+		return fmt.Errorf("convert spec to yaml: %w", err)
+	}
+	yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
+	if err != nil {
+		return fmt.Errorf("prepend yaml comment: %w", err)
+	}
+	yamlSpecPath := path.Join(versionDir, "spec.yaml")
+	yamlEmbedPath, err := filepath.Rel(dir, yamlSpecPath)
+	if err != nil {
+		return fmt.Errorf("get relative output path: %w", err)
+	}
+	out.versionSpecFiles = append(out.versionSpecFiles, yamlEmbedPath)
+	err = os.WriteFile(yamlSpecPath, yamlBuf, 0644)
+	if err != nil {
+		return fmt.Errorf("write yaml file: %w", err)
+	}
+	fmt.Println(yamlSpecPath)
+	return nil
+}
+
+func (out *DocWriter) Finalize() error {
+	err := writeEmbedGo(out.paths[0], out.versionSpecFiles)
+	if err != nil {
+		return err
+	}
+	for _, dir := range out.paths[1:] {
+		err := files.CopyDir(dir, out.paths[0], true)
+		if err != nil {
+			return fmt.Errorf("copy outputs: %w", err)
+		}
+	}
+	return nil
+}
+
 // Some services have a need to write specs to multiple destinations. This
 // tends to happen in Typescript services in which we want to write specs to
 // two places:
@@ -31,96 +136,6 @@ func getOutputPaths(cfg config.Output) []string {
 		paths = []string{cfg.Path}
 	}
 	return paths
-}
-
-// WriteOutputs writes compiled specs to all directories specified by the given
-// api config. Removes any existing builds if they are present.
-func (docs DocSet) WriteOutputs(cfg config.Output, appendOutputFiles bool) error {
-	paths := getOutputPaths(cfg)
-
-	if !appendOutputFiles {
-		for _, dir := range paths {
-			err := os.RemoveAll(dir)
-			if err != nil {
-				return fmt.Errorf("clear output directory: %w", err)
-			}
-		}
-	}
-
-	err := docs.Write(paths[0], appendOutputFiles)
-	if err != nil {
-		return fmt.Errorf("write output files: %w", err)
-	}
-
-	for _, dir := range paths[1:] {
-		err := files.CopyDir(dir, paths[0], true)
-		if err != nil {
-			return fmt.Errorf("copy outputs: %w", err)
-		}
-	}
-
-	return nil
-}
-
-// Write writes compiled specs to a single directory in YAML and JSON formats.
-// Unlike WriteOutputs this function assumes the destination directory does not
-// already exist.
-func (docs DocSet) Write(dir string, appendOutputFiles bool) error {
-	err := os.MkdirAll(dir, 0777)
-	if err != nil {
-		return err
-	}
-	existingFiles, err := getExisingSpecFiles(dir)
-	if err != nil {
-		return fmt.Errorf("list existing files: %w", err)
-	}
-
-	versionSpecFiles := make([]string, 0, len(existingFiles)+len(docs)*2)
-	versionSpecFiles = append(versionSpecFiles, existingFiles...)
-	for _, doc := range docs {
-		versionDir := path.Join(dir, doc.VersionDate.Format(time.DateOnly))
-		err = os.MkdirAll(versionDir, 0755)
-		if err != nil {
-			return fmt.Errorf("make output directory: %w", err)
-		}
-
-		jsonBuf, err := vervet.ToSpecJSON(doc.Doc)
-		if err != nil {
-			return fmt.Errorf("serialise spec to json: %w", err)
-		}
-		jsonSpecPath := path.Join(versionDir, "spec.json")
-		jsonEmbedPath, err := filepath.Rel(dir, jsonSpecPath)
-		if err != nil {
-			return fmt.Errorf("get relative output path: %w", err)
-		}
-		versionSpecFiles = append(versionSpecFiles, jsonEmbedPath)
-		err = os.WriteFile(jsonSpecPath, jsonBuf, 0644)
-		if err != nil {
-			return fmt.Errorf("write json file: %w", err)
-		}
-		fmt.Println(jsonSpecPath)
-
-		yamlBuf, err := yaml.JSONToYAML(jsonBuf)
-		if err != nil {
-			return fmt.Errorf("convert spec to yaml: %w", err)
-		}
-		yamlBuf, err = vervet.WithGeneratedComment(yamlBuf)
-		if err != nil {
-			return fmt.Errorf("prepend yaml comment: %w", err)
-		}
-		yamlSpecPath := path.Join(versionDir, "spec.yaml")
-		yamlEmbedPath, err := filepath.Rel(dir, yamlSpecPath)
-		if err != nil {
-			return fmt.Errorf("get relative output path: %w", err)
-		}
-		versionSpecFiles = append(versionSpecFiles, yamlEmbedPath)
-		err = os.WriteFile(yamlSpecPath, yamlBuf, 0644)
-		if err != nil {
-			return fmt.Errorf("write yaml file: %w", err)
-		}
-		fmt.Println(yamlSpecPath)
-	}
-	return writeEmbedGo(dir, versionSpecFiles)
 }
 
 func getExisingSpecFiles(dir string) ([]string, error) {
