@@ -27,71 +27,11 @@ func TestResolveRefs(t *testing.T) {
 			},
 		}
 
-		rr := simplebuild.NewRefResolver(&doc)
-		err := rr.Resolve(path)
+		rr := simplebuild.NewRefResolver()
+		err := rr.ResolveRefs(&doc)
 		c.Assert(err, qt.IsNil)
 
 		c.Assert(doc.Components.Parameters["foo"].Value, qt.Equals, param)
-	})
-
-	c.Run("ignores refs on other parts of the doc", func(c *qt.C) {
-		param := &openapi3.Parameter{}
-		pathA := openapi3.PathItem{
-			Parameters: []*openapi3.ParameterRef{{
-				Ref:   "#/components/parameters/foo",
-				Value: param,
-			}},
-		}
-		pathB := openapi3.PathItem{
-			Parameters: []*openapi3.ParameterRef{{
-				Ref:   "#/components/parameters/bar",
-				Value: param,
-			}},
-		}
-		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &pathA,
-				"/bar": &pathB,
-			},
-		}
-
-		rr := simplebuild.NewRefResolver(&doc)
-		err := rr.Resolve(pathA)
-		c.Assert(err, qt.IsNil)
-
-		c.Assert(doc.Components.Parameters["bar"], qt.IsNil)
-	})
-
-	c.Run("merges refs from successive calls", func(c *qt.C) {
-		paramA := &openapi3.Parameter{}
-		pathA := openapi3.PathItem{
-			Parameters: []*openapi3.ParameterRef{{
-				Ref:   "#/components/parameters/foo",
-				Value: paramA,
-			}},
-		}
-		paramB := &openapi3.Parameter{}
-		pathB := openapi3.PathItem{
-			Parameters: []*openapi3.ParameterRef{{
-				Ref:   "#/components/parameters/bar",
-				Value: paramB,
-			}},
-		}
-		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &pathA,
-				"/bar": &pathB,
-			},
-		}
-
-		rr := simplebuild.NewRefResolver(&doc)
-		err := rr.Resolve(pathA)
-		c.Assert(err, qt.IsNil)
-		err = rr.Resolve(pathB)
-		c.Assert(err, qt.IsNil)
-
-		c.Assert(doc.Components.Parameters["foo"].Value, qt.Equals, paramA)
-		c.Assert(doc.Components.Parameters["bar"].Value, qt.Equals, paramB)
 	})
 
 	c.Run("recursively resolves components", func(c *qt.C) {
@@ -114,8 +54,8 @@ func TestResolveRefs(t *testing.T) {
 			},
 		}
 
-		rr := simplebuild.NewRefResolver(&doc)
-		err := rr.Resolve(path)
+		rr := simplebuild.NewRefResolver()
+		err := rr.ResolveRefs(&doc)
 		c.Assert(err, qt.IsNil)
 
 		c.Assert(doc.Components.Parameters["foo"].Value, qt.Equals, param)
@@ -136,8 +76,8 @@ func TestResolveRefs(t *testing.T) {
 			},
 		}
 
-		rr := simplebuild.NewRefResolver(&doc)
-		err := rr.Resolve(path)
+		rr := simplebuild.NewRefResolver()
+		err := rr.ResolveRefs(&doc)
 		c.Assert(err, qt.IsNil)
 
 		c.Assert(doc.Components.Parameters["foo"], qt.IsNil)
@@ -169,10 +109,8 @@ func TestResolveRefs(t *testing.T) {
 			},
 		}
 
-		rr := simplebuild.NewRefResolver(&doc)
-		err := rr.Resolve(pathA)
-		c.Assert(err, qt.IsNil)
-		err = rr.Resolve(pathB)
+		rr := simplebuild.NewRefResolver()
+		err := rr.ResolveRefs(&doc)
 		c.Assert(err, qt.IsNil)
 
 		c.Assert(doc.Paths["/foo"].Parameters[0].Ref, qt.Not(qt.Equals), doc.Paths["/bar"].Parameters[0].Ref)
@@ -205,10 +143,8 @@ func TestResolveRefs(t *testing.T) {
 			},
 		}
 
-		rr := simplebuild.NewRefResolver(&doc)
-		err := rr.Resolve(pathA)
-		c.Assert(err, qt.IsNil)
-		err = rr.Resolve(pathB)
+		rr := simplebuild.NewRefResolver()
+		err := rr.ResolveRefs(&doc)
 		c.Assert(err, qt.IsNil)
 
 		out, _ := doc.MarshalJSON()

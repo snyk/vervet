@@ -45,8 +45,8 @@ func Build(ctx context.Context, project *config.Project, startDate vervet.Versio
 				return err
 			}
 
-			refResolver := NewRefResolver(doc.Doc)
-			err = doc.ResolveRefs(refResolver)
+			refResolver := NewRefResolver()
+			err = refResolver.ResolveRefs(doc.Doc)
 			if err != nil {
 				return err
 			}

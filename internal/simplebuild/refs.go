@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"slices"
 	"strings"
-	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/mitchellh/reflectwalk"
@@ -48,16 +47,12 @@ import (
 // This class walks a given object and recursively copy any refs it finds back
 // into the document at the path they are referenced from.
 type refResolver struct {
-	doc *openapi3.T
+	doc     *openapi3.T
+	renames map[string]string
 }
 
-// TODO: Clean up public API.
-func NewRefResolver(doc *openapi3.T) refResolver {
-	return refResolver{doc: doc}
-}
-
-func (rr *refResolver) Resolve(from any) error {
-	return reflectwalk.Walk(from, rr)
+func NewRefResolver() refResolver {
+	return refResolver{renames: make(map[string]string)}
 }
 
 // ResolveRefs recursively finds all ref objects in the current documents paths
@@ -67,8 +62,12 @@ func (rr *refResolver) Resolve(from any) error {
 // WARNING: this will mutate references so if references are shared between
 // documents make sure that any other documents are serialised before resolving
 // refs. This method only ensures the current document is correct.
-func (doc VersionedDoc) ResolveRefs(rr refResolver) error {
-	return rr.Resolve(doc.Doc.Paths)
+func (rr *refResolver) ResolveRefs(doc *openapi3.T) error {
+	// Refs use a full path eg #/components/schemas/..., to avoid having a
+	// special case at the top level we pass the entire document and trust the
+	// refs to not reference parts of the document they shouldn't.
+	rr.doc = doc
+	return reflectwalk.Walk(doc.Paths, rr)
 }
 
 // Implements reflectwalk.StructWalker. This function is called for every
@@ -99,6 +98,7 @@ func (rr *refResolver) Struct(v reflect.Value) error {
 		// document is serialised before resolving references on a different
 		// document which could share references.
 		ref.Set(reflect.ValueOf(newRef))
+		rr.renames[newRef] = refLoc
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func (rr *refResolver) deref(ref string, value reflect.Value) (string, error) {
 	}
 
 	field := reflect.ValueOf(rr.doc)
-	newRef, err := deref(path[1:], field, value)
+	newRef, err := deref(path[1:], field, value, rr.renames)
 	if err != nil {
 		return "", err
 	}
@@ -129,7 +129,7 @@ func (rr *refResolver) deref(ref string, value reflect.Value) (string, error) {
 	return newRefStr, nil
 }
 
-func deref(path []string, field, value reflect.Value) ([]string, error) {
+func deref(path []string, field, value reflect.Value, renames map[string]string) ([]string, error) {
 	if len(path) == 0 {
 		field.Set(value.Elem())
 		return []string{}, nil
@@ -145,12 +145,11 @@ func deref(path []string, field, value reflect.Value) ([]string, error) {
 	// name, if they conflict then we need to rename the current component
 	if len(path) == 1 {
 		// Name might have changed on previous documents but previous
-		// collisions are no longer present. Always start from 0 to make sure
-		// we aren't leaving unessisary gaps. Some components are already
-		// numbers, eg "400" responses, in which case assume they don't
-		// conflict. TODO: fix that
-		if !unicode.IsDigit(rune(newName[0])) {
-			newName = strings.TrimRightFunc(newName, unicode.IsDigit)
+		// collisions are no longer present. Always start from the original
+		// name to make sure we aren't leaving unessisary gaps.
+		originalName, ok := renames[newName]
+		if ok {
+			newName = originalName
 			nextField, err = getField(newName, field)
 			if err != nil {
 				return nil, fmt.Errorf("invalid ref: %w", err)
@@ -190,7 +189,7 @@ func deref(path []string, field, value reflect.Value) ([]string, error) {
 		nextField = nextField.Elem()
 	}
 
-	newRef, err := deref(path[1:], nextField, value)
+	newRef, err := deref(path[1:], nextField, value, renames)
 	return append(newRef, newName), err
 }
 
