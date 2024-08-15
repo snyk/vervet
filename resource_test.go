@@ -2,6 +2,7 @@ package vervet_test
 
 import (
 	"context"
+	"net/url"
 	"testing"
 	"time"
 
@@ -141,4 +142,64 @@ func TestResourceVersionsAtSunset(t *testing.T) {
 			c.Assert(e.Version.String(), qt.Equals, t.match)
 		}
 	}
+}
+
+func TestResolveRefsWithoutSourceName(t *testing.T) {
+	tests := []struct {
+		name string
+		ref  string
+		want string
+	}{
+		{
+			name: "empty ref",
+			ref:  "",
+			want: "",
+		},
+		{
+			name: "ref with source and fragment",
+			ref:  "#/components/schemas/Pet",
+			want: "Pet",
+		},
+		{
+			name: "ref without source",
+			ref:  "components/schemas/Pet",
+			want: "Pet",
+		},
+		{
+			name: "ref with extension",
+			ref:  "models/Pet.yaml",
+			want: "Pet",
+		},
+		{
+			name: "ref with multiple extensions",
+			ref:  "models/Pet.json.gz",
+			want: "Pet",
+		},
+		{
+			name: "ref with complex path",
+			ref:  "path/to/models/Pet.yaml",
+			want: "Pet",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ResolveRefsWithoutSourceName(nil, mockComponentRef(tt.ref)); got != tt.want {
+				t.Errorf("ResolveRefsWithoutSourceName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+type mockComponentRef string
+
+func (m mockComponentRef) RefString() string {
+	return string(m)
+}
+
+func (m mockComponentRef) RefPath() *url.URL {
+	return nil
+}
+
+func (m mockComponentRef) CollectionName() string {
+	return ""
 }
