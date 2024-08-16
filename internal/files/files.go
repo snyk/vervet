@@ -7,8 +7,8 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
 )
 
 // FileSource defines a source of spec files to lint. This abstraction allows

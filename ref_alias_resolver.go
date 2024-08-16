@@ -1,20 +1,54 @@
 package vervet
 
 import (
-	"reflect"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mitchellh/reflectwalk"
+
+	"github.com/snyk/vervet/v8/internal/openapiwalker"
 )
 
 // refAliasResolver rewrites references in an OpenAPI document object to local
 // references, so that the spec is self-contained.
 type refAliasResolver struct {
-	doc         *openapi3.T
-	refAliases  map[string]string
-	curRefType  reflect.Value
-	curRefField reflect.Value
+	doc        *openapi3.T
+	refAliases map[string]string
+}
+
+func (l *refAliasResolver) ProcessCallbackRef(ref *openapi3.CallbackRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessExampleRef(ref *openapi3.ExampleRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessHeaderRef(ref *openapi3.HeaderRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessLinkRef(ref *openapi3.LinkRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessParameterRef(ref *openapi3.ParameterRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessResponseRef(ref *openapi3.ResponseRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessSchemaRef(ref *openapi3.SchemaRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
+}
+
+func (l *refAliasResolver) ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef) {
+	ref.Ref = l.resolveRefAlias(ref.Ref)
 }
 
 // newRefAliasResolver returns a new refAliasResolver.
@@ -52,26 +86,6 @@ func (l *refAliasResolver) resolveRefAlias(ref string) string {
 }
 
 // resolve rewrites all references in the OpenAPI document to local references.
-func (l *refAliasResolver) resolve() error {
-	return reflectwalk.Walk(l.doc, l)
-}
-
-// Struct implements reflectwalk.StructWalker.
-func (l *refAliasResolver) Struct(v reflect.Value) error {
-	l.curRefType, l.curRefField = v, v.FieldByName("Ref")
-	return nil
-}
-
-// StructField implements reflectwalk.StructWalker.
-func (l *refAliasResolver) StructField(sf reflect.StructField, v reflect.Value) error {
-	if !l.curRefField.IsValid() {
-		return nil
-	}
-	ref := l.curRefField.String()
-	if ref == "" {
-		return nil
-	}
-	ref = l.resolveRefAlias(ref)
-	l.curRefField.Set(reflect.ValueOf(ref))
-	return nil
+func (l *refAliasResolver) resolve() {
+	openapiwalker.ProcessRefs(l.doc, l)
 }

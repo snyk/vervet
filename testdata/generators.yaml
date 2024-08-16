@@ -6,7 +6,7 @@ version-controller:
   scope: version
   files: |-
     {{- $path := .Path -}}
-    {{- range $_, $pathItem := .ResourceVersion.Document.Paths -}}
+    {{- range $_, $pathItem := .ResourceVersion.Document.Paths.Map -}}
     {{- range $method, $operation := $pathItem|pathOperations -}}
     {{- $operationId := $operation.OperationID -}}
     {{- $ctx := map "Context" . "OperationId" $operationId }}

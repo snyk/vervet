@@ -11,8 +11,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/testdata"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 func setup(c *qt.C) {
@@ -95,7 +96,7 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(restApi.resources, qt.HasLen, 1)
 	c.Assert(restApi.resources[0].sourceFiles, qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
 	c.Assert(restApi.overlayIncludes, qt.HasLen, 1)
-	c.Assert(restApi.overlayIncludes[0].Paths, qt.HasLen, 2)
+	c.Assert(restApi.overlayIncludes[0].Paths.Len(), qt.Equals, 2)
 	c.Assert(
 		restApi.overlayInlines[0].Servers[0].URL,
 		qt.Contains,
@@ -105,7 +106,7 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(restApi.output, qt.Not(qt.IsNil))
 
 	// Build stage
-	err = compiler.BuildAll(ctx)
+	err = compiler.BuildAll(ctx, vervet.MustParseVersion("2024-06-01"))
 	c.Assert(err, qt.IsNil)
 
 	// Verify created files/folders are as expected
@@ -141,7 +142,7 @@ func TestCompilerSmokePaths(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Build stage
-	err = compiler.BuildAll(ctx)
+	err = compiler.BuildAll(ctx, vervet.MustParseVersion("2024-06-01"))
 	c.Assert(err, qt.IsNil)
 
 	refOutputPath := testdata.Path("output")
