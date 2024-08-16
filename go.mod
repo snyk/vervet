@@ -1,4 +1,4 @@
-module github.com/snyk/vervet/v7
+module github.com/snyk/vervet/v8
 
 go 1.22
 

@@ -7,9 +7,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/internal/storage"
-	"github.com/snyk/vervet/v7/testdata"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/internal/storage"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 const serviceASpec = `

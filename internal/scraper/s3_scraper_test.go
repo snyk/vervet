@@ -9,10 +9,10 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/internal/scraper"
-	"github.com/snyk/vervet/v7/internal/storage/s3"
-	s3testing "github.com/snyk/vervet/v7/internal/storage/s3/testing"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/internal/scraper"
+	"github.com/snyk/vervet/v8/internal/storage/s3"
+	s3testing "github.com/snyk/vervet/v8/internal/storage/s3/testing"
 )
 
 func TestS3Scraper(t *testing.T) {

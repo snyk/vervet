@@ -6,7 +6,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7/internal/simplebuild"
+	"github.com/snyk/vervet/v8/internal/simplebuild"
 )
 
 func TestResolveRefs(t *testing.T) {

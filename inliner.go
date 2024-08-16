@@ -3,7 +3,7 @@ package vervet
 import (
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7/internal/openapiwalker"
+	"github.com/snyk/vervet/v8/internal/openapiwalker"
 )
 
 // Inliner inlines the component.

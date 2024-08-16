@@ -7,8 +7,8 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
 )
 
 func (docs DocSet) ApplyOverlays(ctx context.Context, cfgs []*config.Overlay) error {

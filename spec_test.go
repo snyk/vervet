@@ -6,8 +6,8 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	. "github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/testdata"
+	. "github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 func TestSpecs(t *testing.T) {

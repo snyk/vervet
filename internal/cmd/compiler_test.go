@@ -8,9 +8,9 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/internal/cmd"
-	"github.com/snyk/vervet/v7/testdata"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/internal/cmd"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 var specFile = "/spec.yaml"

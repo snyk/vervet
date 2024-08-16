@@ -7,8 +7,8 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/testdata"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 var openapiCmp = qt.CmpEquals(cmpopts.IgnoreUnexported(

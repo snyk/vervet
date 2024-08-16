@@ -5,7 +5,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7/internal/openapiwalker"
+	"github.com/snyk/vervet/v8/internal/openapiwalker"
 )
 
 // refAliasResolver rewrites references in an OpenAPI document object to local
