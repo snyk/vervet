@@ -7,7 +7,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7/internal/simplebuild"
+	"github.com/snyk/vervet/v8/internal/simplebuild"
 )
 
 func TestResolveRefs(t *testing.T) {
@@ -22,9 +22,7 @@ func TestResolveRefs(t *testing.T) {
 			}},
 		}
 		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &path,
-			},
+			Paths: openapi3.NewPaths(openapi3.WithPath("/foo", &path)),
 		}
 
 		rr := simplebuild.NewRefResolver()
@@ -49,9 +47,7 @@ func TestResolveRefs(t *testing.T) {
 			}},
 		}
 		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &path,
-			},
+			Paths: openapi3.NewPaths(openapi3.WithPath("/foo", &path)),
 		}
 
 		rr := simplebuild.NewRefResolver()
@@ -71,9 +67,7 @@ func TestResolveRefs(t *testing.T) {
 		}
 		doc := openapi3.T{
 			Components: &openapi3.Components{},
-			Paths: openapi3.Paths{
-				"/foo": &path,
-			},
+			Paths:      openapi3.NewPaths(openapi3.WithPath("/foo", &path)),
 		}
 
 		rr := simplebuild.NewRefResolver()
@@ -103,17 +97,14 @@ func TestResolveRefs(t *testing.T) {
 			}},
 		}
 		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &pathA,
-				"/bar": &pathB,
-			},
+			Paths: openapi3.NewPaths(openapi3.WithPath("/foo", &pathA), openapi3.WithPath("/bar", &pathB)),
 		}
 
 		rr := simplebuild.NewRefResolver()
 		err := rr.ResolveRefs(&doc)
 		c.Assert(err, qt.IsNil)
 
-		c.Assert(doc.Paths["/foo"].Parameters[0].Ref, qt.Not(qt.Equals), doc.Paths["/bar"].Parameters[0].Ref)
+		c.Assert(doc.Paths.Value("/foo").Parameters[0].Ref, qt.Not(qt.Equals), doc.Paths.Value("/bar").Parameters[0].Ref)
 		c.Assert(doc.Components.Parameters, qt.HasLen, 2)
 	})
 
@@ -137,10 +128,7 @@ func TestResolveRefs(t *testing.T) {
 			}},
 		}
 		doc := openapi3.T{
-			Paths: openapi3.Paths{
-				"/foo": &pathA,
-				"/bar": &pathB,
-			},
+			Paths: openapi3.NewPaths(openapi3.WithPath("/foo", &pathA), openapi3.WithPath("/bar", &pathB)),
 		}
 
 		rr := simplebuild.NewRefResolver()
@@ -152,7 +140,7 @@ func TestResolveRefs(t *testing.T) {
 		fmt.Println(string(out))
 		fmt.Println()
 
-		c.Assert(doc.Paths["/foo"].Parameters[0].Ref, qt.Equals, doc.Paths["/bar"].Parameters[0].Ref)
+		c.Assert(doc.Paths.Value("/foo").Parameters[0].Ref, qt.Equals, doc.Paths.Value("/bar").Parameters[0].Ref)
 		c.Assert(doc.Components.Parameters, qt.HasLen, 1)
 	})
 }

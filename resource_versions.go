@@ -20,7 +20,7 @@ func (s resourceVersionsSlice) validate() error {
 			} else if err != nil {
 				return fmt.Errorf("validation failed: %w", err)
 			}
-			for path := range ep.Paths {
+			for _, path := range ep.Paths.InMatchingOrder() {
 				if conflict, ok := resourcePaths[path]; ok {
 					return fmt.Errorf("conflict: %q %q", conflict, ep.sourcePrefix)
 				}
@@ -65,7 +65,7 @@ func (s resourceVersionsSlice) at(v Version) (*openapi3.T, error) {
 		return nil, ErrNoMatchingVersion
 	}
 	if result.Extensions == nil {
-		result.Extensions = map[string]interface{}{}
+		result.Extensions = map[string]any{}
 	}
 	result.Extensions[ExtSnykApiLifecycle] = v.LifecycleAt(time.Time{}).String()
 	return result, nil

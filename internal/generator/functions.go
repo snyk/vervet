@@ -58,7 +58,7 @@ var (
 		},
 		"isAssociativeArray": func(s *openapi3.Schema) bool {
 			return s != nil &&
-				s.Type == "object" &&
+				s.Type.Is("object") &&
 				len(s.Properties) == 0 &&
 				s.AdditionalProperties.Has != nil &&
 				*s.AdditionalProperties.Has

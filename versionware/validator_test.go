@@ -15,7 +15,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 
-	"github.com/snyk/vervet/v7/versionware"
+	"github.com/snyk/vervet/v8/versionware"
 )
 
 const (

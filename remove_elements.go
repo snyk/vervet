@@ -1,11 +1,9 @@
 package vervet
 
 import (
-	"reflect"
 	"regexp"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mitchellh/reflectwalk"
 )
 
 // ExcludePatterns defines patterns matching elements to be removed from an
@@ -49,13 +47,13 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 	}
 	// Remove excluded paths
 	excludedPaths := map[string]struct{}{}
-	for path := range doc.Paths {
+	for _, path := range doc.Paths.InMatchingOrder() {
 		if ex.isExcludedPath(path) {
 			excludedPaths[path] = struct{}{}
 		}
 	}
 	for path := range excludedPaths {
-		delete(doc.Paths, path)
+		doc.Paths.Delete(path)
 	}
 	// Remove excluded elements
 	if err := ex.apply(); err != nil {
@@ -65,45 +63,31 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 }
 
 func (ex *excluder) apply() error {
-	return reflectwalk.Walk(ex.doc, ex)
-}
-
-// Struct implements reflectwalk.StructWalker.
-func (ex *excluder) Struct(v reflect.Value) error {
-	if !v.CanInterface() {
-		return nil
-	}
-
-	switch v.Interface().(type) {
-	case openapi3.Operation:
-		ex.applyOperation(v.Addr().Interface().(*openapi3.Operation))
-	}
-
-	return nil
-}
-
-// StructField implements reflectwalk.StructWalker.
-func (ex *excluder) StructField(field reflect.StructField, v reflect.Value) error {
-	if field.Name != "Extensions" || !v.CanInterface() {
-		return nil
-	}
-
-	switch v.Interface().(type) {
-	case map[string]interface{}:
-		ex.applyExtensions(v.Addr().Interface().(*map[string]interface{}))
-	}
-
-	return nil
-}
-
-func (ex *excluder) applyExtensions(extensions *map[string]interface{}) {
-	exts := make(map[string]interface{}, len(*extensions))
-	for k, v := range *extensions {
-		if !ex.isExcludedExtension(k) {
-			exts[k] = v
+	for _, pathItem := range ex.doc.Paths.Map() {
+		ex.applyExtensions(pathItem.Extensions)
+		for _, operation := range pathItem.Operations() {
+			ex.applyOperation(operation)
+			ex.applyExtensions(operation.Extensions)
+			if operation.Responses != nil {
+				ex.applyExtensions(operation.Responses.Extensions)
+			}
+			for _, responseRef := range operation.Responses.Map() {
+				ex.applyExtensions(responseRef.Extensions)
+				if responseRef.Value != nil {
+					ex.applyExtensions(responseRef.Value.Extensions)
+				}
+			}
 		}
 	}
-	*extensions = exts
+	return nil
+}
+
+func (ex *excluder) applyExtensions(extensions map[string]interface{}) {
+	for k := range extensions {
+		if ex.isExcludedExtension(k) {
+			delete(extensions, k)
+		}
+	}
 }
 
 func (ex *excluder) applyOperation(op *openapi3.Operation) {
@@ -115,7 +99,7 @@ func (ex *excluder) applyOperation(op *openapi3.Operation) {
 	}
 	op.Parameters = params
 
-	for _, resp := range op.Responses {
+	for _, resp := range op.Responses.Map() {
 		if resp.Value == nil {
 			continue
 		}

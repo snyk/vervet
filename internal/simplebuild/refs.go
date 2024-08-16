@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mitchellh/reflectwalk"
 
-	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/internal/openapiwalker"
 )
 
 // Refs are an OpenAPI concept where you can define part of a spec then use a
@@ -55,6 +55,125 @@ func NewRefResolver() refResolver {
 	return refResolver{renames: make(map[string]string)}
 }
 
+func (rr *refResolver) deRef(orignalRef string, component any) (string, error) {
+	newRef, err := rr.deref(orignalRef, reflect.ValueOf(component))
+	if err != nil {
+		return "", err
+	}
+	if newRef != orignalRef {
+		rr.renames[newRef] = orignalRef
+	}
+	return newRef, nil
+}
+
+func (rr *refResolver) ProcessCallbackRef(ref *openapi3.CallbackRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.CallbackRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
+func (rr *refResolver) ProcessExampleRef(ref *openapi3.ExampleRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.ExampleRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
+func (rr *refResolver) ProcessHeaderRef(ref *openapi3.HeaderRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.HeaderRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
+func (rr *refResolver) ProcessLinkRef(ref *openapi3.LinkRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.LinkRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
+func (rr *refResolver) ProcessParameterRef(ref *openapi3.ParameterRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.ParameterRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
+func (rr *refResolver) ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.RequestBodyRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
+func (rr *refResolver) ProcessResponseRef(ref *openapi3.ResponseRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.ResponseRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
+func (rr *refResolver) ProcessSchemaRef(ref *openapi3.SchemaRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.SchemaRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
+func (rr *refResolver) ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef) error {
+	if ref.Ref == "" {
+		return nil
+	}
+	component := &openapi3.SecuritySchemeRef{
+		Value: ref.Value,
+	}
+	var err error
+	ref.Ref, err = rr.deRef(ref.Ref, component)
+	return err
+}
+
 // ResolveRefs recursively finds all ref objects in the current documents paths
 // and makes sure they are valid by copying the referenced component to the
 // documents components section.
@@ -67,47 +186,7 @@ func (rr *refResolver) ResolveRefs(doc *openapi3.T) error {
 	// special case at the top level we pass the entire document and trust the
 	// refs to not reference parts of the document they shouldn't.
 	rr.doc = doc
-	return reflectwalk.Walk(doc.Paths, rr)
-}
-
-// Implements reflectwalk.StructWalker. This function is called for every
-// struct found when walking.
-func (rr *refResolver) Struct(v reflect.Value) error {
-	ref := v.FieldByName("Ref")
-	value := v.FieldByName("Value")
-	if !ref.IsValid() || !value.IsValid() {
-		// This isn't a openapi3.*Ref so nothing to do
-		return nil
-	}
-	refLoc := ref.String()
-	if refLoc == "" {
-		// This ref has been inlined
-		return nil
-	}
-	// Create a new *Ref object to avoid mutating the original
-	component := reflect.New(v.Type())
-	reflect.Indirect(component).FieldByName("Value").Set(value)
-	newRef, err := rr.deref(refLoc, component)
-	if err != nil {
-		return err
-	}
-
-	if newRef != refLoc {
-		// WARNING: this mutates other documents that have references to this
-		// component. Any existing generated document is now invalid. Ensure a
-		// document is serialised before resolving references on a different
-		// document which could share references.
-		ref.Set(reflect.ValueOf(newRef))
-		rr.renames[newRef] = refLoc
-	}
-
-	return nil
-}
-
-// Implements reflectwalk.StructWalker. We work on whole structs so there is
-// nothing to do here.
-func (rr *refResolver) StructField(sf reflect.StructField, v reflect.Value) error {
-	return nil
+	return openapiwalker.ProcessRefs(doc, rr)
 }
 
 func (rr *refResolver) deref(ref string, value reflect.Value) (string, error) {

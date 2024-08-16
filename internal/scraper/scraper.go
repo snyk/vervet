@@ -16,8 +16,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.uber.org/multierr"
 
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/internal/storage"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/internal/storage"
 )
 
 // Scraper gets OpenAPI specs from a collection of services and updates storage

@@ -5,9 +5,9 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/internal/compiler"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/internal/compiler"
 )
 
 // ResourceKey uniquely identifies an API resource.
@@ -43,7 +43,8 @@ func MapResourceOperations(resourceVersions *vervet.ResourceVersions) (Operation
 		if err != nil {
 			return nil, err
 		}
-		for path, pathItem := range r.Document.Paths {
+		for _, path := range r.Document.Paths.InMatchingOrder() {
+			pathItem := r.Document.Paths.Value(path)
 			ops := MapPathOperations(pathItem)
 			for method, op := range ops {
 				opVersion := OperationVersion{

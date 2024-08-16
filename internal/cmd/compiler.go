@@ -6,10 +6,10 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/internal/compiler"
-	"github.com/snyk/vervet/v7/internal/simplebuild"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/internal/compiler"
+	"github.com/snyk/vervet/v8/internal/simplebuild"
 )
 
 var defaultPivotDate = vervet.MustParseVersion("2024-09-01")

@@ -5,8 +5,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/testdata"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 func TestRemoveElementsExact(t *testing.T) {
@@ -16,24 +16,24 @@ func TestRemoveElementsExact(t *testing.T) {
 
 	// Establish that the OpenAPI document has these expected features
 
-	c.Assert(doc.Paths["/examples/hello-world"], qt.Not(qt.IsNil))
-	c.Assert(doc.Paths["/examples/hello-world/{id}"], qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/examples/hello-world"), qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/examples/hello-world/{id}"), qt.Not(qt.IsNil))
 	c.Assert(
-		doc.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Headers["snyk-request-id"],
+		doc.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(200).Value.Headers["snyk-request-id"],
 		qt.Not(qt.IsNil),
 	)
 	c.Assert(
-		doc.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Headers["snyk-version-served"],
+		doc.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(200).Value.Headers["snyk-version-served"],
 		qt.Not(qt.IsNil),
 	)
-	c.Assert(doc.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Parameters, qt.HasLen, 4)
+	c.Assert(doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").Delete.Parameters, qt.HasLen, 4)
 	c.Assert(
-		doc.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Parameters[3].Value.Name,
+		doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").Delete.Parameters[3].Value.Name,
 		qt.Equals,
 		"x-private-matter",
 	)
 
-	c.Assert(doc.Paths["/orgs/{orgId}/projects"].Extensions["x-snyk-api-resource"], qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.Not(qt.IsNil))
 	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))
 
 	// Remove some of them
@@ -47,20 +47,21 @@ func TestRemoveElementsExact(t *testing.T) {
 
 	// Assert their removal
 
-	c.Assert(doc.Paths["/examples/hello-world"], qt.IsNil)
-	c.Assert(doc.Paths["/examples/hello-world/{id}"], qt.IsNil)
+	c.Assert(doc.Paths.Value("/examples/hello-world"), qt.IsNil)
+	c.Assert(doc.Paths.Value("/examples/hello-world/{id}"), qt.IsNil)
 	c.Assert(
-		doc.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Headers["snyk-request-id"],
+		doc.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(200).Value.Headers["snyk-request-id"],
 		qt.IsNil,
 	) // now removed
 	c.Assert(
-		doc.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Headers["snyk-version-served"],
+		doc.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(200).Value.Headers["snyk-version-served"],
 		qt.Not(qt.IsNil),
 	) // still there
-	c.Assert(doc.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Parameters, qt.HasLen, 3) // x-private-matter removed
+	c.Assert(doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").
+		Delete.Parameters, qt.HasLen, 3) // x-private-matter removed
 
-	c.Assert(doc.Paths["/orgs/{orgId}/projects"].Extensions["x-snyk-api-resource"], qt.IsNil) // now removed
-	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))                        // still there
+	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.IsNil) // now removed
+	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))                              // still there
 }
 
 func TestRemoveElementsRegex(t *testing.T) {
@@ -71,25 +72,25 @@ func TestRemoveElementsRegex(t *testing.T) {
 	// Establish that the OpenAPI document has these expected features
 
 	c.Assert(
-		doc.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Headers["snyk-request-id"],
+		doc.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(200).Value.Headers["snyk-request-id"],
 		qt.Not(qt.IsNil),
 	)
 	c.Assert(
-		doc.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Headers["snyk-version-served"],
+		doc.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(200).Value.Headers["snyk-version-served"],
 		qt.Not(qt.IsNil),
 	)
 	c.Assert(
-		doc.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Parameters,
+		doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").Delete.Parameters,
 		qt.HasLen,
 		4,
 	)
 	c.Assert(
-		doc.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Parameters[3].Value.Name,
+		doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").Delete.Parameters[3].Value.Name,
 		qt.Equals,
 		"x-private-matter",
 	)
 
-	c.Assert(doc.Paths["/orgs/{orgId}/projects"].Extensions["x-snyk-api-resource"], qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.Not(qt.IsNil))
 	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))
 
 	// Remove some of them
@@ -103,19 +104,19 @@ func TestRemoveElementsRegex(t *testing.T) {
 	// Assert their removal
 
 	c.Assert(
-		doc.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Headers["snyk-request-id"],
+		doc.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(200).Value.Headers["snyk-request-id"],
 		qt.Not(qt.IsNil),
 	) // still there
 	c.Assert(
-		doc.Paths["/orgs/{orgId}/projects"].Get.Responses["200"].Value.Headers["snyk-version-served"],
+		doc.Paths.Value("/orgs/{orgId}/projects").Get.Responses.Status(200).Value.Headers["snyk-version-served"],
 		qt.IsNil,
 	) // now removed
 	c.Assert(
-		doc.Paths["/orgs/{org_id}/projects/{project_id}"].Delete.Parameters,
+		doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").Delete.Parameters,
 		qt.HasLen,
 		3,
 	) // x-private-matter removed
 
-	c.Assert(doc.Paths["/orgs/{orgId}/projects"].Extensions["x-snyk-api-resource"], qt.IsNil) // now removed
-	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))                        // still there
+	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.IsNil) // now removed
+	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))                              // still there
 }
