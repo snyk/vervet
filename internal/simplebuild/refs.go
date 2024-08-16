@@ -55,7 +55,7 @@ func NewRefResolver() refResolver {
 	return refResolver{renames: make(map[string]string)}
 }
 
-func (rr *refResolver) deRef(orignalRef string, component any) (string, error) {
+func (rr *refResolver) copyToComponents(orignalRef string, component any) (string, error) {
 	newRef, err := rr.deref(orignalRef, reflect.ValueOf(component))
 	if err != nil {
 		return "", err
@@ -74,7 +74,7 @@ func (rr *refResolver) ProcessCallbackRef(ref *openapi3.CallbackRef) error {
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
@@ -86,7 +86,7 @@ func (rr *refResolver) ProcessExampleRef(ref *openapi3.ExampleRef) error {
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
@@ -98,7 +98,7 @@ func (rr *refResolver) ProcessHeaderRef(ref *openapi3.HeaderRef) error {
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
@@ -110,7 +110,7 @@ func (rr *refResolver) ProcessLinkRef(ref *openapi3.LinkRef) error {
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
@@ -122,7 +122,7 @@ func (rr *refResolver) ProcessParameterRef(ref *openapi3.ParameterRef) error {
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
@@ -134,7 +134,7 @@ func (rr *refResolver) ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) error
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
@@ -146,7 +146,7 @@ func (rr *refResolver) ProcessResponseRef(ref *openapi3.ResponseRef) error {
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
@@ -158,7 +158,7 @@ func (rr *refResolver) ProcessSchemaRef(ref *openapi3.SchemaRef) error {
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
@@ -170,7 +170,7 @@ func (rr *refResolver) ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef)
 		Value: ref.Value,
 	}
 	var err error
-	ref.Ref, err = rr.deRef(ref.Ref, component)
+	ref.Ref, err = rr.copyToComponents(ref.Ref, component)
 	return err
 }
 
