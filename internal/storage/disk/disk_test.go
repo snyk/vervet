@@ -8,7 +8,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7/internal/storage"
+	"github.com/snyk/vervet/v8/internal/storage"
 )
 
 var t0 = time.Date(2021, time.December, 3, 20, 49, 51, 0, time.UTC)

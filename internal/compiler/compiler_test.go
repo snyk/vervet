@@ -11,9 +11,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/testdata"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 func setup(c *qt.C) {
@@ -96,7 +96,7 @@ func TestCompilerSmoke(t *testing.T) {
 	c.Assert(restApi.resources, qt.HasLen, 1)
 	c.Assert(restApi.resources[0].sourceFiles, qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
 	c.Assert(restApi.overlayIncludes, qt.HasLen, 1)
-	c.Assert(restApi.overlayIncludes[0].Paths, qt.HasLen, 2)
+	c.Assert(restApi.overlayIncludes[0].Paths.Len(), qt.Equals, 2)
 	c.Assert(
 		restApi.overlayInlines[0].Servers[0].URL,
 		qt.Contains,

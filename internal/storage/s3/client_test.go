@@ -7,9 +7,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7/internal/storage"
-	"github.com/snyk/vervet/v7/internal/storage/s3"
-	s3testing "github.com/snyk/vervet/v7/internal/storage/s3/testing"
+	"github.com/snyk/vervet/v8/internal/storage"
+	"github.com/snyk/vervet/v8/internal/storage/s3"
+	s3testing "github.com/snyk/vervet/v8/internal/storage/s3/testing"
 )
 
 func TestPutObject(t *testing.T) {

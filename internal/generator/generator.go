@@ -13,8 +13,8 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
 )
 
 // Generator generates files for new resources from data models and templates.

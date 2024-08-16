@@ -15,12 +15,12 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/internal/handler"
-	"github.com/snyk/vervet/v7/internal/storage"
-	"github.com/snyk/vervet/v7/internal/storage/disk"
-	"github.com/snyk/vervet/v7/internal/storage/gcs"
-	"github.com/snyk/vervet/v7/internal/storage/s3"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/internal/handler"
+	"github.com/snyk/vervet/v8/internal/storage"
+	"github.com/snyk/vervet/v8/internal/storage/disk"
+	"github.com/snyk/vervet/v8/internal/storage/gcs"
+	"github.com/snyk/vervet/v8/internal/storage/s3"
 )
 
 func main() {

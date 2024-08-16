@@ -8,8 +8,8 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/internal/simplebuild"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/internal/simplebuild"
 )
 
 func TestGetLatest(t *testing.T) {
@@ -106,7 +106,7 @@ func TestBuild(t *testing.T) {
 		}
 		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
 		c.Assert(output[0].VersionDate, qt.Equals, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
-		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.IsNotNil)
+		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.IsNotNil)
 	})
 
 	c.Run("merges operations from the same version", func(c *qt.C) {
@@ -144,9 +144,9 @@ func TestBuild(t *testing.T) {
 		}
 		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
 		c.Assert(output[0].VersionDate, qt.Equals, version.Date)
-		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
-		c.Assert(output[0].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
-		c.Assert(output[0].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
+		c.Assert(output[0].Doc.Paths.Value("/foo").Post, qt.Equals, postFoo)
+		c.Assert(output[0].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 	})
 
 	c.Run("generates an output per unique version", func(c *qt.C) {
@@ -234,19 +234,19 @@ func TestBuild(t *testing.T) {
 		slices.SortFunc(output, compareDocs)
 
 		c.Assert(output[0].VersionDate, qt.Equals, versionA.Date)
-		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
-		c.Assert(output[0].Doc.Paths["/foo"].Post, qt.IsNil)
-		c.Assert(output[0].Doc.Paths["/bar"], qt.IsNil)
+		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
+		c.Assert(output[0].Doc.Paths.Value("/foo").Post, qt.IsNil)
+		c.Assert(output[0].Doc.Paths.Value("/bar"), qt.IsNil)
 
 		c.Assert(output[1].VersionDate, qt.Equals, versionB.Date)
-		c.Assert(output[1].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
-		c.Assert(output[1].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
-		c.Assert(output[1].Doc.Paths["/bar"], qt.IsNil)
+		c.Assert(output[1].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
+		c.Assert(output[1].Doc.Paths.Value("/foo").Post, qt.Equals, postFoo)
+		c.Assert(output[1].Doc.Paths.Value("/bar"), qt.IsNil)
 
 		c.Assert(output[2].VersionDate, qt.Equals, versionC.Date)
-		c.Assert(output[2].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
-		c.Assert(output[2].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
-		c.Assert(output[2].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[2].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
+		c.Assert(output[2].Doc.Paths.Value("/foo").Post, qt.Equals, postFoo)
+		c.Assert(output[2].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 	})
 
 	c.Run("resolves operations to latest version with respect to output", func(c *qt.C) {
@@ -284,16 +284,16 @@ func TestBuild(t *testing.T) {
 		slices.SortFunc(output, compareDocs)
 
 		c.Assert(output[0].VersionDate, qt.Equals, versionA.Date)
-		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.Equals, getFooOld)
-		c.Assert(output[0].Doc.Paths["/bar"], qt.IsNil)
+		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.Equals, getFooOld)
+		c.Assert(output[0].Doc.Paths.Value("/bar"), qt.IsNil)
 
 		c.Assert(output[1].VersionDate, qt.Equals, versionB.Date)
-		c.Assert(output[1].Doc.Paths["/foo"].Get, qt.Equals, getFooOld)
-		c.Assert(output[1].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[1].Doc.Paths.Value("/foo").Get, qt.Equals, getFooOld)
+		c.Assert(output[1].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 
 		c.Assert(output[2].VersionDate, qt.Equals, versionC.Date)
-		c.Assert(output[2].Doc.Paths["/foo"].Get, qt.Equals, getFooNew)
-		c.Assert(output[2].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[2].Doc.Paths.Value("/foo").Get, qt.Equals, getFooNew)
+		c.Assert(output[2].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 	})
 
 	c.Run("does not generate versions before pivot date", func(c *qt.C) {
@@ -333,12 +333,12 @@ func TestBuild(t *testing.T) {
 		c.Assert(len(output), qt.Equals, 2)
 
 		c.Assert(output[0].VersionDate, qt.Equals, versionB.Date)
-		c.Assert(output[0].Doc.Paths["/foo"].Get, qt.Equals, getFooOld)
-		c.Assert(output[0].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.Equals, getFooOld)
+		c.Assert(output[0].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 
 		c.Assert(output[1].VersionDate, qt.Equals, versionC.Date)
-		c.Assert(output[1].Doc.Paths["/foo"].Get, qt.Equals, getFooNew)
-		c.Assert(output[1].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[1].Doc.Paths.Value("/foo").Get, qt.Equals, getFooNew)
+		c.Assert(output[1].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 	})
 
 	c.Run("lower stabilities are merged into higher", func(c *qt.C) {
@@ -381,18 +381,18 @@ func TestBuild(t *testing.T) {
 		slices.SortFunc(output, compareDocs)
 
 		c.Assert(output[0].VersionDate, qt.Equals, versionBetaA.Date)
-		c.Assert(output[0].Doc.Paths["/foo"], qt.IsNil)
-		c.Assert(output[0].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[0].Doc.Paths.Value("/foo"), qt.IsNil)
+		c.Assert(output[0].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 
 		c.Assert(output[1].VersionDate, qt.Equals, versionGA.Date)
-		c.Assert(output[1].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
-		c.Assert(output[1].Doc.Paths["/foo"].Post, qt.IsNil)
-		c.Assert(output[0].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[1].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
+		c.Assert(output[1].Doc.Paths.Value("/foo").Post, qt.IsNil)
+		c.Assert(output[0].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 
 		c.Assert(output[2].VersionDate, qt.Equals, versionBetaB.Date)
-		c.Assert(output[2].Doc.Paths["/foo"].Get, qt.Equals, getFoo)
-		c.Assert(output[2].Doc.Paths["/foo"].Post, qt.Equals, postFoo)
-		c.Assert(output[2].Doc.Paths["/bar"].Get, qt.Equals, getBar)
+		c.Assert(output[2].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
+		c.Assert(output[2].Doc.Paths.Value("/foo").Post, qt.Equals, postFoo)
+		c.Assert(output[2].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 	})
 }
 

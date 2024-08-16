@@ -6,9 +6,9 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/internal/cmd"
-	"github.com/snyk/vervet/v7/testdata"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/internal/cmd"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 func TestFilterInclude(t *testing.T) {
@@ -40,11 +40,11 @@ func TestFilterInclude(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Included paths and their referenced components are present
-	c.Assert(doc.Paths["/examples/hello-world/{id}"], qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/examples/hello-world/{id}"), qt.Not(qt.IsNil))
 	c.Assert(doc.Components.Schemas["HelloWorld"], qt.Not(qt.IsNil))
 
 	// Not-included paths are not present
-	c.Assert(doc.Paths["/openapi"], qt.IsNil)
+	c.Assert(doc.Paths.Value("/openapi"), qt.IsNil)
 }
 
 func XestFilterExclude(t *testing.T) {
@@ -78,11 +78,11 @@ func XestFilterExclude(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Excluded paths and components only these reference, are not present
-	c.Assert(doc.Paths["/examples/hello-world/{id}"], qt.IsNil)
+	c.Assert(doc.Paths.Value("/examples/hello-world/{id}"), qt.IsNil)
 	c.Assert(doc.Components.Schemas["HelloWorld"], qt.IsNil)
 
 	// Not-excluded paths and referenced components are present
-	c.Assert(doc.Paths["/openapi"], qt.Not(qt.IsNil))
-	c.Assert(doc.Paths["/openapi/{version}"], qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/openapi"), qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/openapi/{version}"), qt.Not(qt.IsNil))
 	c.Assert(doc.Components.Headers["VersionRequestedResponseHeader"], qt.Not(qt.IsNil))
 }

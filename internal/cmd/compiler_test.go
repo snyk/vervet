@@ -8,9 +8,9 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/internal/cmd"
-	"github.com/snyk/vervet/v7/testdata"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/internal/cmd"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 var specFile = "/spec.yaml"
@@ -42,7 +42,7 @@ func TestBuild(t *testing.T) {
 			c.Assert(err, qt.IsNil)
 			c.Assert(doc.Validate(context.TODO()), qt.IsNil)
 			for _, path := range test.paths {
-				c.Assert(doc.Paths[path], qt.Not(qt.IsNil))
+				c.Assert(doc.Paths.Value(path), qt.Not(qt.IsNil))
 			}
 		})
 	}

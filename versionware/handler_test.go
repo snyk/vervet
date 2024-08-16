@@ -9,8 +9,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/versionware"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/versionware"
 )
 
 func ExampleHandler() {
