@@ -2,15 +2,15 @@ package simplebuild
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/tufin/oasdiff/checker"
+	"github.com/tufin/oasdiff/diff"
+	"github.com/tufin/oasdiff/load"
 
 	"github.com/snyk/vervet/v8"
 	"github.com/snyk/vervet/v8/config"
@@ -282,41 +282,25 @@ func CheckBreakingChanges(docs DocSet) error {
 		prevDoc := docs[i-1]
 		currDoc := docs[i]
 
-		// Create temporary file paths for previous and current specs
-		prevSpecPath := filepath.Join(os.TempDir(), fmt.Sprintf("spec-%d.json", i-1))
-		currSpecPath := filepath.Join(os.TempDir(), fmt.Sprintf("spec-%d.json", i))
+		s1 := &load.SpecInfo{Spec: prevDoc.Doc}
+		s2 := &load.SpecInfo{Spec: currDoc.Doc}
 
-		// Write specs to temporary files
-		if err := writeTempSpecFile(prevDoc.Doc, prevSpecPath); err != nil {
+		diffReport, sourcesMap, err := diff.GetWithOperationsSourcesMap(diff.NewConfig(), s1, s2)
+		if err != nil {
 			return err
 		}
-		if err := writeTempSpecFile(currDoc.Doc, currSpecPath); err != nil {
-			return err
+		changes := checker.CheckBackwardCompatibilityUntilLevel(
+			checker.GetDefaultChecks(), diffReport, sourcesMap, checker.INFO)
+		breakingChange := false
+		for _, change := range changes {
+			if change.IsBreaking() {
+				breakingChange = true
+			}
 		}
-
-		cmd := exec.Command("oasdiff", "breaking", "--fail-on", "ERR", prevSpecPath, currSpecPath)
-		output, err := cmd.CombinedOutput()
-		if err == nil {
+		if !breakingChange {
 			return fmt.Errorf("no breaking change detected between versions %s and %s: \n %s",
-				prevDoc.VersionDate.Format(time.DateOnly), currDoc.VersionDate.Format(time.DateOnly), string(output))
+				prevDoc.VersionDate, currDoc.VersionDate, changes)
 		}
-
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
-			continue // breaking change detected, continue to the next pair
-		}
-		if os.IsNotExist(err) {
-			return fmt.Errorf("oasdiff executable not found. Please ensure it is installed and available in your PATH")
-		}
-		return fmt.Errorf("failed to run oasdiff: %w", err)
 	}
 	return nil
-}
-
-func writeTempSpecFile(doc *openapi3.T, path string) error {
-	jsonBuf, err := doc.MarshalJSON()
-	if err != nil {
-		return fmt.Errorf("failed to marshal spec to JSON: %w", err)
-	}
-	return os.WriteFile(path, jsonBuf, 0644)
 }
