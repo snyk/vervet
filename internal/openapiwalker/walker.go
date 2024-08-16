@@ -7,265 +7,415 @@ import (
 )
 
 type RefProcessor interface {
-	ProcessCallbackRef(ref *openapi3.CallbackRef)
-	ProcessExampleRef(ref *openapi3.ExampleRef)
-	ProcessHeaderRef(ref *openapi3.HeaderRef)
-	ProcessLinkRef(ref *openapi3.LinkRef)
-	ProcessParameterRef(ref *openapi3.ParameterRef)
-	ProcessRequestBodyRef(ref *openapi3.RequestBodyRef)
-	ProcessResponseRef(ref *openapi3.ResponseRef)
-	ProcessSchemaRef(ref *openapi3.SchemaRef)
-	ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef)
+	ProcessCallbackRef(ref *openapi3.CallbackRef) error
+	ProcessExampleRef(ref *openapi3.ExampleRef) error
+	ProcessHeaderRef(ref *openapi3.HeaderRef) error
+	ProcessLinkRef(ref *openapi3.LinkRef) error
+	ProcessParameterRef(ref *openapi3.ParameterRef) error
+	ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) error
+	ProcessResponseRef(ref *openapi3.ResponseRef) error
+	ProcessSchemaRef(ref *openapi3.SchemaRef) error
+	ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef) error
 }
 
 // ProcessRefs visits all the documents and calls the RefProcessor for each ref encountered.
 //
 //nolint:gocyclo // needs to check each type in the kinopneapi lib
-func ProcessRefs(data any, p RefProcessor) {
+func ProcessRefs(data any, p RefProcessor) error {
 	switch v := data.(type) {
 	case nil:
-		return
+		return nil
 
 	case *openapi3.T:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case *openapi3.Components:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case *openapi3.MediaType:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case *openapi3.Response:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 
 	case *openapi3.Parameter:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case *openapi3.RequestBody:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case openapi3.RequestBody:
-		ProcessRefs(v.Content, p)
+		return ProcessRefs(v.Content, p)
 
 	case openapi3.T:
-		ProcessRefs(v.Components, p)
-		ProcessRefs(v.Info, p)
-		ProcessRefs(v.Paths, p)
-		ProcessRefs(v.Security, p)
-		ProcessRefs(v.Servers, p)
-		ProcessRefs(v.Tags, p)
-		ProcessRefs(v.ExternalDocs, p)
+		if err := ProcessRefs(v.Components, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Info, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Paths, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Security, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Servers, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Tags, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.ExternalDocs, p); err != nil {
+			return err
+		}
 	case openapi3.Components:
-		ProcessRefs(v.Schemas, p)
-		ProcessRefs(v.Parameters, p)
-		ProcessRefs(v.Headers, p)
-		ProcessRefs(v.RequestBodies, p)
-		ProcessRefs(v.Responses, p)
-		ProcessRefs(v.SecuritySchemes, p)
-		ProcessRefs(v.Examples, p)
-		ProcessRefs(v.Links, p)
-		ProcessRefs(v.Callbacks, p)
+		if err := ProcessRefs(v.Schemas, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Parameters, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Headers, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.RequestBodies, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Responses, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.SecuritySchemes, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Examples, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Links, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Callbacks, p); err != nil {
+			return err
+		}
 
 	case openapi3.ResponseBodies:
 		for _, ref := range v {
-			ProcessRefs(ref, p)
+			if err := ProcessRefs(ref, p); err != nil {
+				return err
+			}
 		}
 
 	case openapi3.RequestBodies:
 		for _, ref := range v {
-			ProcessRefs(ref, p)
+			if err := ProcessRefs(ref, p); err != nil {
+				return err
+			}
 		}
 
 	case openapi3.SecurityRequirements:
 		for _, requirement := range v {
-			ProcessRefs(requirement, p)
+			if err := ProcessRefs(requirement, p); err != nil {
+				return err
+			}
 		}
 
 	case openapi3.Response:
-		ProcessRefs(v.Headers, p)
-		ProcessRefs(v.Content, p)
-		ProcessRefs(v.Links, p)
+		if err := ProcessRefs(v.Headers, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Content, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Links, p); err != nil {
+			return err
+		}
 
 	case openapi3.Links:
 		for _, link := range v {
-			ProcessRefs(link, p)
+			if err := ProcessRefs(link, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.Content:
 		for _, mediaType := range v {
-			ProcessRefs(mediaType, p)
+			if err := ProcessRefs(mediaType, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.ParametersMap:
 		for _, ref := range v {
-			ProcessRefs(ref, p)
+			if err := ProcessRefs(ref, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.Schemas:
 		for _, schema := range v {
-			ProcessRefs(schema, p)
+			if err := ProcessRefs(schema, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.SchemaRefs:
 		for _, schema := range v {
-			ProcessRefs(schema, p)
+			if err := ProcessRefs(schema, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.Headers:
 		for _, header := range v {
-			ProcessRefs(header, p)
+			if err := ProcessRefs(header, p); err != nil {
+				return err
+			}
 		}
 
 	case openapi3.MediaType:
-		ProcessRefs(v.Schema, p)
-		ProcessRefs(v.Examples, p)
+		if err := ProcessRefs(v.Schema, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Examples, p); err != nil {
+			return err
+		}
 
 	case openapi3.Parameter:
-		ProcessRefs(v.Schema, p)
-		ProcessRefs(v.Content, p)
-		ProcessRefs(v.Examples, p)
+		if err := ProcessRefs(v.Schema, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Content, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Examples, p); err != nil {
+			return err
+		}
 
 	case openapi3.Examples:
 		for _, example := range v {
-			ProcessRefs(example, p)
+			if err := ProcessRefs(example, p); err != nil {
+				return err
+			}
 		}
 	case *openapi3.Schema:
 		if v != nil {
-			ProcessRefs(*v, p)
+			if err := ProcessRefs(*v, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.SecuritySchemes:
 		for _, ref := range v {
-			ProcessRefs(ref, p)
+			if err := ProcessRefs(ref, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.Callbacks:
 		for _, ref := range v {
-			ProcessRefs(ref, p)
+			if err := ProcessRefs(ref, p); err != nil {
+				return err
+			}
 		}
 	case *openapi3.Paths:
 		if v != nil {
-			ProcessRefs(*v, p)
+			if err := ProcessRefs(*v, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.Paths:
 		for _, path := range v.Map() {
-			ProcessRefs(path, p)
+			if err := ProcessRefs(path, p); err != nil {
+				return err
+			}
 		}
 
 	case openapi3.Schema:
-		ProcessRefs(v.Properties, p)
-		ProcessRefs(v.Items, p)
-		ProcessRefs(v.AllOf, p)
-		ProcessRefs(v.AnyOf, p)
-		ProcessRefs(v.OneOf, p)
-		ProcessRefs(v.Not, p)
+		if err := ProcessRefs(v.Properties, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Items, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.AllOf, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.AnyOf, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.OneOf, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Not, p); err != nil {
+			return err
+		}
 
 	case *openapi3.PathItem:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case openapi3.PathItem:
-		ProcessRefs(v.Connect, p)
-		ProcessRefs(v.Delete, p)
-		ProcessRefs(v.Get, p)
-		ProcessRefs(v.Head, p)
-		ProcessRefs(v.Options, p)
-		ProcessRefs(v.Patch, p)
-		ProcessRefs(v.Post, p)
-		ProcessRefs(v.Put, p)
-		ProcessRefs(v.Trace, p)
-		ProcessRefs(v.Servers, p)
-		ProcessRefs(v.Parameters, p)
+		if err := ProcessRefs(v.Connect, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Delete, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Get, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Head, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Options, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Patch, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Post, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Put, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Trace, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Servers, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Parameters, p); err != nil {
+			return err
+		}
 	case *openapi3.Operation:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case openapi3.Operation:
-		ProcessRefs(v.Parameters, p)
-		ProcessRefs(v.RequestBody, p)
-		ProcessRefs(v.Responses, p)
-		ProcessRefs(v.Callbacks, p)
-		ProcessRefs(v.Security, p)
-		ProcessRefs(v.Servers, p)
-		ProcessRefs(v.ExternalDocs, p)
+		if err := ProcessRefs(v.Parameters, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.RequestBody, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Responses, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Callbacks, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Security, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.Servers, p); err != nil {
+			return err
+		}
+		if err := ProcessRefs(v.ExternalDocs, p); err != nil {
+			return err
+		}
 	case *openapi3.Responses:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case openapi3.Responses:
 		for _, ref := range v.Map() {
-			ProcessRefs(ref, p)
+			if err := ProcessRefs(ref, p); err != nil {
+				return err
+			}
 		}
 	case openapi3.Parameters:
 		for _, parameter := range v {
-			ProcessRefs(parameter, p)
+			if err := ProcessRefs(parameter, p); err != nil {
+				return err
+			}
 		}
 	case *openapi3.Callback:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case openapi3.Callback:
 		for _, pathItem := range v.Map() {
-			ProcessRefs(pathItem, p)
+			if err := ProcessRefs(pathItem, p); err != nil {
+				return err
+			}
 		}
 	case *openapi3.Example:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case *openapi3.Header:
 		if v != nil {
-			ProcessRefs(*v, p)
+			return ProcessRefs(*v, p)
 		}
 	case openapi3.Header:
-		ProcessRefs(v.Parameter, p)
+		return ProcessRefs(v.Parameter, p)
 
 	case *openapi3.CallbackRef:
 		if v != nil {
-			p.ProcessCallbackRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessCallbackRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 
 	case *openapi3.ExampleRef:
 		if v != nil {
-			p.ProcessExampleRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessExampleRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 
 	case *openapi3.HeaderRef:
 		if v != nil {
-			p.ProcessHeaderRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessHeaderRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 	case *openapi3.LinkRef:
 		if v != nil {
-			p.ProcessLinkRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessLinkRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 	case *openapi3.ParameterRef:
 		if v != nil {
-			p.ProcessParameterRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessParameterRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 	case *openapi3.RequestBodyRef:
 		if v != nil {
-			p.ProcessRequestBodyRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessRequestBodyRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 	case *openapi3.ResponseRef:
 		if v != nil {
-			p.ProcessResponseRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessResponseRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 
 	case *openapi3.SchemaRef:
 		if v != nil {
-			p.ProcessSchemaRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessSchemaRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 	case *openapi3.SecuritySchemeRef:
 		if v != nil {
-			p.ProcessSecuritySchemeRef(v)
-			ProcessRefs(v.Value, p)
+			if err := p.ProcessSecuritySchemeRef(v); err != nil {
+				return err
+			}
+			return ProcessRefs(v.Value, p)
 		}
 	// no interesting nested fields
 	case *openapi3.Info:
@@ -290,4 +440,5 @@ func ProcessRefs(data any, p RefProcessor) {
 		// be caught in tests
 		panic(fmt.Sprintf("unhandled type %#v", v))
 	}
+	return nil
 }

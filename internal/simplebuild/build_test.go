@@ -104,8 +104,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "foo",
 			}},
 		}
-		output, err := ops.Build(vervet.MustParseVersion("2024-01-01"))
-		c.Assert(err, qt.IsNil)
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
 		c.Assert(output[0].VersionDate, qt.Equals, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
 		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.IsNotNil)
 	})
@@ -143,8 +142,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output, err := ops.Build(vervet.MustParseVersion("2024-01-01"))
-		c.Assert(err, qt.IsNil)
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
 		c.Assert(output[0].VersionDate, qt.Equals, version.Date)
 		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
 		c.Assert(output[0].Doc.Paths.Value("/foo").Post, qt.Equals, postFoo)
@@ -179,8 +177,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output, err := ops.Build(vervet.MustParseVersion("2024-01-01"))
-		c.Assert(err, qt.IsNil)
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
 
 		inputVersions := make([]time.Time, len(versions))
 		for idx, in := range versions {
@@ -232,8 +229,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output, err := ops.Build(vervet.MustParseVersion("2024-01-01"))
-		c.Assert(err, qt.IsNil)
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
 
 		slices.SortFunc(output, compareDocs)
 
@@ -283,8 +279,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output, err := ops.Build(vervet.MustParseVersion("2024-01-01"))
-		c.Assert(err, qt.IsNil)
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
 
 		slices.SortFunc(output, compareDocs)
 
@@ -331,8 +326,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output, err := ops.Build(vervet.MustParseVersion("2024-01-02"))
-		c.Assert(err, qt.IsNil)
+		output := ops.Build(vervet.MustParseVersion("2024-01-02"))
 
 		slices.SortFunc(output, compareDocs)
 
@@ -382,8 +376,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output, err := ops.Build(vervet.MustParseVersion("2024-01-01"))
-		c.Assert(err, qt.IsNil)
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
 
 		slices.SortFunc(output, compareDocs)
 

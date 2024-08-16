@@ -15,40 +15,49 @@ type refAliasResolver struct {
 	refAliases map[string]string
 }
 
-func (l *refAliasResolver) ProcessCallbackRef(ref *openapi3.CallbackRef) {
+func (l *refAliasResolver) ProcessCallbackRef(ref *openapi3.CallbackRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
-func (l *refAliasResolver) ProcessExampleRef(ref *openapi3.ExampleRef) {
+func (l *refAliasResolver) ProcessExampleRef(ref *openapi3.ExampleRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
-func (l *refAliasResolver) ProcessHeaderRef(ref *openapi3.HeaderRef) {
+func (l *refAliasResolver) ProcessHeaderRef(ref *openapi3.HeaderRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
-func (l *refAliasResolver) ProcessLinkRef(ref *openapi3.LinkRef) {
+func (l *refAliasResolver) ProcessLinkRef(ref *openapi3.LinkRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
-func (l *refAliasResolver) ProcessParameterRef(ref *openapi3.ParameterRef) {
+func (l *refAliasResolver) ProcessParameterRef(ref *openapi3.ParameterRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
-func (l *refAliasResolver) ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) {
+func (l *refAliasResolver) ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
-func (l *refAliasResolver) ProcessResponseRef(ref *openapi3.ResponseRef) {
+func (l *refAliasResolver) ProcessResponseRef(ref *openapi3.ResponseRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
-func (l *refAliasResolver) ProcessSchemaRef(ref *openapi3.SchemaRef) {
+func (l *refAliasResolver) ProcessSchemaRef(ref *openapi3.SchemaRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
-func (l *refAliasResolver) ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef) {
+func (l *refAliasResolver) ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef) error {
 	ref.Ref = l.resolveRefAlias(ref.Ref)
+	return nil
 }
 
 // newRefAliasResolver returns a new refAliasResolver.
@@ -86,6 +95,6 @@ func (l *refAliasResolver) resolveRefAlias(ref string) string {
 }
 
 // resolve rewrites all references in the OpenAPI document to local references.
-func (l *refAliasResolver) resolve() {
-	openapiwalker.ProcessRefs(l.doc, l)
+func (l *refAliasResolver) resolve() error {
+	return openapiwalker.ProcessRefs(l.doc, l)
 }
