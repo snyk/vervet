@@ -1,15 +1,68 @@
 package vervet
 
 import (
-	"reflect"
-
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mitchellh/reflectwalk"
+
+	"github.com/snyk/vervet/v8/internal/openapiwalker"
 )
 
 // Inliner inlines the component.
 type Inliner struct {
 	refs map[string]struct{}
+}
+
+func (in *Inliner) ProcessCallbackRef(ref *openapi3.CallbackRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
+}
+
+func (in *Inliner) ProcessExampleRef(ref *openapi3.ExampleRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
+}
+
+func (in *Inliner) ProcessHeaderRef(ref *openapi3.HeaderRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
+}
+
+func (in *Inliner) ProcessLinkRef(ref *openapi3.LinkRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
+}
+
+func (in *Inliner) ProcessParameterRef(ref *openapi3.ParameterRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
+}
+
+func (in *Inliner) ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
+}
+
+func (in *Inliner) ProcessResponseRef(ref *openapi3.ResponseRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
+}
+
+func (in *Inliner) ProcessSchemaRef(ref *openapi3.SchemaRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
+}
+
+func (in *Inliner) ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef) {
+	if in.matched(ref.Ref) {
+		RemoveRefs(ref)
+	}
 }
 
 // NewInliner returns a new Inliner instance.
@@ -25,162 +78,62 @@ func (in *Inliner) AddRef(ref string) {
 // Inline inlines all the JSON References previously indicated with AddRef in
 // the given OpenAPI document.
 func (in *Inliner) Inline(doc *openapi3.T) error {
-	return reflectwalk.Walk(doc, in)
-}
-
-// Struct implements reflectwalk.StructWalker.
-func (in *Inliner) Struct(v reflect.Value) error {
-	if !v.CanInterface() {
+	if len(in.refs) == 0 {
 		return nil
 	}
-	switch val := v.Interface().(type) {
-	case openapi3.SchemaRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.SchemaRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ParameterRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ParameterRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.HeaderRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.HeaderRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.RequestBodyRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.RequestBodyRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ResponseRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ResponseRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.SecuritySchemeRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.SecuritySchemeRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.ExampleRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.ExampleRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.LinkRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.LinkRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	case openapi3.CallbackRef:
-		if _, ok := in.refs[val.Ref]; ok {
-			valPointer := v.Addr().Interface().(*openapi3.CallbackRef)
-			refRemover := NewRefRemover(valPointer)
-			err := refRemover.RemoveRef()
-			if err != nil {
-				return err
-			}
-		}
-	}
+	openapiwalker.ProcessRefs(doc, in)
+
 	return nil
 }
 
-// StructField implements reflectwalk.StructWalker.
-func (in *Inliner) StructField(field reflect.StructField, v reflect.Value) error {
-	return nil
+func (in *Inliner) matched(ref string) bool {
+	_, match := in.refs[ref]
+	return match
 }
 
-// RefRemover removes the ref from the component.
-type RefRemover struct {
-	target interface{}
-}
-
-// NewRefRemover returns a new RefRemover instance.
-func NewRefRemover(target interface{}) *RefRemover {
-	return &RefRemover{target: target}
-}
-
-// RemoveRef removes all $ref locations from an OpenAPI document object
+// RemoveRefs removes all $ref locations from an OpenAPI document object
 // fragment. If the reference has already been resolved, this has the effect of
 // "inlining" the formerly referenced object when serializing the OpenAPI
 // document.
-func (rr *RefRemover) RemoveRef() error {
-	return reflectwalk.Walk(rr.target, rr)
+func RemoveRefs(target interface{}) {
+	openapiwalker.ProcessRefs(target, clearRefs{})
 }
 
-// Struct implements reflectwalk.StructWalker.
-func (rr *RefRemover) Struct(v reflect.Value) error {
-	if !v.CanInterface() {
-		return nil
-	}
-	switch v.Interface().(type) {
-	case openapi3.SchemaRef:
-		valPointer := v.Addr().Interface().(*openapi3.SchemaRef)
-		valPointer.Ref = ""
-	case openapi3.ParameterRef:
-		valPointer := v.Addr().Interface().(*openapi3.ParameterRef)
-		valPointer.Ref = ""
-	case openapi3.HeaderRef:
-		valPointer := v.Addr().Interface().(*openapi3.HeaderRef)
-		valPointer.Ref = ""
-	case openapi3.RequestBodyRef:
-		valPointer := v.Addr().Interface().(*openapi3.RequestBodyRef)
-		valPointer.Ref = ""
-	case openapi3.ResponseRef:
-		valPointer := v.Addr().Interface().(*openapi3.ResponseRef)
-		valPointer.Ref = ""
-	case openapi3.SecuritySchemeRef:
-		valPointer := v.Addr().Interface().(*openapi3.SecuritySchemeRef)
-		valPointer.Ref = ""
-	case openapi3.ExampleRef:
-		valPointer := v.Addr().Interface().(*openapi3.ExampleRef)
-		valPointer.Ref = ""
-	case openapi3.LinkRef:
-		valPointer := v.Addr().Interface().(*openapi3.LinkRef)
-		valPointer.Ref = ""
-	case openapi3.CallbackRef:
-		valPointer := v.Addr().Interface().(*openapi3.CallbackRef)
-		valPointer.Ref = ""
-	}
-
-	return nil
+type clearRefs struct {
 }
 
-// StructField implements reflectwalk.StructWalker.
-func (rr *RefRemover) StructField(field reflect.StructField, v reflect.Value) error {
-	return nil
+func (c clearRefs) ProcessCallbackRef(ref *openapi3.CallbackRef) {
+	ref.Ref = ""
+}
+
+func (c clearRefs) ProcessExampleRef(ref *openapi3.ExampleRef) {
+	ref.Ref = ""
+}
+
+func (c clearRefs) ProcessHeaderRef(ref *openapi3.HeaderRef) {
+	ref.Ref = ""
+}
+
+func (c clearRefs) ProcessLinkRef(ref *openapi3.LinkRef) {
+	ref.Ref = ""
+}
+
+func (c clearRefs) ProcessParameterRef(ref *openapi3.ParameterRef) {
+	ref.Ref = ""
+}
+
+func (c clearRefs) ProcessRequestBodyRef(ref *openapi3.RequestBodyRef) {
+	ref.Ref = ""
+}
+
+func (c clearRefs) ProcessResponseRef(ref *openapi3.ResponseRef) {
+	ref.Ref = ""
+}
+
+func (c clearRefs) ProcessSchemaRef(ref *openapi3.SchemaRef) {
+	ref.Ref = ""
+}
+
+func (c clearRefs) ProcessSecuritySchemeRef(ref *openapi3.SecuritySchemeRef) {
+	ref.Ref = ""
 }

@@ -1,4 +1,4 @@
-{{ range $path, $pathItem := .ResourceVersion.Document.Paths -}}
+{{ range $path, $pathItem := .ResourceVersion.Document.Paths.Map -}}
 {{ range $method, $operation := $pathItem|pathOperations -}}
 export {{ "{" }} {{ $operation.OperationID }} {{ "}" }} from './{{ $operation.OperationID }}';
 {{ end }}

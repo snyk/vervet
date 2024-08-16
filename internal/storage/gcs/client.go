@@ -16,8 +16,8 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
-	"github.com/snyk/vervet/v7"
-	vustorage "github.com/snyk/vervet/v7/internal/storage"
+	"github.com/snyk/vervet/v8"
+	vustorage "github.com/snyk/vervet/v8/internal/storage"
 )
 
 // StaticKeyCredentials structure google.Credentials for

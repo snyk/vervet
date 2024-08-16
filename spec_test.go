@@ -6,8 +6,8 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	. "github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/testdata"
+	. "github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/testdata"
 )
 
 func TestSpecs(t *testing.T) {
@@ -135,7 +135,7 @@ func TestSpecs(t *testing.T) {
 		c.Assert(err, qt.IsNil)
 		c.Assert(version, qt.Equals, t.match)
 		for _, expected := range t.hasVersions {
-			pathItem := spec.Paths[expected.path]
+			pathItem := spec.Paths.Value(expected.path)
 
 			if !expected.shouldExist {
 				c.Assert(pathItem, qt.IsNil)

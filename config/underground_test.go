@@ -6,8 +6,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
 )
 
 func createTestFile(c *qt.C, data []byte) *os.File {

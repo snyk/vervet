@@ -1,6 +1,7 @@
 package versionware
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/getkin/kin-openapi/routers/gorillamux"
 
-	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v8"
 )
 
 // Validator provides versioned OpenAPI validation middleware for HTTP requests
@@ -43,16 +44,17 @@ type ValidatorConfig struct {
 var defaultValidatorConfig = ValidatorConfig{
 	VersionError: DefaultVersionError,
 	Options: []openapi3filter.ValidatorOption{
-		openapi3filter.OnErr(func(w http.ResponseWriter, status int, code openapi3filter.ErrCode, _ error) {
-			statusText := http.StatusText(http.StatusInternalServerError)
-			switch code {
-			case openapi3filter.ErrCodeCannotFindRoute:
-				statusText = "Not Found"
-			case openapi3filter.ErrCodeRequestInvalid:
-				statusText = "Bad Request"
-			}
-			http.Error(w, statusText, status)
-		}),
+		openapi3filter.OnErr(
+			func(ctx context.Context, w http.ResponseWriter, status int, code openapi3filter.ErrCode, _ error) {
+				statusText := http.StatusText(http.StatusInternalServerError)
+				switch code {
+				case openapi3filter.ErrCodeCannotFindRoute:
+					statusText = "Not Found"
+				case openapi3filter.ErrCodeRequestInvalid:
+					statusText = "Bad Request"
+				}
+				http.Error(w, statusText, status)
+			}),
 	},
 }
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v8"
 )
 
 // StorageType describes backend implementations supported by Vervet Underground.

@@ -5,7 +5,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v8"
 )
 
 // LocalizeCommand is the `vervet localize` subcommand.

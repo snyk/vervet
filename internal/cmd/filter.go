@@ -6,7 +6,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/urfave/cli/v2"
 
-	"github.com/snyk/vervet/v7"
+	"github.com/snyk/vervet/v8"
 )
 
 // FilterCommand is the `vervet filter` subcommand.
@@ -43,14 +43,14 @@ func Filter(ctx *cli.Context) error {
 
 	if excludePaths := ctx.StringSlice("exclude-paths"); len(excludePaths) > 0 {
 		for _, excludePath := range excludePaths {
-			delete(doc.Paths, excludePath)
+			doc.Paths.Delete(excludePath)
 		}
 	}
 	if includePaths := ctx.StringSlice("include-paths"); len(includePaths) > 0 {
-		newPaths := openapi3.Paths{}
+		newPaths := openapi3.NewPaths()
 		for _, includePath := range includePaths {
-			if pathInfo, ok := doc.Paths[includePath]; ok {
-				newPaths[includePath] = pathInfo
+			if pathInfo := doc.Paths.Value(includePath); pathInfo != nil {
+				newPaths.Set(includePath, pathInfo)
 			}
 		}
 		doc.Paths = newPaths

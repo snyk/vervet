@@ -11,10 +11,10 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/internal/compiler"
-	"github.com/snyk/vervet/v7/internal/files"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/internal/compiler"
+	"github.com/snyk/vervet/v8/internal/files"
 )
 
 // Some services have a need to write specs to multiple destinations. This

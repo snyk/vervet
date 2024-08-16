@@ -9,9 +9,9 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v7"
-	"github.com/snyk/vervet/v7/config"
-	"github.com/snyk/vervet/v7/internal/files"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
+	"github.com/snyk/vervet/v8/internal/files"
 )
 
 // Build compiles the versioned resources in a project configuration based on
@@ -151,13 +151,14 @@ func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 				return nil, fmt.Errorf("invalid version %q", versionStr)
 			}
 
-			doc.InternalizeRefs(ctx, nil)
+			doc.InternalizeRefs(ctx, vervet.ResolveRefsWithoutSourceName)
 			err = doc.ResolveRefs()
 			if err != nil {
 				return nil, fmt.Errorf("failed to localize refs: %w", err)
 			}
 
-			for pathName, pathDef := range doc.T.Paths {
+			for _, pathName := range doc.T.Paths.InMatchingOrder() {
+				pathDef := doc.T.Paths.Value(pathName)
 				for opName, opDef := range pathDef.Operations() {
 					k := OpKey{
 						Path:   pathName,
