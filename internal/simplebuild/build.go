@@ -49,8 +49,7 @@ func Build(ctx context.Context, project *config.Project, startDate vervet.Versio
 			return err
 		}
 
-		if apiConfig.Output != nil {
-			err = docs.WriteOutputs(*apiConfig.Output, appendOutputFiles)
+		// Process each document
 		for _, doc := range docs {
 			err := doc.ApplyOverlays(ctx, apiConfig.Overlays)
 			if err != nil {
@@ -68,6 +67,7 @@ func Build(ctx context.Context, project *config.Project, startDate vervet.Versio
 				return err
 			}
 		}
+
 		err = writer.Finalize()
 		if err != nil {
 			return err
