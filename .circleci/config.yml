@@ -10,7 +10,7 @@ defaults: &defaults
   resource_class: small
   working_directory: ~/vervet
   docker:
-    - image: cimg/go:1.22-node
+    - image: cimg/go:1.22.5-node
 
 test_defaults: &test_defaults
   resource_class: medium
@@ -54,7 +54,7 @@ jobs:
           command: npm install -g @stoplight/spectral@6.5.0
       - checkout
       - go/install:
-          version: 1.22.3
+          version: 1.22.5
       - go/mod-download-cached
       - run:
           name: Verify testdata/output up to date

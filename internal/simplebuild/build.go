@@ -24,7 +24,10 @@ func Build(ctx context.Context, project *config.Project, startDate vervet.Versio
 		return nil
 	}
 	for _, apiConfig := range project.APIs {
-		fmt.Printf("Processing API: %s\n", apiConfig.Name)
+		if apiConfig.Output == nil {
+			fmt.Printf("No output specified for %s, skipping\n", apiConfig.Name)
+			continue
+		}
 
 		operations, err := LoadPaths(ctx, apiConfig)
 		if err != nil {
@@ -33,13 +36,8 @@ func Build(ctx context.Context, project *config.Project, startDate vervet.Versio
 		for _, op := range operations {
 			op.Annotate()
 		}
-
-		docs, err := operations.Build(startDate)
-		if err != nil {
-			return err
-		}
-
-		err = docs.ApplyOverlays(ctx, apiConfig.Overlays)
+		docs := operations.Build(startDate)
+		writer, err := NewWriter(*apiConfig.Output, appendOutputFiles)
 		if err != nil {
 			return err
 		}
@@ -53,9 +51,26 @@ func Build(ctx context.Context, project *config.Project, startDate vervet.Versio
 
 		if apiConfig.Output != nil {
 			err = docs.WriteOutputs(*apiConfig.Output, appendOutputFiles)
+		for _, doc := range docs {
+			err := doc.ApplyOverlays(ctx, apiConfig.Overlays)
 			if err != nil {
 				return err
 			}
+
+			refResolver := NewRefResolver()
+			err = refResolver.ResolveRefs(doc.Doc)
+			if err != nil {
+				return err
+			}
+
+			err = writer.Write(doc)
+			if err != nil {
+				return err
+			}
+		}
+		err = writer.Finalize()
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -94,7 +109,7 @@ type VersionedDoc struct {
 }
 type DocSet []VersionedDoc
 
-func (ops Operations) Build(startVersion vervet.Version) (DocSet, error) {
+func (ops Operations) Build(startVersion vervet.Version) DocSet {
 	versionDates := ops.VersionDates()
 	versionDates = filterVersionByStartDate(versionDates, startVersion.Date)
 	output := make(DocSet, len(versionDates))
@@ -103,20 +118,15 @@ func (ops Operations) Build(startVersion vervet.Version) (DocSet, error) {
 			Doc:         &openapi3.T{},
 			VersionDate: versionDate,
 		}
-		refResolver := NewRefResolver(output[idx].Doc)
 		for path, spec := range ops {
 			op := spec.GetLatest(versionDate)
 			if op == nil {
 				continue
 			}
 			output[idx].Doc.AddOperation(path.Path, path.Method, op)
-			err := refResolver.Resolve(op)
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
-	return output, nil
+	return output
 }
 
 func filterVersionByStartDate(dates []time.Time, startDate time.Time) []time.Time {

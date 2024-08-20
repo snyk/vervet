@@ -11,18 +11,17 @@ import (
 	"github.com/snyk/vervet/v8/config"
 )
 
-func (docs DocSet) ApplyOverlays(ctx context.Context, cfgs []*config.Overlay) error {
+func (doc VersionedDoc) ApplyOverlays(ctx context.Context, cfgs []*config.Overlay) error {
+	// TODO: cache
 	overlays, err := loadOverlays(ctx, cfgs)
 	if err != nil {
 		return fmt.Errorf("load overlays: %w", err)
 	}
-	for _, doc := range docs {
-		for _, overlay := range overlays {
-			// NB: Will overwrite any existing definitions without warning.
-			err := vervet.Merge(doc.Doc, overlay, true)
-			if err != nil {
-				return fmt.Errorf("apply overlay: %w", err)
-			}
+	for _, overlay := range overlays {
+		// NB: Will overwrite any existing definitions without warning.
+		err := vervet.Merge(doc.Doc, overlay, true)
+		if err != nil {
+			return fmt.Errorf("apply overlay: %w", err)
 		}
 	}
 

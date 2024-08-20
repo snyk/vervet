@@ -80,7 +80,10 @@ func NewDocumentFile(specFile string) (_ *Document, returnErr error) {
 	if err != nil {
 		return nil, err
 	}
-	newRefAliasResolver(&t).resolve()
+	err = newRefAliasResolver(&t).resolve()
+	if err != nil {
+		return nil, err
+	}
 
 	l := openapi3.NewLoader()
 	l.IsExternalRefsAllowed = true

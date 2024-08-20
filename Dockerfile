@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.22.3
+ARG GO_VERSION=1.22.5
 
 ###############
 # Build stage #
