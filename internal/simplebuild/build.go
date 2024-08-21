@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/tufin/oasdiff/checker"
+	"github.com/tufin/oasdiff/diff"
+	"github.com/tufin/oasdiff/load"
 
 	"github.com/snyk/vervet/v8"
 	"github.com/snyk/vervet/v8/config"
@@ -39,6 +42,14 @@ func Build(ctx context.Context, project *config.Project, startDate vervet.Versio
 			return err
 		}
 
+		sortDocsByVersionDate(docs)
+
+		err = CheckBreakingChanges(docs)
+		if err != nil {
+			return err
+		}
+
+		// Process each document
 		for _, doc := range docs {
 			err := doc.ApplyOverlays(ctx, apiConfig.Overlays)
 			if err != nil {
@@ -56,12 +67,25 @@ func Build(ctx context.Context, project *config.Project, startDate vervet.Versio
 				return err
 			}
 		}
+
 		err = writer.Finalize()
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func sortDocsByVersionDate(docs DocSet) {
+	slices.SortFunc(docs, func(a, b VersionedDoc) int {
+		if a.VersionDate.Before(b.VersionDate) {
+			return -1
+		}
+		if a.VersionDate.After(b.VersionDate) {
+			return 1
+		}
+		return 0
+	})
 }
 
 type OpKey struct {
@@ -261,4 +285,32 @@ func (vs VersionSet) Annotate() {
 			}
 		}
 	}
+}
+
+func CheckBreakingChanges(docs DocSet) error {
+	for i := 1; i < len(docs); i++ {
+		prevDoc := docs[i-1]
+		currDoc := docs[i]
+
+		s1 := &load.SpecInfo{Spec: prevDoc.Doc}
+		s2 := &load.SpecInfo{Spec: currDoc.Doc}
+
+		diffReport, sourcesMap, err := diff.GetWithOperationsSourcesMap(diff.NewConfig(), s1, s2)
+		if err != nil {
+			return err
+		}
+		changes := checker.CheckBackwardCompatibilityUntilLevel(
+			checker.GetDefaultChecks(), diffReport, sourcesMap, checker.INFO)
+		breakingChange := false
+		for _, change := range changes {
+			if change.IsBreaking() {
+				breakingChange = true
+			}
+		}
+		if !breakingChange {
+			return fmt.Errorf("no breaking change detected between versions %s and %s: \n %s",
+				prevDoc.VersionDate, currDoc.VersionDate, changes)
+		}
+	}
+	return nil
 }

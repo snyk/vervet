@@ -492,6 +492,75 @@ func TestAnnotate(t *testing.T) {
 	})
 }
 
+func TestCheckBreakingChanges(t *testing.T) {
+	c := qt.New(t)
+
+	c.Run("detects breaking changes between versions", func(c *qt.C) {
+		paths1 := openapi3.Paths{}
+		paths1.Set("/foo", &openapi3.PathItem{
+			Get: &openapi3.Operation{},
+		})
+
+		paths2 := openapi3.Paths{}
+		paths2.Set("/foo", &openapi3.PathItem{
+			Post: &openapi3.Operation{},
+		})
+
+		doc1 := &openapi3.T{
+			Paths: &paths1,
+		}
+		doc2 := &openapi3.T{
+			Paths: &paths2,
+		}
+
+		docs := simplebuild.DocSet{
+			{
+				VersionDate: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				Doc:         doc1,
+			},
+			{
+				VersionDate: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				Doc:         doc2,
+			},
+		}
+
+		err := simplebuild.CheckBreakingChanges(docs)
+		c.Assert(err, qt.IsNil, qt.Commentf("expected breaking change to be detected"))
+	})
+
+	c.Run("no breaking changes between versions", func(c *qt.C) {
+		paths1 := openapi3.Paths{}
+		paths1.Set("/foo", &openapi3.PathItem{
+			Get: &openapi3.Operation{},
+		})
+
+		paths2 := openapi3.Paths{}
+		paths2.Set("/foo", &openapi3.PathItem{
+			Get: &openapi3.Operation{},
+		})
+
+		doc1 := &openapi3.T{
+			Paths: &paths1,
+		}
+		doc2 := &openapi3.T{
+			Paths: &paths2,
+		}
+
+		docs := simplebuild.DocSet{
+			{
+				VersionDate: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				Doc:         doc1,
+			},
+			{
+				VersionDate: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				Doc:         doc2,
+			},
+		}
+
+		err := simplebuild.CheckBreakingChanges(docs)
+		c.Assert(err, qt.Not(qt.IsNil), qt.Commentf("expected no breaking changes"))
+	})
+}
 func compareDocs(a, b simplebuild.VersionedDoc) int {
 	return a.VersionDate.Compare(b.VersionDate)
 }
