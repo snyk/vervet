@@ -177,7 +177,7 @@ func overrideSunsetHeader(doc *openapi3.T) {
 		}
 	}
 
-	if doc.Components.Headers["sunsetHeader"] != nil {
+	if doc.Components != nil && doc.Components.Headers["sunsetHeader"] != nil {
 		if doc.Components.Headers["sunsetHeader"].Value == nil {
 			return
 		}
