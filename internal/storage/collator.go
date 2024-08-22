@@ -131,6 +131,10 @@ func (c *Collator) Collate() (map[vervet.Version]openapi3.T, error) {
 				collatorMergeError.WithLabelValues(version.String()).Inc()
 				return nil, err
 			}
+
+			// Overrides sunset header documentation until we can provide a more definitive fix
+			overrideSunsetHeader(spec)
+
 			if err := c.applyOverlay(spec); err != nil {
 				log.Error().Err(err).Msgf("failed to merge overlay for version %s", version)
 				collatorMergeError.WithLabelValues(version.String()).Inc()
@@ -141,6 +145,44 @@ func (c *Collator) Collate() (map[vervet.Version]openapi3.T, error) {
 	}
 
 	return specs, nil
+}
+
+func overrideSunsetHeader(doc *openapi3.T) {
+	const headerDescription = "A header containing the date of when the underlying endpoint will be removed. " +
+		"This header is only present if the endpoint has been deprecated. " +
+		"For information purposes only. " +
+		"Returned as a date in the format: YYYY-MM-DD"
+	const example = "2021-08-02"
+	const schemaFormat = "date"
+
+	for _, path := range doc.Paths.Map() {
+		for _, operation := range path.Operations() {
+			for _, responses := range operation.Responses.Map() {
+				if responses.Value == nil {
+					continue
+				}
+				if responses.Value.Headers["sunset"] != nil {
+					if responses.Value.Headers["sunset"].Value == nil {
+						continue
+					}
+					responses.Value.Headers["sunset"].Value.Description = headerDescription
+
+					if responses.Value.Headers["sunset"].Value.Schema.Value == nil {
+						continue
+					}
+					responses.Value.Headers["sunset"].Value.Example = example
+					responses.Value.Headers["sunset"].Value.Schema.Value.Format = schemaFormat
+				}
+			}
+		}
+	}
+
+	if doc.Components.Headers["sunsetHeader"] != nil {
+		if doc.Components.Headers["sunsetHeader"].Value == nil {
+			return
+		}
+		doc.Components.Headers["SunsetHeader"].Value.Description = headerDescription
+	}
 }
 
 func mergeRevisions(revisions ContentRevisions) (*openapi3.T, error) {

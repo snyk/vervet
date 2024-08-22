@@ -294,7 +294,8 @@ var Versions embed.FS
 func (c *Compiler) BuildAll(ctx context.Context, stopVersion vervet.Version) error {
 	var errs error
 	for apiName := range c.apis {
-		err := c.Build(apiName, stopVersion) //nolint:contextcheck // TODO: fix contextcheck in separate PR
+		err := c.Build(apiName, stopVersion) //nolint:contextcheck
+		// TODO: fix contextcheck in separate PR
 		if err != nil {
 			errs = multierr.Append(errs, err)
 		}
