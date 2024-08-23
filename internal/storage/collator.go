@@ -161,27 +161,28 @@ func overrideSunsetHeader(doc *openapi3.T) {
 				if responses.Value == nil {
 					continue
 				}
-				if responses.Value.Headers["sunset"] != nil {
-					if responses.Value.Headers["sunset"].Value == nil {
-						continue
-					}
-					responses.Value.Headers["sunset"].Value.Description = headerDescription
 
-					if responses.Value.Headers["sunset"].Value.Schema.Value == nil {
+				if sunsetHeader, ok := responses.Value.Headers["sunset"]; ok {
+					if sunsetHeader.Value == nil {
 						continue
 					}
-					responses.Value.Headers["sunset"].Value.Example = example
-					responses.Value.Headers["sunset"].Value.Schema.Value.Format = schemaFormat
+					sunsetHeader.Value.Description = headerDescription
+					sunsetHeader.Value.Example = example
+					if sunsetHeader.Value.Schema.Value == nil {
+						continue
+					}
+					sunsetHeader.Value.Schema.Value.Format = schemaFormat
 				}
 			}
 		}
 	}
-
-	if doc.Components != nil && doc.Components.Headers["sunsetHeader"] != nil {
-		if doc.Components.Headers["sunsetHeader"].Value == nil {
-			return
+	if doc.Components != nil {
+		if sunsetHeader, ok := doc.Components.Headers["SunsetHeader"]; ok {
+			if sunsetHeader.Value == nil {
+				return
+			}
+			sunsetHeader.Value.Description = headerDescription
 		}
-		doc.Components.Headers["SunsetHeader"].Value.Description = headerDescription
 	}
 }
 
