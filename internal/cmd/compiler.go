@@ -13,7 +13,10 @@ import (
 )
 
 var defaultPivotDate = vervet.MustParseVersion("2024-09-01")
+var defaultVersioningUrl = "https://api.snyk.io/rest/openapi"
+
 var pivotDateCLIFlagName = "pivot-version"
+var versioningUrlCLIFlagName = "versioning-url"
 
 var buildFlags = []cli.Flag{
 	&cli.StringFlag{
@@ -33,6 +36,12 @@ var buildFlags = []cli.Flag{
 			"Pivot version after which new strategy versioning is used."+
 				" Flag for testing only, recommend to use the default date(%s)", defaultPivotDate.String()),
 		Value: defaultPivotDate.String(),
+	},
+	&cli.StringFlag{
+		Name:    versioningUrlCLIFlagName,
+		Aliases: []string{"U"},
+		Usage:   fmt.Sprintf("URL to fetch versioning information. Default is %q", defaultVersioningUrl),
+		Value:   defaultVersioningUrl,
 	},
 }
 
@@ -73,7 +82,9 @@ func SimpleBuild(ctx *cli.Context) error {
 		return fmt.Errorf("failed to parse pivot date %q: %w", pivotDate, err)
 	}
 
-	err = simplebuild.Build(ctx.Context, project, pivotDate, false)
+	versioningURL := ctx.String(versioningUrlCLIFlagName)
+
+	err = simplebuild.Build(ctx.Context, project, pivotDate, versioningURL, false)
 	return err
 }
 
@@ -89,6 +100,8 @@ func CombinedBuild(ctx *cli.Context) error {
 		return fmt.Errorf("failed to parse pivot date %q: %w", pivotDate, err)
 	}
 
+	versioningURL := ctx.String(versioningUrlCLIFlagName)
+
 	comp, err := compiler.New(ctx.Context, project)
 	if err != nil {
 		return err
@@ -98,7 +111,7 @@ func CombinedBuild(ctx *cli.Context) error {
 		return err
 	}
 
-	return simplebuild.Build(ctx.Context, project, pivotDate, true)
+	return simplebuild.Build(ctx.Context, project, pivotDate, versioningURL, true)
 }
 
 func parsePivotDate(ctx *cli.Context) (vervet.Version, error) {
