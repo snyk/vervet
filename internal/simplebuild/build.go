@@ -406,7 +406,6 @@ func CheckSingleVersionResourceToBeBeforeLatestVersion(paths []string, latestVer
 					latestVersion.Date.Format("2006-01-02"),
 					latestVersion.Date.Format("2006-01-02"),
 				)
-
 			}
 		}
 	}
