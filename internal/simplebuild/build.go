@@ -52,7 +52,7 @@ func Build(
 				return err
 			}
 
-			if err := CheckSingleVersionResource(paths, latestVersion); err != nil {
+			if err := CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion); err != nil {
 				return err
 			}
 		}
@@ -381,7 +381,7 @@ func fetchLatestVersion(versioningURL string) (vervet.Version, error) {
 	return latestVersion, nil
 }
 
-func CheckSingleVersionResource(paths []string, latestVersion vervet.Version) error {
+func CheckSingleVersionResourceToBeBeforeLatestVersion(paths []string, latestVersion vervet.Version) error {
 	resourceVersions := make(map[string][]string)
 
 	for _, path := range paths {
@@ -399,8 +399,8 @@ func CheckSingleVersionResource(paths []string, latestVersion vervet.Version) er
 			}
 
 			if version.Date.After(latestVersion.Date) {
-				return fmt.Errorf("version %s is after the last released version %s",
-					version.Date.Format("2006-01-02"), latestVersion.Date.Format("2006-01-02"))
+				return fmt.Errorf("version %s is after the last released version of the global API %s. Please change the version date to be before %s or at the same date",
+					version.Date.Format("2006-01-02"), latestVersion.Date.Format("2006-01-02"), latestVersion.Date.Format("2006-01-02"))
 			}
 		}
 	}

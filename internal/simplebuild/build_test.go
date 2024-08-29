@@ -571,7 +571,7 @@ func TestCheckSingleVersionResource(t *testing.T) {
 		}
 		latestVersion := vervet.MustParseVersion("2024-01-01")
 
-		err := simplebuild.CheckSingleVersionResource(paths, latestVersion)
+		err := simplebuild.CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion)
 		c.Assert(err, qt.IsNil)
 	})
 
@@ -581,7 +581,7 @@ func TestCheckSingleVersionResource(t *testing.T) {
 		}
 		latestVersion := vervet.MustParseVersion("2024-01-01")
 
-		err := simplebuild.CheckSingleVersionResource(paths, latestVersion)
+		err := simplebuild.CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion)
 		c.Assert(err, qt.ErrorMatches, "version .* is after the last released version .*")
 	})
 
@@ -592,7 +592,7 @@ func TestCheckSingleVersionResource(t *testing.T) {
 		}
 		latestVersion := vervet.MustParseVersion("2024-01-01")
 
-		err := simplebuild.CheckSingleVersionResource(paths, latestVersion)
+		err := simplebuild.CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion)
 		c.Assert(err, qt.IsNil)
 	})
 
@@ -602,7 +602,7 @@ func TestCheckSingleVersionResource(t *testing.T) {
 		}
 		latestVersion := vervet.MustParseVersion("2024-01-01")
 
-		err := simplebuild.CheckSingleVersionResource(paths, latestVersion)
+		err := simplebuild.CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion)
 		c.Assert(err, qt.ErrorMatches, "invalid version .*")
 	})
 }
