@@ -12,7 +12,7 @@ import (
 	"github.com/snyk/vervet/v7/internal/simplebuild"
 )
 
-var defaultPivotDate = vervet.MustParseVersion("2024-09-01")
+var defaultPivotDate = vervet.MustParseVersion("2024-10-01")
 var pivotDateCLIFlagName = "pivot-version"
 
 var buildFlags = []cli.Flag{
