@@ -399,8 +399,14 @@ func CheckSingleVersionResourceToBeBeforeLatestVersion(paths []string, latestVer
 			}
 
 			if version.Date.After(latestVersion.Date) {
-				return fmt.Errorf("version %s is after the last released version of the global API %s. Please change the version date to be before %s or at the same date",
-					version.Date.Format("2006-01-02"), latestVersion.Date.Format("2006-01-02"), latestVersion.Date.Format("2006-01-02"))
+				return fmt.Errorf(
+					"version %s is after the last released version of the global API %s. "+
+						"Please change the version date to be before %s or at the same date",
+					version.Date.Format("2006-01-02"),
+					latestVersion.Date.Format("2006-01-02"),
+					latestVersion.Date.Format("2006-01-02"),
+				)
+
 			}
 		}
 	}
