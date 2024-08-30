@@ -561,6 +561,52 @@ func TestCheckBreakingChanges(t *testing.T) {
 		c.Assert(err, qt.Not(qt.IsNil), qt.Commentf("expected no breaking changes"))
 	})
 }
+
+func TestCheckSingleVersionResource(t *testing.T) {
+	c := qt.New(t)
+
+	c.Run("no error when version is before or equal to the latest version", func(c *qt.C) {
+		paths := []string{
+			"internal/api/hidden/resources/apps/2023-07-31/spec.yaml",
+		}
+		latestVersion := vervet.MustParseVersion("2024-01-01")
+
+		err := simplebuild.CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion)
+		c.Assert(err, qt.IsNil)
+	})
+
+	c.Run("error when version is after the latest version", func(c *qt.C) {
+		paths := []string{
+			"internal/api/hidden/resources/apps/2025-07-31/spec.yaml",
+		}
+		latestVersion := vervet.MustParseVersion("2024-01-01")
+
+		err := simplebuild.CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion)
+		c.Assert(err, qt.ErrorMatches, "version .* is after the last released version .*")
+	})
+
+	c.Run("no error when multiple versions are present", func(c *qt.C) {
+		paths := []string{
+			"internal/api/hidden/resources/apps/2023-07-31/spec.yaml",
+			"internal/api/hidden/resources/apps/2024-01-01/spec.yaml",
+		}
+		latestVersion := vervet.MustParseVersion("2024-01-01")
+
+		err := simplebuild.CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion)
+		c.Assert(err, qt.IsNil)
+	})
+
+	c.Run("handles version parsing error gracefully", func(c *qt.C) {
+		paths := []string{
+			"internal/api/hidden/resources/apps/invalid-version/spec.yaml",
+		}
+		latestVersion := vervet.MustParseVersion("2024-01-01")
+
+		err := simplebuild.CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion)
+		c.Assert(err, qt.ErrorMatches, "invalid version .*")
+	})
+}
+
 func compareDocs(a, b simplebuild.VersionedDoc) int {
 	return a.VersionDate.Compare(b.VersionDate)
 }
