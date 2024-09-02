@@ -2,9 +2,14 @@ package simplebuild
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"path/filepath"
 	"slices"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -19,14 +24,37 @@ import (
 
 // Build compiles the versioned resources in a project configuration based on
 // simplified versioning rules, after the start date.
-func Build(ctx context.Context, project *config.Project, startDate vervet.Version, appendOutputFiles bool) error {
+func Build(
+	ctx context.Context,
+	project *config.Project,
+	startDate vervet.Version,
+	versioningUrl string,
+	appendOutputFiles bool,
+) error {
 	if time.Now().Before(startDate.Date) {
 		return nil
 	}
+
+	latestVersion, err := fetchLatestVersion(versioningUrl)
+	if err != nil {
+		return err
+	}
+
 	for _, apiConfig := range project.APIs {
 		if apiConfig.Output == nil {
 			fmt.Printf("No output specified for %s, skipping\n", apiConfig.Name)
 			continue
+		}
+
+		for _, resource := range apiConfig.Resources {
+			paths, err := ResourceSpecFiles(resource)
+			if err != nil {
+				return err
+			}
+
+			if err := CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion); err != nil {
+				return err
+			}
 		}
 
 		operations, err := LoadPaths(ctx, apiConfig)
@@ -310,6 +338,75 @@ func CheckBreakingChanges(docs DocSet) error {
 		if !breakingChange {
 			return fmt.Errorf("no breaking change detected between versions %s and %s: \n %s",
 				prevDoc.VersionDate, currDoc.VersionDate, changes)
+		}
+	}
+	return nil
+}
+
+func fetchLatestVersion(versioningURL string) (vervet.Version, error) {
+	resp, err := http.Get(versioningURL)
+	if err != nil {
+		return vervet.Version{}, fmt.Errorf("failed to fetch versioning information from %q: %w", versioningURL, err)
+	}
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("failed to close response body")
+		}
+	}(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return vervet.Version{}, fmt.Errorf("failed to fetch versioning information, status code: %d", resp.StatusCode)
+	}
+
+	var versions []string
+	if err := json.NewDecoder(resp.Body).Decode(&versions); err != nil {
+		return vervet.Version{}, fmt.Errorf("failed to parse versioning information: %w", err)
+	}
+
+	var dates = make([]string, 0, len(versions))
+
+	for _, version := range versions {
+		parts := strings.Split(version, "~")
+		dates = append(dates, parts[0])
+	}
+	sort.Strings(dates)
+
+	latestVersion, err := vervet.ParseVersion(dates[len(dates)-1])
+	if err != nil {
+		return vervet.Version{}, fmt.Errorf("failed to parse latest version date %q: %w", dates[len(dates)-1], err)
+	}
+
+	return latestVersion, nil
+}
+
+func CheckSingleVersionResourceToBeBeforeLatestVersion(paths []string, latestVersion vervet.Version) error {
+	resourceVersions := make(map[string][]string)
+
+	for _, path := range paths {
+		resourceDir := filepath.Dir(filepath.Dir(path))
+		versionDir := filepath.Base(filepath.Dir(path))
+		resourceVersions[resourceDir] = append(resourceVersions[resourceDir], versionDir)
+	}
+
+	for _, versions := range resourceVersions {
+		if len(versions) == 1 {
+			versionStr := versions[0]
+			version, err := vervet.ParseVersion(versionStr)
+			if err != nil {
+				return fmt.Errorf("invalid version %q", versionStr)
+			}
+
+			if version.Date.After(latestVersion.Date) {
+				return fmt.Errorf(
+					"version %s is after the last released version of the global API %s. "+
+						"Please change the version date to be before %s or at the same date",
+					version.Date.Format("2006-01-02"),
+					latestVersion.Date.Format("2006-01-02"),
+					latestVersion.Date.Format("2006-01-02"),
+				)
+			}
 		}
 	}
 	return nil
