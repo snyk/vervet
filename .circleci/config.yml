@@ -23,12 +23,14 @@ ignore_main_branch_filter: &ignore_main_branch_filter
     branches:
       ignore:
         - main
+        - v7
 
 only_main_branch_filter: &only_main_branch_filter
   filters:
     branches:
       only:
         - main
+        - v7
 
 commands:
   gcr_auth:
