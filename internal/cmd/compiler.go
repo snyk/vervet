@@ -12,7 +12,7 @@ import (
 	"github.com/snyk/vervet/v8/internal/simplebuild"
 )
 
-var defaultPivotDate = vervet.MustParseVersion("2024-10-01")
+var defaultPivotDate = vervet.MustParseVersion("2024-10-15")
 var defaultVersioningUrl = "https://api.snyk.io/rest/openapi"
 
 var pivotDateCLIFlagName = "pivot-version"
