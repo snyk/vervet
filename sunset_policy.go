@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// https://github.com/snyk/sweater-comb/blob/main/docs/version.md#stability-levels
+// https://github.com/snyk/sweater-comb/blob/main/docs/principles/version.md
 var VersionSunsetPolicy = map[Stability]time.Duration{
 	StabilityGA:           180 * 24 * time.Hour,
 	StabilityBeta:         90 * 24 * time.Hour,
