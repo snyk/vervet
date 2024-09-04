@@ -239,7 +239,7 @@ func deref(path []string, field, value reflect.Value, renames map[string]string)
 		// If the component is the same as the one we have already then it
 		// isn't a problem, we can merge them.
 		for !isZero(nextField) && !vervet.ComponentsEqual(nextField.Interface(), value.Interface()) {
-			newName = fmt.Sprintf("%s~%d", prevName, suffix)
+			newName = fmt.Sprintf("%s__%d", prevName, suffix)
 			nextField, err = getField(newName, field)
 			if err != nil {
 				return nil, fmt.Errorf("renaming ref: %w", err)
