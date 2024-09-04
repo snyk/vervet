@@ -27,6 +27,14 @@ var BackstageCommand = cli.Command{
 				Aliases: []string{"c", "conf"},
 				Usage:   "Project configuration file",
 			},
+			&cli.StringFlag{
+				Name:    pivotDateCLIFlagName,
+				Aliases: []string{"P"},
+				Usage: fmt.Sprintf(
+					"Pivot version after which new strategy versioning is used."+
+						" Flag for testing only, recommend to use the default date(%s)", defaultPivotDate.String()),
+				Value: defaultPivotDate.String(),
+			},
 		},
 		Action: UpdateCatalog,
 	}, {
@@ -37,6 +45,14 @@ var BackstageCommand = cli.Command{
 				Name:    "config",
 				Aliases: []string{"c", "conf"},
 				Usage:   "Project configuration file",
+			},
+			&cli.StringFlag{
+				Name:    pivotDateCLIFlagName,
+				Aliases: []string{"P"},
+				Usage: fmt.Sprintf(
+					"Pivot version after which new strategy versioning is used."+
+						" Flag for testing only, recommend to use the default date(%s)", defaultPivotDate.String()),
+				Value: defaultPivotDate.String(),
 			},
 		},
 		Action: PreviewCatalog,
@@ -121,6 +137,11 @@ func processCatalog(ctx *cli.Context, w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	pivotDate, err := parsePivotDate(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to parse pivot date %q: %w", pivotDate, err)
+	}
+
 	f, err := os.Open(configFile)
 	if err != nil {
 		return err
@@ -172,7 +193,7 @@ func processCatalog(ctx *cli.Context, w io.Writer) error {
 		for _, outputPath := range outputPaths {
 			outputPath = filepath.Join(projectDir, outputPath)
 			if matchPath(outputPath) {
-				if err := catalogInfo.LoadVervetAPIs(projectDir, outputPath); err != nil {
+				if err := catalogInfo.LoadVervetAPIs(projectDir, outputPath, pivotDate.Date); err != nil {
 					return err
 				}
 				break
