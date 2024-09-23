@@ -138,7 +138,8 @@ type VersionedDoc struct {
 type DocSet []VersionedDoc
 
 func (ops Operations) Build(startVersion vervet.Version) DocSet {
-	versionDates := ops.VersionDates()
+	filteredOps := filterOutExperimentalVersions(ops)
+	versionDates := filteredOps.VersionDates()
 	versionDates = filterVersionByStartDate(versionDates, startVersion.Date)
 	output := make(DocSet, len(versionDates))
 	for idx, versionDate := range versionDates {
@@ -146,7 +147,7 @@ func (ops Operations) Build(startVersion vervet.Version) DocSet {
 			Doc:         &openapi3.T{},
 			VersionDate: versionDate,
 		}
-		for path, spec := range ops {
+		for path, spec := range filteredOps {
 			op := spec.GetLatest(versionDate)
 			if op == nil {
 				continue
@@ -155,6 +156,23 @@ func (ops Operations) Build(startVersion vervet.Version) DocSet {
 		}
 	}
 	return output
+}
+
+func filterOutExperimentalVersions(ops Operations) Operations {
+	filteredOps := make(Operations, len(ops))
+	for opKey, versionSet := range ops {
+		filteredVersionSet := VersionSet{}
+		for _, versionedOp := range versionSet {
+			if versionedOp.Version.Stability == vervet.StabilityExperimental {
+				continue
+			}
+			filteredVersionSet = append(filteredVersionSet, versionedOp)
+		}
+		if len(filteredVersionSet) != 0 {
+			filteredOps[opKey] = filteredVersionSet
+		}
+	}
+	return filteredOps
 }
 
 func filterVersionByStartDate(dates []time.Time, startDate time.Time) []time.Time {

@@ -394,6 +394,83 @@ func TestBuild(t *testing.T) {
 		c.Assert(output[2].Doc.Paths.Value("/foo").Post, qt.Equals, postFoo)
 		c.Assert(output[2].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
 	})
+
+	c.Run("experimental version are filtered out", func(c *qt.C) {
+		versionBetaA := vervet.MustParseVersion("2024-01-01~beta")
+		versionGA := vervet.MustParseVersion("2024-01-02")
+		versionBetaB := vervet.MustParseVersion("2024-01-03~beta")
+		versionExperimental := vervet.MustParseVersion("2024-01-04~experimental")
+		versionExperimentalBeforePivotDate := vervet.MustParseVersion("2023-01-01~experimental")
+
+		getFoo := openapi3.NewOperation()
+		postFoo := openapi3.NewOperation()
+		getBar := openapi3.NewOperation()
+
+		ops := simplebuild.Operations{
+			simplebuild.OpKey{
+				Path:   "/foo",
+				Method: "GET",
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionGA,
+				Operation:    getFoo,
+				ResourceName: "foo",
+			}},
+			simplebuild.OpKey{
+				Path:   "/foo",
+				Method: "POST",
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionBetaB,
+				Operation:    postFoo,
+				ResourceName: "foo",
+			}},
+			simplebuild.OpKey{
+				Path:   "/bar",
+				Method: "GET",
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionBetaA,
+				Operation:    getBar,
+				ResourceName: "bar",
+			}},
+			simplebuild.OpKey{
+				Path:   "/experimental-path",
+				Method: "GET",
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionExperimental,
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "experimental-path",
+			}},
+			simplebuild.OpKey{
+				Path:   "/experimental-path-before-pivot-date",
+				Method: "GET",
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      versionExperimentalBeforePivotDate,
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "experimental-path-before-pivot-date",
+			}},
+		}
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+
+		slices.SortFunc(output, compareDocs)
+
+		c.Assert(output, qt.HasLen, 3)
+
+		c.Assert(output[0].VersionDate, qt.Equals, versionBetaA.Date)
+		c.Assert(output[0].Doc.Paths.Value("/foo"), qt.IsNil)
+		c.Assert(output[0].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
+		c.Assert(output[0].Doc.Paths.Value("/experimental-path-before-pivot-date"), qt.IsNil)
+
+		c.Assert(output[1].VersionDate, qt.Equals, versionGA.Date)
+		c.Assert(output[1].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
+		c.Assert(output[1].Doc.Paths.Value("/foo").Post, qt.IsNil)
+		c.Assert(output[0].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
+
+		c.Assert(output[2].VersionDate, qt.Equals, versionBetaB.Date)
+		c.Assert(output[2].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
+		c.Assert(output[2].Doc.Paths.Value("/foo").Post, qt.Equals, postFoo)
+		c.Assert(output[2].Doc.Paths.Value("/bar").Get, qt.Equals, getBar)
+		c.Assert(output[2].Doc.Paths.Value("/experimental-path-before-pivot-date"), qt.IsNil)
+		c.Assert(output[2].Doc.Paths.Value("/experimental-path"), qt.IsNil)
+	})
 }
 
 func TestAnnotate(t *testing.T) {
