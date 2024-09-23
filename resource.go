@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/hairyhenderson/go-codeowners"
 	"golang.org/x/exp/maps"
 )
 
@@ -32,6 +34,10 @@ const (
 	// with its resolved release version. It is also used to identify the
 	// overall version of the compiled spec at the document level.
 	ExtSnykApiVersion = "x-snyk-api-version"
+
+	// ExtSnykApiOwner is used to annotate an operation in a compiled OpenAPI spec
+	// with the owners of the operation. This is useful to get to the owning github team.
+	ExtSnykApiOwner = "x-snyk-api-owners"
 
 	// ExtSnykApiReleases is used to annotate a path in a compiled OpenAPI spec
 	// with all the release versions containing a change in the path info. This
@@ -208,7 +214,14 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 		path, operation string
 	}
 	opReleases := map[operationKey]VersionSlice{}
-
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	ownerFinder, err := codeowners.FromFile(cwd)
+	if err != nil {
+		return nil, err
+	}
 	for i := range specYamls {
 		specYamls[i], err = filepath.Abs(specYamls[i])
 		if err != nil {
@@ -238,6 +251,7 @@ func LoadResourceVersionsFileset(specYamls []string) (*ResourceVersions, error) 
 						op.Extensions = make(map[string]any)
 					}
 					op.Extensions[ExtSnykApiVersion] = rc.Version.String()
+					op.Extensions[ExtSnykApiOwner] = ownerFinder.Owners(specYamls[i])
 					opKey := operationKey{path, opName}
 					opReleases[opKey] = append(opReleases[opKey], rc.Version)
 				}
