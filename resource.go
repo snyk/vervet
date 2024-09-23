@@ -19,6 +19,10 @@ const (
 	// spec with its API release stability level.
 	ExtSnykApiStability = "x-snyk-api-stability"
 
+	// ExtApiStability is used to annotate a path in a compiled OpenAPI spec
+	// with its API release stability level.
+	ExtApiStabilityLevel = "x-stability-level"
+
 	// ExtSnykApiLifecycle is used to annotate compiled OpenAPI with lifecycle
 	// stage: releases, deprecated or sunset. It is applied at the top-level as
 	// well as per-operation.
