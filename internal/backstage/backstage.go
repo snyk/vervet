@@ -178,7 +178,7 @@ func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
 
 // LoadVervetAPIs loads all the compiled versioned OpenAPI specs and adds them
 // to the catalog as API components.
-func (c *CatalogInfo) LoadVervetAPIs(root, versions string) error {
+func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time) error {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return err
@@ -202,7 +202,7 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string) error {
 		if err != nil {
 			return err
 		}
-		api, err := c.vervetAPI(doc, root)
+		api, err := c.vervetAPI(doc, root, pivotDate)
 		if err != nil {
 			return err
 		}
@@ -252,51 +252,65 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string) error {
 }
 
 // vervetAPI adds an OpenAPI spec document to the catalog.
-func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string) (*API, error) {
+func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate time.Time) (*API, error) {
 	version, err := doc.Version()
 	if err != nil {
 		return nil, err
 	}
-	lifecycle := version.LifecycleAt(time.Time{})
 	ref, err := filepath.Rel(root, doc.Location().String())
 	if err != nil {
 		return nil, err
 	}
-	var backstageLifecycle string
-	if lifecycle == vervet.LifecycleReleased {
-		backstageLifecycle = version.Stability.String()
-	} else {
-		backstageLifecycle = lifecycle.String()
+
+	name := toBackstageName(doc.Info.Title) + "_" + version.DateString()
+	title := doc.Info.Title + " " + version.DateString()
+	labels := map[string]string{
+		snykApiVersionDate: version.DateString(),
 	}
+	tags := []string{version.Date.Format("2006-01")}
+	spec := APISpec{
+		Type:      "openapi",
+		Owner:     c.serviceComponent.Spec.Owner,
+		Lifecycle: "production",
+		Definition: DefinitionRef{
+			Text: ref,
+		},
+	}
+
+	// Specs generated after the pivot date have per operation stability, so
+	// there is no global stability for the whole document. To preserve
+	// backwards compatibility we still output metadata for the older specs.
+	if version.Date.Before(pivotDate) {
+		lifecycle := version.LifecycleAt(time.Time{})
+		var backstageLifecycle string
+		if lifecycle == vervet.LifecycleReleased {
+			backstageLifecycle = version.Stability.String()
+		} else {
+			backstageLifecycle = lifecycle.String()
+		}
+
+		name = name + "_" + version.Stability.String()
+		title = title + " " + version.Stability.String()
+		labels[snykApiStability] = version.Stability.String()
+		labels[snykApiLifecycle] = lifecycle.String()
+		tags = append(tags, version.Stability.String(), lifecycle.String())
+		spec.Lifecycle = backstageLifecycle
+	}
+
 	return &API{
 		APIVersion: backstageVersion,
 		Kind:       "API",
 		Metadata: Metadata{
-			Name:        toBackstageName(doc.Info.Title) + "_" + version.DateString() + "_" + version.Stability.String(),
-			Title:       doc.Info.Title + " " + version.DateString() + " " + version.Stability.String(),
+			Name:        name,
+			Title:       title,
 			Description: doc.Info.Description,
-			Labels: map[string]string{
-				snykApiVersionDate: version.DateString(),
-				snykApiStability:   version.Stability.String(),
-				snykApiLifecycle:   lifecycle.String(),
-			},
-			Tags: []string{
-				version.Date.Format("2006-01"),
-				version.Stability.String(),
-				lifecycle.String(),
-			},
+			Labels:      labels,
+			Tags:        tags,
 			Annotations: map[string]string{
 				snykApiGeneratedBy: "vervet",
 			},
 		},
-		Spec: APISpec{
-			Type:      "openapi",
-			Lifecycle: backstageLifecycle,
-			Owner:     c.serviceComponent.Spec.Owner,
-			Definition: DefinitionRef{
-				Text: ref,
-			},
-		},
+		Spec: spec,
 	}, nil
 }
 

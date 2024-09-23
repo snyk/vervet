@@ -84,6 +84,8 @@ func Build(
 				return err
 			}
 
+			doc.Doc.Extensions[vervet.ExtSnykApiVersion] = doc.VersionDate.Format(time.DateOnly)
+
 			refResolver := NewRefResolver()
 			err = refResolver.ResolveRefs(doc.Doc)
 			if err != nil {

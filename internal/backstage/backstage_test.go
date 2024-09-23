@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"testing"
+	"time"
 
 	qt "github.com/frankban/quicktest"
 
@@ -114,7 +115,7 @@ func TestLoadVersionsNoApis(t *testing.T) {
 	catalog, err := LoadCatalogInfo(bytes.NewBufferString(catalogSrc))
 	c.Assert(err, qt.IsNil)
 	versionsRoot := testdata.Path("output")
-	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot)
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC))
 	c.Assert(err, qt.IsNil)
 
 	var saveOutput bytes.Buffer
@@ -146,7 +147,7 @@ func TestLoadVersionsSomeApis(t *testing.T) {
 `[1:]))
 	c.Assert(err, qt.IsNil)
 	versionsRoot := testdata.Path("output")
-	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot)
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC))
 	c.Assert(err, qt.IsNil)
 
 	var saveOutput bytes.Buffer
@@ -164,6 +165,34 @@ func TestLoadVersionsSomeApis(t *testing.T) {
     - Registry_2023-06-02_experimental
     - Registry_2023-06-03_experimental
     - someOtherApi
+---
+`[1:]+string(vervetAPIs))
+}
+
+func TestDoesNotOutputStabilitiesAfterPivotDate(t *testing.T) {
+	c := qt.New(t)
+	vervetAPIs, err := os.ReadFile(testdata.Path("catalog-vervet-apis-with-pivot.yaml"))
+	c.Assert(err, qt.IsNil)
+	catalog, err := LoadCatalogInfo(bytes.NewBufferString(catalogSrc))
+	c.Assert(err, qt.IsNil)
+	versionsRoot := testdata.Path("output")
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC))
+	c.Assert(err, qt.IsNil)
+
+	var saveOutput bytes.Buffer
+	err = catalog.Save(&saveOutput)
+	c.Assert(err, qt.IsNil)
+	c.Assert(saveOutput.String(), qt.Equals, catalogSrc+`
+  providesApis:
+    - Registry_2021-06-01_experimental
+    - Registry_2021-06-04_experimental
+    - Registry_2021-06-07_experimental
+    - Registry_2021-06-13_beta
+    - Registry_2021-06-13_experimental
+    - Registry_2021-08-20_experimental
+    - Registry_2023-06-01
+    - Registry_2023-06-02
+    - Registry_2023-06-03
 ---
 `[1:]+string(vervetAPIs))
 }
