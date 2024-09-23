@@ -300,11 +300,8 @@ func (vs VersionSet) Annotate() {
 		op.Operation.Extensions[vervet.ExtSnykApiVersion] = op.Version.String()
 		op.Operation.Extensions[vervet.ExtSnykApiReleases] = releases
 		op.Operation.Extensions[vervet.ExtSnykApiLifecycle] = op.Version.LifecycleAt(time.Time{}).String()
-
-		if op.Version.Stability == vervet.StabilityBeta {
-			op.Operation.Extensions[vervet.ExtApiStabilityLevel] = "beta"
-			op.Operation.Extensions[vervet.ExtSnykApiStability] = "beta"
-		}
+		op.Operation.Extensions[vervet.ExtApiStabilityLevel] = op.Version.Stability.String()
+		op.Operation.Extensions[vervet.ExtSnykApiStability] = op.Version.Stability.String()
 
 		if idx < (count - 1) {
 			laterVersion := vs[idx+1].Version

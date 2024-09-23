@@ -465,7 +465,6 @@ func TestAnnotate(t *testing.T) {
 			[]string{"2024-01-01", "2024-02-01~beta", "2024-03-01"},
 		)
 
-		// Check stability level for beta version
 		c.Assert(vs[1].Operation.Extensions[vervet.ExtApiStabilityLevel], qt.Equals, "beta")
 		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykApiStability], qt.Equals, "beta")
 	})
@@ -498,7 +497,6 @@ func TestAnnotate(t *testing.T) {
 		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykDeprecatedBy], qt.IsNil)
 		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykSunsetEligible], qt.IsNil)
 
-		// Check stability level for beta version
 		c.Assert(vs[0].Operation.Extensions["x-stability-level"], qt.Equals, "beta")
 		c.Assert(vs[0].Operation.Extensions["x-snyk-api-stability"], qt.Equals, "beta")
 	})
