@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/hairyhenderson/go-codeowners"
 	"github.com/tufin/oasdiff/checker"
 	"github.com/tufin/oasdiff/diff"
 	"github.com/tufin/oasdiff/load"
@@ -84,6 +86,9 @@ func Build(
 				return err
 			}
 
+			if doc.Doc.Extensions == nil {
+				doc.Doc.Extensions = make(map[string]interface{})
+			}
 			doc.Doc.Extensions[vervet.ExtSnykApiVersion] = doc.VersionDate.Format(time.DateOnly)
 
 			refResolver := NewRefResolver()
@@ -205,6 +210,14 @@ func (ops Operations) VersionDates() []time.Time {
 
 func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 	operations := map[OpKey]VersionSet{}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	ownerFinder, err := codeowners.FromFile(cwd)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, resource := range api.Resources {
 		paths, err := ResourceSpecFiles(resource)
@@ -242,6 +255,10 @@ func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 			for _, pathName := range doc.T.Paths.InMatchingOrder() {
 				pathDef := doc.T.Paths.Value(pathName)
 				for opName, opDef := range pathDef.Operations() {
+					if opDef.Extensions == nil {
+						opDef.Extensions = make(map[string]interface{})
+					}
+					opDef.Extensions[vervet.ExtSnykApiOwner] = ownerFinder.Owners(path)
 					k := OpKey{
 						Path:   pathName,
 						Method: opName,

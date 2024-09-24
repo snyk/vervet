@@ -456,6 +456,8 @@ paths:
           $ref: '#/components/responses/404'
         "500":
           $ref: '#/components/responses/500'
+      x-snyk-api-owners:
+      - '@snyk/api'
       x-snyk-api-releases:
       - 2021-06-01~experimental
       - 2021-06-07~experimental
@@ -615,6 +617,8 @@ paths:
           $ref: '#/components/responses/500'
       tags:
       - Projects
+      x-snyk-api-owners:
+      - '@snyk/api'
       x-snyk-api-releases:
       - 2021-06-04~experimental
       x-snyk-api-version: 2021-06-04~experimental
