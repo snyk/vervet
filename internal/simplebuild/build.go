@@ -331,12 +331,15 @@ func (vs VersionSet) Annotate() {
 
 	for idx, op := range vs {
 		if op.Operation.Extensions == nil {
-			op.Operation.Extensions = make(map[string]interface{}, 6)
+			op.Operation.Extensions = make(map[string]interface{}, 8)
 		}
 		op.Operation.Extensions[vervet.ExtSnykApiResource] = op.ResourceName
 		op.Operation.Extensions[vervet.ExtSnykApiVersion] = op.Version.String()
 		op.Operation.Extensions[vervet.ExtSnykApiReleases] = releases
 		op.Operation.Extensions[vervet.ExtSnykApiLifecycle] = op.Version.LifecycleAt(time.Time{}).String()
+		op.Operation.Extensions[vervet.ExtApiStabilityLevel] = op.Version.Stability.String()
+		op.Operation.Extensions[vervet.ExtSnykApiStability] = op.Version.Stability.String()
+
 		if idx < (count - 1) {
 			laterVersion := vs[idx+1].Version
 			// Sanity check the later version actually deprecates this one

@@ -501,6 +501,10 @@ func TestAnnotate(t *testing.T) {
 		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykApiResource], qt.Equals, "foo")
 		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykApiVersion], qt.Equals, "2024-03-01")
 		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykApiResource], qt.Equals, "bar")
+
+		// Check stability level for beta version
+		c.Assert(vs[1].Operation.Extensions[vervet.ExtApiStabilityLevel], qt.Equals, "beta")
+		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykApiStability], qt.Equals, "beta")
 	})
 
 	c.Run("adds a list of all other versions", func(c *qt.C) {
@@ -537,6 +541,9 @@ func TestAnnotate(t *testing.T) {
 			qt.DeepEquals,
 			[]string{"2024-01-01", "2024-02-01~beta", "2024-03-01"},
 		)
+
+		c.Assert(vs[1].Operation.Extensions[vervet.ExtApiStabilityLevel], qt.Equals, "beta")
+		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykApiStability], qt.Equals, "beta")
 	})
 
 	c.Run("adds deprecation annotations on older versions", func(c *qt.C) {
@@ -566,6 +573,9 @@ func TestAnnotate(t *testing.T) {
 		c.Assert(vs[1].Operation.Extensions[vervet.ExtSnykSunsetEligible], qt.Equals, "2024-08-29")
 		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykDeprecatedBy], qt.IsNil)
 		c.Assert(vs[2].Operation.Extensions[vervet.ExtSnykSunsetEligible], qt.IsNil)
+
+		c.Assert(vs[0].Operation.Extensions["x-stability-level"], qt.Equals, "beta")
+		c.Assert(vs[0].Operation.Extensions["x-snyk-api-stability"], qt.Equals, "beta")
 	})
 }
 
