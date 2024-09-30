@@ -337,7 +337,7 @@ func (vs VersionSet) Annotate() {
 		op.Operation.Extensions[vervet.ExtSnykApiVersion] = op.Version.String()
 		op.Operation.Extensions[vervet.ExtSnykApiReleases] = releases
 		op.Operation.Extensions[vervet.ExtSnykApiLifecycle] = op.Version.LifecycleAt(time.Time{}).String()
-		op.Operation.Extensions[vervet.ExtApiStabilityLevel] = op.Version.Stability.String()
+		op.Operation.Extensions[vervet.ExtApiStabilityLevel] = MapStabilityLevel(op.Version.Stability)
 		op.Operation.Extensions[vervet.ExtSnykApiStability] = op.Version.Stability.String()
 
 		if idx < (count - 1) {
@@ -352,6 +352,18 @@ func (vs VersionSet) Annotate() {
 				op.Operation.Extensions[vervet.ExtSnykSunsetEligible] = sunsetDate.Format("2006-01-02")
 			}
 		}
+	}
+}
+
+// MapStabilityLevel maps the vervet stability level to the x-API stability level header.
+func MapStabilityLevel(s vervet.Stability) string {
+	switch s {
+	case vervet.StabilityGA:
+		return "stable"
+	case vervet.StabilityBeta:
+		return "beta"
+	default:
+		return ""
 	}
 }
 
