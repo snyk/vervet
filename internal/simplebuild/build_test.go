@@ -700,3 +700,34 @@ func compareDocs(a, b simplebuild.VersionedDoc) int {
 func compareDates(a, b time.Time) int {
 	return a.Compare(b)
 }
+
+func TestMapStabilityLevel(t *testing.T) {
+	tests := []struct {
+		name string
+		args vervet.Stability
+		want string
+	}{
+		{
+			name: "stable",
+			args: vervet.StabilityGA,
+			want: "stable",
+		},
+		{
+			name: "beta",
+			args: vervet.StabilityBeta,
+			want: "beta",
+		},
+		{
+			name: "defaults to blank",
+			args: vervet.StabilityExperimental,
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := simplebuild.MapStabilityLevel(tt.args); got != tt.want {
+				t.Errorf("MapStabilityLevel() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
