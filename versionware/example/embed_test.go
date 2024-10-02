@@ -5,8 +5,8 @@ import (
 
 	qt "github.com/frankban/quicktest"
 
-	"github.com/snyk/vervet/v6"
-	"github.com/snyk/vervet/v6/versionware/example/releases"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/versionware/example/releases"
 )
 
 func TestEmbedding(t *testing.T) {

@@ -15,14 +15,14 @@ import (
 	promware "github.com/slok/go-http-metrics/middleware"
 	promware_std "github.com/slok/go-http-metrics/middleware/std"
 
-	"github.com/snyk/vervet/v6"
-	"github.com/snyk/vervet/v6/versionware"
-	. "github.com/snyk/vervet/v6/versionware/example"
-	"github.com/snyk/vervet/v6/versionware/example/releases"
-	release_2021_11_01 "github.com/snyk/vervet/v6/versionware/example/resources/things/2021-11-01"
-	release_2021_11_08 "github.com/snyk/vervet/v6/versionware/example/resources/things/2021-11-08"
-	release_2021_11_20 "github.com/snyk/vervet/v6/versionware/example/resources/things/2021-11-20"
-	"github.com/snyk/vervet/v6/versionware/example/store"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/versionware"
+	. "github.com/snyk/vervet/v8/versionware/example"
+	"github.com/snyk/vervet/v8/versionware/example/releases"
+	release_2021_11_01 "github.com/snyk/vervet/v8/versionware/example/resources/things/2021-11-01"
+	release_2021_11_08 "github.com/snyk/vervet/v8/versionware/example/resources/things/2021-11-08"
+	release_2021_11_20 "github.com/snyk/vervet/v8/versionware/example/resources/things/2021-11-20"
+	"github.com/snyk/vervet/v8/versionware/example/store"
 )
 
 func Example() {
