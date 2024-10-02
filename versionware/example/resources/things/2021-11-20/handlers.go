@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/snyk/vervet/v6"
-	"github.com/snyk/vervet/v6/versionware/example/store"
+	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/versionware/example/store"
 )
 
 // Version is the resource release version of handlers in this package.
