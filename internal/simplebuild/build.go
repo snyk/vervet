@@ -145,7 +145,7 @@ type VersionedDoc struct {
 type DocSet []VersionedDoc
 
 func (ops Operations) Build(startVersion vervet.Version) DocSet {
-	filteredOps := filterOutExperimentalVersions(ops)
+	filteredOps := filterBetaAndGAVersions(ops)
 	versionDates := filteredOps.VersionDates()
 	versionDates = filterVersionByStartDate(versionDates, startVersion.Date)
 	output := make(DocSet, len(versionDates))
@@ -165,12 +165,13 @@ func (ops Operations) Build(startVersion vervet.Version) DocSet {
 	return output
 }
 
-func filterOutExperimentalVersions(ops Operations) Operations {
+func filterBetaAndGAVersions(ops Operations) Operations {
 	filteredOps := make(Operations, len(ops))
 	for opKey, versionSet := range ops {
 		filteredVersionSet := VersionSet{}
 		for _, versionedOp := range versionSet {
-			if versionedOp.Version.Stability == vervet.StabilityExperimental {
+			if versionedOp.Version.Stability != vervet.StabilityGA &&
+				versionedOp.Version.Stability != vervet.StabilityBeta {
 				continue
 			}
 			filteredVersionSet = append(filteredVersionSet, versionedOp)
