@@ -77,7 +77,8 @@ func matching(extension *openapi3cerb.Extension, endpoint Endpoint, opKey simple
 	entB := maps.Keys(endpoint.Entitlements)
 	slices.Sort(entA)
 	slices.Sort(entB)
-	if len(entA) != 0 && len(entB) != 0 && !reflect.DeepEqual(entA, entB) {
+	bothZero := len(entA) == 0 && len(entB) == 0
+	if !bothZero && !reflect.DeepEqual(entA, entB) {
 		fmt.Printf(
 			" ! %s %s (%s) entitlement mismatch\n    - spec: %s\n    - csv: %s\n",
 			opKey.Method,
@@ -99,7 +100,8 @@ func matching(extension *openapi3cerb.Extension, endpoint Endpoint, opKey simple
 	permB := maps.Keys(endpoint.Permissions)
 	slices.Sort(permA)
 	slices.Sort(permB)
-	if len(permA) != 0 && len(permB) != 0 && !reflect.DeepEqual(permA, permB) {
+	bothZero = len(permA) == 0 && len(permB) == 0
+	if !bothZero && !reflect.DeepEqual(permA, permB) {
 		fmt.Printf(
 			" ! %s %s (%s) permissions mismatch\n    - spec: %s\n    - csv: %s\n",
 			opKey.Method,
