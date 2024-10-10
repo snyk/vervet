@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -21,6 +22,9 @@ import (
 )
 
 type Endpoint struct {
+	Path         *regexp.Regexp
+	PathStr      string
+	Method       string
 	Permissions  map[authz.Permission]interface{}
 	Entitlements map[authz.Entitlement]interface{}
 }
@@ -50,7 +54,8 @@ func main() {
 				// internal rcp uses the same prefixes as internal
 				apiName = "registry-internal-api"
 			}
-			if _, ok := endpoints[apiName][opKey]; !ok {
+			csvOp := findMatch(opKey.Path, opKey.Method, endpoints[apiName])
+			if csvOp == nil {
 				fmt.Println(" ! missing entry from csv for", opKey.Method, opKey.Path)
 				continue
 			}
@@ -61,7 +66,7 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
-				matching(cerbBlock, endpoints[apiName][opKey], opKey, op.Version)
+				matching(cerbBlock, *csvOp, opKey, op.Version)
 			}
 		}
 	}
@@ -163,7 +168,7 @@ func parsePrefix(path string) (string, string) {
 				} else {
 					replacement = section[1:]
 				}
-				sections[idx] = fmt.Sprintf("{%s}", replacement)
+				sections[idx] = replacement
 			}
 		}
 		replaced := strings.Join(sections, "/")
@@ -173,8 +178,8 @@ func parsePrefix(path string) (string, string) {
 	return "", ""
 }
 
-func getEndpoints(csvPath string) (map[string]map[simplebuild.OpKey]Endpoint, error) {
-	endpoints := make(map[string]map[simplebuild.OpKey]Endpoint)
+func getEndpoints(csvPath string) (map[string][]Endpoint, error) {
+	endpoints := make(map[string][]Endpoint)
 	file, err := os.Open(csvPath)
 	if err != nil {
 		panic(err)
@@ -201,27 +206,27 @@ func getEndpoints(csvPath string) (map[string]map[simplebuild.OpKey]Endpoint, er
 			// not an api we care about
 			continue
 		}
-		opKey := simplebuild.OpKey{
-			Path:   path,
-			Method: data[0],
-		}
+		method := data[0]
 
-		var apiEndpoints map[simplebuild.OpKey]Endpoint
+		var apiEndpoints []Endpoint
 		if entry, ok := endpoints[apiName]; ok {
 			apiEndpoints = entry
 		} else {
-			apiEndpoints = make(map[simplebuild.OpKey]Endpoint)
+			apiEndpoints = []Endpoint{}
 		}
 
-		var ep Endpoint
-		if entry, ok := apiEndpoints[opKey]; ok {
-			ep = entry
-		} else {
-			ep = Endpoint{
+		ep := findByStr(path, method, apiEndpoints)
+		if ep == nil {
+			ep = &Endpoint{
+				Path:         buildRegex(path),
+				PathStr:      path,
+				Method:       method,
 				Permissions:  make(map[authz.Permission]interface{}),
 				Entitlements: make(map[authz.Entitlement]interface{}),
 			}
+			apiEndpoints = append(apiEndpoints, *ep)
 		}
+
 		if data[5] != "" {
 			for _, permission := range strings.Split(data[5], ";") {
 				ep.Permissions[authz.Permission(permission)] = struct{}{}
@@ -232,11 +237,28 @@ func getEndpoints(csvPath string) (map[string]map[simplebuild.OpKey]Endpoint, er
 				ep.Entitlements[authz.Entitlement(entitlement)] = struct{}{}
 			}
 		}
-		apiEndpoints[opKey] = ep
 
 		endpoints[apiName] = apiEndpoints
 	}
 	return endpoints, nil
+}
+
+func findByStr(path, method string, haystack []Endpoint) *Endpoint {
+	for _, entry := range haystack {
+		if entry.PathStr == path && entry.Method == method {
+			return &entry
+		}
+	}
+	return nil
+}
+
+func findMatch(path, method string, haystack []Endpoint) *Endpoint {
+	for _, entry := range haystack {
+		if entry.Method == method && entry.Path.MatchString(path) {
+			return &entry
+		}
+	}
+	return nil
 }
 
 func getProject() (*config.Project, error) {
@@ -252,4 +274,36 @@ func getProject() (*config.Project, error) {
 		return nil, err
 	}
 	return project, nil
+}
+
+func buildRegex(path string) *regexp.Regexp {
+	segments := []string{}
+	current := ""
+	parens := 0
+	for _, ch := range path[1:] {
+		if ch == '/' && parens == 0 {
+			segments = append(segments, current)
+			current = ""
+			continue
+		}
+		if ch == '(' {
+			parens += 1
+		} else if ch == ')' {
+			parens -= 1
+		}
+		current += string(ch)
+	}
+	segments = append(segments, current)
+
+	res := ""
+	for _, segment := range segments {
+		raw, found := strings.CutPrefix(segment, "RegExp(/^")
+		if found {
+			res += strings.TrimSuffix(raw, "$/i)")
+		} else {
+			res += "\\/" + raw
+		}
+	}
+	re := fmt.Sprintf("^%s$", res)
+	return regexp.MustCompile(re)
 }
