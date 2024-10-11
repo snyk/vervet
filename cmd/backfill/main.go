@@ -56,7 +56,7 @@ func main() {
 			}
 			csvOp := findMatch(opKey.Path, opKey.Method, endpoints[apiName])
 			if csvOp == nil {
-				fmt.Println(" ! missing entry from csv for", opKey.Method, opKey.Path)
+				fmt.Printf(" ! missing entry from csv for %s [%s]\n", opKey.Path, opKey.Method)
 				continue
 			}
 
@@ -80,10 +80,10 @@ func matching(extension *openapi3cerb.Extension, endpoint Endpoint, opKey simple
 	bothZero := len(entA) == 0 && len(entB) == 0
 	if !bothZero && !reflect.DeepEqual(entA, entB) {
 		fmt.Printf(
-			" ! %s %s (%s) entitlement mismatch\n    - spec: %s\n    - csv: %s\n",
-			opKey.Method,
-			opKey.Path,
+			" ! %s - %s [%s] \tentitlements - spec: %s, csv: %s\n",
 			version.String(),
+			opKey.Path,
+			opKey.Method,
 			entA,
 			entB,
 		)
@@ -103,10 +103,10 @@ func matching(extension *openapi3cerb.Extension, endpoint Endpoint, opKey simple
 	bothZero = len(permA) == 0 && len(permB) == 0
 	if !bothZero && !reflect.DeepEqual(permA, permB) {
 		fmt.Printf(
-			" ! %s %s (%s) permissions mismatch\n    - spec: %s\n    - csv: %s\n",
-			opKey.Method,
-			opKey.Path,
+			" ! %s - %s [%s] \tpermissions - spec: %s, csv: %s\n",
 			version.String(),
+			opKey.Path,
+			opKey.Method,
 			permA,
 			permB,
 		)
