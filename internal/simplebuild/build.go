@@ -97,7 +97,7 @@ func Build(
 				return err
 			}
 
-			err = writer.Write(doc)
+			err = writer.Write(ctx, doc)
 			if err != nil {
 				return err
 			}
@@ -151,7 +151,14 @@ func (ops Operations) Build(startVersion vervet.Version) DocSet {
 	output := make(DocSet, len(versionDates))
 	for idx, versionDate := range versionDates {
 		output[idx] = VersionedDoc{
-			Doc:         &openapi3.T{},
+			Doc: &openapi3.T{
+				OpenAPI: "3.0.3",
+				Info: &openapi3.Info{
+					Title:   "Snyk API",
+					Version: "1.0.0",
+				},
+				Paths: openapi3.NewPaths(),
+			},
 			VersionDate: versionDate,
 		}
 		for path, spec := range filteredOps {

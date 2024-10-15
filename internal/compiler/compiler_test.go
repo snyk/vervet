@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 	"text/template"
+	"time"
 
 	qt "github.com/frankban/quicktest"
 
@@ -157,7 +158,10 @@ func TestCompilerSmokePaths(t *testing.T) {
 }
 
 func assertOutputsEqual(c *qt.C, refDir, testDir string) {
-	err := fs.WalkDir(os.DirFS(refDir), ".", func(path string, d fs.DirEntry, err error) error {
+	pivotDate, err := time.Parse("2006-01-02", "2024-10-15")
+	c.Assert(err, qt.IsNil)
+
+	err = fs.WalkDir(os.DirFS(refDir), ".", func(path string, d fs.DirEntry, err error) error {
 		c.Assert(err, qt.IsNil)
 		if d.IsDir() {
 			return nil
@@ -166,6 +170,14 @@ func assertOutputsEqual(c *qt.C, refDir, testDir string) {
 			// only comparing compiled specs here
 			return nil
 		}
+		specDate, err := time.Parse("2006-01-02", path[:10])
+		c.Assert(err, qt.IsNil)
+		if !specDate.Before(pivotDate) {
+			// After pivot date we exclusively use simplebuild so don't emit
+			// specs from this pipeline
+			return nil
+		}
+
 		outputFile, err := os.ReadFile(filepath.Join(testDir, path))
 		c.Assert(err, qt.IsNil)
 		refFile, err := os.ReadFile(filepath.Join(refDir, path))

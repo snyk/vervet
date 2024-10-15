@@ -1,6 +1,7 @@
 package simplebuild
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -59,13 +60,18 @@ func NewWriter(cfg config.Output, appendOutputFiles bool) (*DocWriter, error) {
 
 // Write writes compiled specs to a single directory in YAML and JSON formats.
 // Call Finalize after to populate other directories.
-func (out *DocWriter) Write(doc VersionedDoc) error {
+func (out *DocWriter) Write(ctx context.Context, doc VersionedDoc) error {
+	err := doc.Doc.Validate(ctx)
+	if err != nil {
+		return fmt.Errorf("invalid compiled document: %w", err)
+	}
+
 	// We write to the first directory then copy the entire directory
 	// afterwards
 	dir := out.paths[0]
 
 	versionDir := path.Join(dir, doc.VersionDate.Format(time.DateOnly))
-	err := os.MkdirAll(versionDir, 0755)
+	err = os.MkdirAll(versionDir, 0755)
 	if err != nil {
 		return fmt.Errorf("make output directory: %w", err)
 	}

@@ -132,6 +132,7 @@ func TestLoadVersionsNoApis(t *testing.T) {
     - Registry_2023-06-01_experimental
     - Registry_2023-06-02_experimental
     - Registry_2023-06-03_experimental
+    - Registry_2024-10-15_ga
 ---
 `[1:]+string(vervetAPIs))
 }
@@ -164,6 +165,7 @@ func TestLoadVersionsSomeApis(t *testing.T) {
     - Registry_2023-06-01_experimental
     - Registry_2023-06-02_experimental
     - Registry_2023-06-03_experimental
+    - Registry_2024-10-15_ga
     - someOtherApi
 ---
 `[1:]+string(vervetAPIs))
@@ -193,6 +195,7 @@ func TestDoesNotOutputStabilitiesAfterPivotDate(t *testing.T) {
     - Registry_2023-06-01
     - Registry_2023-06-02
     - Registry_2023-06-03
+    - Registry_2024-10-15
 ---
 `[1:]+string(vervetAPIs))
 }

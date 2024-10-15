@@ -1,6 +1,7 @@
 package simplebuild
 
 import (
+	"context"
 	"os"
 	"path"
 	"path/filepath"
@@ -123,6 +124,7 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			if tt.setup != nil {
 				tt.setup(t, tt.args)
 			}
@@ -130,7 +132,7 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 			writer, err := NewWriter(tt.args.cfg, tt.args.appendOutputFiles)
 			c.Assert(err, qt.IsNil)
 			for _, doc := range tt.docs {
-				err = writer.Write(doc)
+				err = writer.Write(ctx, doc)
 				c.Assert(err, qt.IsNil)
 			}
 			err = writer.Finalize()
@@ -142,4 +144,8 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 }
 
 var minimalSpec = `---
+openapi: 3.0.3
+info:
+  title: minimal spec
+  version: 1.0.0
 paths: {}`
