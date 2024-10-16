@@ -2,6 +2,7 @@ package openapiwalker
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -106,15 +107,15 @@ func ProcessRefs(data any, p RefProcessor) error {
 		}
 
 	case openapi3.ResponseBodies:
-		for _, ref := range v {
-			if err := ProcessRefs(ref, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
 
 	case openapi3.RequestBodies:
-		for _, ref := range v {
-			if err := ProcessRefs(ref, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
@@ -138,26 +139,26 @@ func ProcessRefs(data any, p RefProcessor) error {
 		}
 
 	case openapi3.Links:
-		for _, link := range v {
-			if err := ProcessRefs(link, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
 	case openapi3.Content:
-		for _, mediaType := range v {
-			if err := ProcessRefs(mediaType, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
 	case openapi3.ParametersMap:
-		for _, ref := range v {
-			if err := ProcessRefs(ref, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
 	case openapi3.Schemas:
-		for _, schema := range v {
-			if err := ProcessRefs(schema, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
@@ -168,8 +169,8 @@ func ProcessRefs(data any, p RefProcessor) error {
 			}
 		}
 	case openapi3.Headers:
-		for _, header := range v {
-			if err := ProcessRefs(header, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
@@ -194,8 +195,8 @@ func ProcessRefs(data any, p RefProcessor) error {
 		}
 
 	case openapi3.Examples:
-		for _, example := range v {
-			if err := ProcessRefs(example, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
@@ -206,14 +207,14 @@ func ProcessRefs(data any, p RefProcessor) error {
 			}
 		}
 	case openapi3.SecuritySchemes:
-		for _, ref := range v {
-			if err := ProcessRefs(ref, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
 	case openapi3.Callbacks:
-		for _, ref := range v {
-			if err := ProcessRefs(ref, p); err != nil {
+		for _, key := range sortedStringKeys(v) {
+			if err := ProcessRefs(v[key], p); err != nil {
 				return err
 			}
 		}
@@ -224,8 +225,8 @@ func ProcessRefs(data any, p RefProcessor) error {
 			}
 		}
 	case openapi3.Paths:
-		for _, path := range v.Map() {
-			if err := ProcessRefs(path, p); err != nil {
+		for _, path := range v.InMatchingOrder() {
+			if err := ProcessRefs(v.Value(path), p); err != nil {
 				return err
 			}
 		}
@@ -319,8 +320,9 @@ func ProcessRefs(data any, p RefProcessor) error {
 			return ProcessRefs(*v, p)
 		}
 	case openapi3.Responses:
-		for _, ref := range v.Map() {
-			if err := ProcessRefs(ref, p); err != nil {
+		responsesMap := v.Map()
+		for _, key := range sortedStringKeys(responsesMap) {
+			if err := ProcessRefs(responsesMap[key], p); err != nil {
 				return err
 			}
 		}
@@ -335,8 +337,9 @@ func ProcessRefs(data any, p RefProcessor) error {
 			return ProcessRefs(*v, p)
 		}
 	case openapi3.Callback:
-		for _, pathItem := range v.Map() {
-			if err := ProcessRefs(pathItem, p); err != nil {
+		callbackMap := v.Map()
+		for _, key := range sortedStringKeys(callbackMap) {
+			if err := ProcessRefs(callbackMap[key], p); err != nil {
 				return err
 			}
 		}
@@ -433,6 +436,8 @@ func ProcessRefs(data any, p RefProcessor) error {
 	case *openapi3.SecurityScheme:
 	case openapi3.SecurityScheme:
 	case openapi3.Example:
+	case *openapi3.Link:
+	case openapi3.Link:
 
 	default:
 		// intentional panic, have covered all the types in kin-openapi v0.127.0
@@ -441,4 +446,15 @@ func ProcessRefs(data any, p RefProcessor) error {
 		panic(fmt.Sprintf("unhandled type %#v", v))
 	}
 	return nil
+}
+
+// sortedStringKeys returns the keys of a map sorted in lexicographical order.
+// This is useful for deterministic output.
+func sortedStringKeys[K string, V any](m map[K]V) []K {
+	r := make([]K, 0, len(m))
+	for k := range m {
+		r = append(r, k)
+	}
+	slices.Sort(r)
+	return r
 }
