@@ -55,6 +55,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ThingResponse'
           description: Created things successfully
+      x-snyk-api-owners:
+      - '@snyk/api'
       x-snyk-api-releases:
       - 2021-11-01~experimental
       x-snyk-api-version: 2021-11-01~experimental
@@ -72,6 +74,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ThingResponse'
           description: Returns an instance of things
+      x-snyk-api-owners:
+      - '@snyk/api'
       x-snyk-api-releases:
       - 2021-11-01~experimental
       x-snyk-api-version: 2021-11-01~experimental
