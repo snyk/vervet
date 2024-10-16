@@ -66,7 +66,11 @@ func Build(
 		for _, op := range operations {
 			op.Annotate()
 		}
-		docs := operations.Build(startDate)
+		servers, err := FindServers(apiConfig)
+		if err != nil {
+			return err
+		}
+		docs := operations.Build(startDate, servers)
 		writer, err := NewWriter(*apiConfig.Output, appendOutputFiles)
 		if err != nil {
 			return err
@@ -111,6 +115,25 @@ func Build(
 	return nil
 }
 
+// FindServers returns the servers defined in the first version in the first resource of the API type.
+func FindServers(api *config.API) (openapi3.Servers, error) {
+	if len(api.Resources) == 0 {
+		return nil, nil
+	}
+	paths, err := ResourceSpecFiles(api.Resources[0])
+	if err != nil {
+		return nil, err
+	}
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	doc, err := vervet.NewDocumentFile(paths[0])
+	if err != nil {
+		return nil, err
+	}
+	return doc.Servers, nil
+}
+
 func sortDocsByVersionDate(docs DocSet) {
 	slices.SortFunc(docs, func(a, b VersionedDoc) int {
 		if a.VersionDate.Before(b.VersionDate) {
@@ -144,7 +167,7 @@ type VersionedDoc struct {
 }
 type DocSet []VersionedDoc
 
-func (ops Operations) Build(startVersion vervet.Version) DocSet {
+func (ops Operations) Build(startVersion vervet.Version, servers openapi3.Servers) DocSet {
 	filteredOps := filterBetaAndGAVersions(ops)
 	versionDates := filteredOps.VersionDates()
 	versionDates = filterVersionByStartDate(versionDates, startVersion.Date)
@@ -157,7 +180,8 @@ func (ops Operations) Build(startVersion vervet.Version) DocSet {
 					Title:   "Snyk API",
 					Version: "1.0.0",
 				},
-				Paths: openapi3.NewPaths(),
+				Paths:   openapi3.NewPaths(),
+				Servers: servers,
 			},
 			VersionDate: versionDate,
 		}

@@ -104,9 +104,32 @@ func TestBuild(t *testing.T) {
 				ResourceName: "foo",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), nil)
 		c.Assert(output[0].VersionDate, qt.Equals, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
 		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.IsNotNil)
+	})
+
+	c.Run("copies servers to output", func(c *qt.C) {
+		ops := simplebuild.Operations{
+			simplebuild.OpKey{
+				Path:   "/foo",
+				Method: "GET",
+			}: simplebuild.VersionSet{simplebuild.VersionedOp{
+				Version:      vervet.MustParseVersion("2024-01-01"),
+				Operation:    openapi3.NewOperation(),
+				ResourceName: "foo",
+			}},
+		}
+		expectedServer := &openapi3.Server{
+			URL: "https://example.com",
+		}
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), openapi3.Servers{
+			expectedServer,
+		})
+		c.Assert(output[0].VersionDate, qt.Equals, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
+		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.IsNotNil)
+		c.Assert(output[0].Doc.Servers, qt.HasLen, 1)
+		c.Assert(output[0].Doc.Servers[0], qt.Equals, expectedServer)
 	})
 
 	c.Run("merges operations from the same version", func(c *qt.C) {
@@ -142,7 +165,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), nil)
 		c.Assert(output[0].VersionDate, qt.Equals, version.Date)
 		c.Assert(output[0].Doc.Paths.Value("/foo").Get, qt.Equals, getFoo)
 		c.Assert(output[0].Doc.Paths.Value("/foo").Post, qt.Equals, postFoo)
@@ -177,7 +200,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), nil)
 
 		inputVersions := make([]time.Time, len(versions))
 		for idx, in := range versions {
@@ -229,7 +252,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), nil)
 
 		slices.SortFunc(output, compareDocs)
 
@@ -279,7 +302,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), nil)
 
 		slices.SortFunc(output, compareDocs)
 
@@ -326,7 +349,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-02"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-02"), nil)
 
 		slices.SortFunc(output, compareDocs)
 
@@ -376,7 +399,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "bar",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), nil)
 
 		slices.SortFunc(output, compareDocs)
 
@@ -448,7 +471,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "experimental-path-before-pivot-date",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), nil)
 
 		slices.SortFunc(output, compareDocs)
 
@@ -524,7 +547,7 @@ func TestBuild(t *testing.T) {
 				ResourceName: "wip-path-before-pivot-date",
 			}},
 		}
-		output := ops.Build(vervet.MustParseVersion("2024-01-01"))
+		output := ops.Build(vervet.MustParseVersion("2024-01-01"), nil)
 
 		slices.SortFunc(output, compareDocs)
 
