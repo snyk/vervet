@@ -12,6 +12,8 @@ import "embed"
 //go:embed 2021-11-08~experimental/spec.yaml
 //go:embed 2021-11-20~experimental/spec.json
 //go:embed 2021-11-20~experimental/spec.yaml
+//go:embed 2024-10-15/spec.json
+//go:embed 2024-10-15/spec.yaml
 
 // Versions contains OpenAPI specs for each distinct release version.
 var Versions embed.FS

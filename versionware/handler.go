@@ -90,7 +90,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		h.errFunc(w, req, http.StatusBadRequest, err)
 		return
 	}
-	resolved, handler, err := h.Resolve(requested)
+	versionToResolve := requested
+	// Check if the cerberus has resolved a specific version to be served.
+	snykVersionInHeader := req.Header.Get(HeaderSnykVersionServed)
+	if snykVersionInHeader != "" {
+		versionToResolve, err = vervet.ParseVersion(snykVersionInHeader)
+		if err != nil {
+			h.errFunc(w, req, http.StatusBadRequest, fmt.Errorf(
+				"cant parse header %s with version %s:%w", HeaderSnykVersionServed, snykVersionInHeader, err))
+			return
+		}
+	}
+	resolved, handler, err := h.Resolve(versionToResolve)
 	if err != nil {
 		h.errFunc(w, req, http.StatusNotFound, err)
 		return

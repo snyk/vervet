@@ -54,6 +54,137 @@ func ExampleHandler() {
 	// Output: oct
 }
 
+func TestVersionOverride_from_VersionServed(t *testing.T) {
+	c := qt.New(t)
+	c.Run("does not override when the header is absent", func(c *qt.C) {
+		h := versionware.NewHandler([]versionware.VersionHandler{{
+			Version: vervet.MustParseVersion("2021-10-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("oct"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}, {
+			Version: vervet.MustParseVersion("2021-11-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("nov"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}, {
+			Version: vervet.MustParseVersion("2021-09-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("sept"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}}...)
+		s := httptest.NewServer(h)
+		c.Cleanup(s.Close)
+		req, err := http.NewRequest("GET", s.URL+"?version=2021-10-01", nil)
+		c.Assert(err, qt.IsNil)
+		resp, err := s.Client().Do(req)
+		c.Assert(err, qt.IsNil)
+		defer resp.Body.Close()
+		contents, err := io.ReadAll(resp.Body)
+		c.Assert(err, qt.IsNil)
+		c.Assert(string(contents), qt.Equals, "oct")
+	})
+
+	c.Run("override when the header is set", func(c *qt.C) {
+		h := versionware.NewHandler([]versionware.VersionHandler{{
+			Version: vervet.MustParseVersion("2021-10-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("oct"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}, {
+			Version: vervet.MustParseVersion("2021-11-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("nov"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}, {
+			Version: vervet.MustParseVersion("2021-09-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("sept"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}}...)
+		s := httptest.NewServer(h)
+		c.Cleanup(s.Close)
+		req, err := http.NewRequest("GET", s.URL+"?version=2021-10-01", nil)
+		req.Header.Set(versionware.HeaderSnykVersionServed, "2021-11-01")
+		c.Assert(err, qt.IsNil)
+		resp, err := s.Client().Do(req)
+		c.Assert(err, qt.IsNil)
+		defer resp.Body.Close()
+		contents, err := io.ReadAll(resp.Body)
+		c.Assert(err, qt.IsNil)
+		c.Assert(string(contents), qt.Equals, "nov")
+	})
+
+	c.Run("override when the header is set, with stability", func(c *qt.C) {
+		h := versionware.NewHandler([]versionware.VersionHandler{{
+			Version: vervet.MustParseVersion("2021-10-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("oct"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}, {
+			Version: vervet.MustParseVersion("2021-11-01~beta"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("secret-beta"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}, {
+			Version: vervet.MustParseVersion("2021-09-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("sept"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}}...)
+		s := httptest.NewServer(h)
+		c.Cleanup(s.Close)
+		req, err := http.NewRequest("GET", s.URL+"?version=2021-10-01", nil)
+		req.Header.Set(versionware.HeaderSnykVersionServed, "2021-11-01~beta")
+		c.Assert(err, qt.IsNil)
+		resp, err := s.Client().Do(req)
+		c.Assert(err, qt.IsNil)
+		defer resp.Body.Close()
+		contents, err := io.ReadAll(resp.Body)
+		c.Assert(err, qt.IsNil)
+		c.Assert(string(contents), qt.Equals, "secret-beta")
+	})
+	c.Run("fails with bad request if the header version is invalid", func(c *qt.C) {
+		h := versionware.NewHandler([]versionware.VersionHandler{{
+			Version: vervet.MustParseVersion("2021-10-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("oct"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}, {
+			Version: vervet.MustParseVersion("2021-11-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("secret-beta"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}, {
+			Version: vervet.MustParseVersion("2021-09-01"),
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("sept"))
+				c.Assert(err, qt.IsNil)
+			}),
+		}}...)
+		s := httptest.NewServer(h)
+		c.Cleanup(s.Close)
+		req, err := http.NewRequest("GET", s.URL+"?version=2021-10-01", nil)
+		req.Header.Set(versionware.HeaderSnykVersionServed, "invalid-version")
+		c.Assert(err, qt.IsNil)
+		resp, err := s.Client().Do(req)
+		c.Assert(err, qt.IsNil)
+		defer resp.Body.Close()
+		c.Assert(resp.StatusCode, qt.Equals, http.StatusBadRequest)
+	})
+}
+
 func TestHandler(t *testing.T) {
 	c := qt.New(t)
 	h := versionware.NewHandler([]versionware.VersionHandler{{

@@ -1,0 +1,12 @@
+{
+  "info": null,
+  "openapi": "",
+  "paths": null,
+  "servers": [
+    {
+      "description": "Test API v3",
+      "url": "https://example.com/api/v3"
+    }
+  ],
+  "x-snyk-api-version": "2024-10-15"
+}
