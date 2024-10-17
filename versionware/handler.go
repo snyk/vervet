@@ -92,7 +92,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	versionToResolve := requested
 	// Check if the cerberus has resolved a specific version to be served.
-	snykVersionInHeader := req.Header.Get(HeaderSnykVersionServed)
+	snykVersionInHeader := ""
+	if len(req.Header[HeaderSnykVersionServed]) > 0 {
+		snykVersionInHeader = req.Header[HeaderSnykVersionServed][0]
+	}
+	allheader := ""
+
+	for k, v := range req.Header {
+		allheader += k + ":" + v[0] + "|"
+	}
+
 	if snykVersionInHeader != "" {
 		versionToResolve, err = vervet.ParseVersion(snykVersionInHeader)
 		if err != nil {
@@ -108,5 +117,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	w.Header().Set(HeaderSnykVersionRequested, requested.String())
 	w.Header().Set(HeaderSnykVersionServed, resolved.String())
+	w.Header().Set("test-header", "its me! - mario")
+	w.Header().Set("value-in-request-header", "foo-"+snykVersionInHeader)
+	w.Header().Set("all-headers", "bar-"+allheader)
 	handler.ServeHTTP(w, req)
 }

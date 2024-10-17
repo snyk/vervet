@@ -111,7 +111,7 @@ func TestVersionOverride_from_VersionServed(t *testing.T) {
 		s := httptest.NewServer(h)
 		c.Cleanup(s.Close)
 		req, err := http.NewRequest("GET", s.URL+"?version=2021-10-01", nil)
-		req.Header.Set(versionware.HeaderSnykVersionServed, "2021-11-01")
+		req.Header[versionware.HeaderSnykVersionServed] = []string{"2021-11-01"}
 		c.Assert(err, qt.IsNil)
 		resp, err := s.Client().Do(req)
 		c.Assert(err, qt.IsNil)
@@ -144,7 +144,7 @@ func TestVersionOverride_from_VersionServed(t *testing.T) {
 		s := httptest.NewServer(h)
 		c.Cleanup(s.Close)
 		req, err := http.NewRequest("GET", s.URL+"?version=2021-10-01", nil)
-		req.Header.Set(versionware.HeaderSnykVersionServed, "2021-11-01~beta")
+		req.Header[versionware.HeaderSnykVersionServed] = []string{"2021-11-01~beta"}
 		c.Assert(err, qt.IsNil)
 		resp, err := s.Client().Do(req)
 		c.Assert(err, qt.IsNil)
@@ -176,7 +176,7 @@ func TestVersionOverride_from_VersionServed(t *testing.T) {
 		s := httptest.NewServer(h)
 		c.Cleanup(s.Close)
 		req, err := http.NewRequest("GET", s.URL+"?version=2021-10-01", nil)
-		req.Header.Set(versionware.HeaderSnykVersionServed, "invalid-version")
+		req.Header[versionware.HeaderSnykVersionServed] = []string{"invalid-version"}
 		c.Assert(err, qt.IsNil)
 		resp, err := s.Client().Do(req)
 		c.Assert(err, qt.IsNil)
