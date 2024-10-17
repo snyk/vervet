@@ -197,11 +197,9 @@ func (d *Document) LoadReference(relPath, refPath string, target interface{}) (_
 
 // Version returns the version of the document.
 func (d *Document) Version() (Version, error) {
-	vs, err := ExtensionString(d.Extensions, ExtSnykApiVersion)
-	if err != nil {
-		return Version{}, err
-	}
-	return ParseVersion(vs)
+	versionDir := filepath.Dir(d.path)
+	versionStr := filepath.Base(versionDir)
+	return ParseVersion(versionStr)
 }
 
 // Lifecycle returns the lifecycle of the document.
