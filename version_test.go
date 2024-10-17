@@ -2,6 +2,7 @@ package vervet_test
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -434,6 +435,125 @@ func TestLifecycleAtDefaultDate(t *testing.T) {
 			c.Patch(TimeNow, func() time.Time { return time.Date(2022, time.September, 6, 14, 49, 50, 0, time.UTC) })
 			lifecycle := test.version.LifecycleAt(time.Time{})
 			c.Assert(lifecycle.String(), qt.Equals, test.lifecycle)
+		})
+	}
+}
+
+func TestVersionIndex_ResolveGAorBetaStability(t *testing.T) {
+	tests := []struct {
+		name     string
+		versions VersionSlice
+		query    Version
+		want     Version
+		wantErr  bool
+	}{
+		{
+			name:     "no versions",
+			versions: VersionSlice{},
+			query:    MustParseVersion("2021-06-01"),
+			wantErr:  true,
+		},
+		{
+			name: "query is before first version",
+			versions: VersionSlice{
+				MustParseVersion("2021-06-07"),
+				MustParseVersion("2021-06-08"),
+				MustParseVersion("2021-06-09"),
+			},
+			query:   MustParseVersion("2021-06-01"),
+			wantErr: true,
+		},
+		{
+			name: "query is first version",
+			versions: VersionSlice{
+				MustParseVersion("2021-06-07"),
+				MustParseVersion("2021-06-08"),
+				MustParseVersion("2021-06-09"),
+			},
+			query:   MustParseVersion("2021-06-07"),
+			want:    MustParseVersion("2021-06-07"),
+			wantErr: false,
+		},
+		{
+			name: "query is after last version",
+			versions: VersionSlice{
+				MustParseVersion("2021-06-07"),
+				MustParseVersion("2021-06-08"),
+				MustParseVersion("2021-06-09"),
+			},
+			query:   MustParseVersion("2021-06-10"),
+			want:    MustParseVersion("2021-06-09"),
+			wantErr: false,
+		},
+		{
+			name: "return recent beta endpoint, when ga not available",
+			versions: VersionSlice{
+				MustParseVersion("2021-06-07~beta"),
+				MustParseVersion("2021-06-08~beta"),
+				MustParseVersion("2021-06-09~beta"),
+				MustParseVersion("2021-06-10~beta"),
+			},
+			query:   MustParseVersion("2021-06-12"),
+			want:    MustParseVersion("2021-06-10~beta"),
+			wantErr: false,
+		},
+		{
+			name: "return latest beta endpoint, when ga not available",
+			versions: VersionSlice{
+				MustParseVersion("2021-06-07~beta"),
+				MustParseVersion("2021-06-08~beta"),
+				MustParseVersion("2021-06-09~beta"),
+				MustParseVersion("2021-06-13~beta"),
+			},
+			query:   MustParseVersion("2021-06-10"),
+			want:    MustParseVersion("2021-06-09~beta"),
+			wantErr: false,
+		},
+		{
+			name: "return latest beta endpoint, when an older beta is requested, even when ga is available",
+			versions: VersionSlice{
+				MustParseVersion("2021-06-07~beta"),
+				MustParseVersion("2021-06-08~beta"),
+				MustParseVersion("2021-06-09~beta"),
+				MustParseVersion("2021-06-13~beta"),
+				MustParseVersion("2021-06-14"),
+			},
+			query:   MustParseVersion("2021-06-10"),
+			want:    MustParseVersion("2021-06-09~beta"),
+			wantErr: false,
+		},
+		{
+			name: "error, for beta stability",
+			versions: VersionSlice{
+				MustParseVersion("2021-06-07"),
+				MustParseVersion("2021-06-08"),
+				MustParseVersion("2021-06-09"),
+			},
+			query:   MustParseVersion("2021-06-09~beta"),
+			wantErr: true,
+		},
+		{
+			name: "error, for experimental stability",
+			versions: VersionSlice{
+				MustParseVersion("2021-06-07"),
+				MustParseVersion("2021-06-08"),
+				MustParseVersion("2021-06-09"),
+			},
+			query:   MustParseVersion("2021-06-09~experimental"),
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vi := NewVersionIndex(tt.versions)
+			got, err := vi.ResolveGAorBetaStability(tt.query)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ResolveGAorBetaStability() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ResolveGAorBetaStability() got = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
