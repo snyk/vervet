@@ -69,12 +69,23 @@ func (h *Handler) HandleErrors(errFunc VersionErrorHandler) {
 // Resolve returns the resolved version and its associated http.Handler for the
 // requested version.
 func (h *Handler) Resolve(requested vervet.Version) (*vervet.Version, http.Handler, error) {
-	resolvedVersion, err := h.index.ResolveForBuild(requested)
-	if err != nil {
-		return nil, nil, err
+	var resolvedVersion vervet.Version
+	var err error
+	if requested.Date.Compare(defaultPivotDate.Date) < 0 {
+		resolvedVersion, err = h.index.ResolveForBuild(requested)
+		if err != nil {
+			return nil, nil, err
+		}
+	} else {
+		resolvedVersion, err = h.index.ResolveGAorBetaStability(requested)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	return &resolvedVersion, h.handlers[resolvedVersion], nil
 }
+
+var defaultPivotDate = vervet.MustParseVersion("2024-10-15")
 
 // ServeHTTP implements http.Handler with the handler matching the version
 // query parameter on the request. If no matching version is found, responds
