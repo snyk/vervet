@@ -250,6 +250,14 @@ func ProcessRefs(data any, p RefProcessor) error {
 		if err := ProcessRefs(v.Not, p); err != nil {
 			return err
 		}
+		if err := ProcessRefs(v.AdditionalProperties, p); err != nil {
+			return err
+		}
+
+	case openapi3.AdditionalProperties:
+		if err := ProcessRefs(v.Schema, p); err != nil {
+			return err
+		}
 
 	case *openapi3.PathItem:
 		if v != nil {
