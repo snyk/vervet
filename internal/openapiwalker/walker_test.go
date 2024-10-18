@@ -290,6 +290,41 @@ func TestProcessRefs(t *testing.T) {
 			},
 		})
 	})
+
+	c.Run("processes schema refs inside additional properties", func(c *qt.C) {
+		doc := &openapi3.T{}
+		doc.Components = &openapi3.Components{
+			Schemas: openapi3.Schemas{
+				"key-1": {
+					Value: &openapi3.Schema{
+						AdditionalProperties: openapi3.AdditionalProperties{
+							Schema: &openapi3.SchemaRef{
+								Ref: "value-1",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		recorder := &recordRefProcessor{}
+		err := ProcessRefs(doc, recorder)
+		c.Assert(err, qt.IsNil)
+		c.Assert(toJson(c, recorder.SchemaRefs), qt.JSONEquals, []*openapi3.SchemaRef{
+			{
+				Value: &openapi3.Schema{
+					AdditionalProperties: openapi3.AdditionalProperties{
+						Schema: &openapi3.SchemaRef{
+							Ref: "value-1",
+						},
+					},
+				},
+			},
+			{
+				Ref: "value-1",
+			},
+		})
+	})
 }
 
 func toJson(c *qt.C, obj any) []byte {
