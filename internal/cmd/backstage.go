@@ -11,6 +11,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/snyk/vervet/v8"
 	"github.com/snyk/vervet/v8/config"
 	"github.com/snyk/vervet/v8/internal/backstage"
 )
@@ -32,8 +33,8 @@ var BackstageCommand = cli.Command{
 				Aliases: []string{"P"},
 				Usage: fmt.Sprintf(
 					"Pivot version after which new strategy versioning is used."+
-						" Flag for testing only, recommend to use the default date(%s)", defaultPivotDate.String()),
-				Value: defaultPivotDate.String(),
+						" Flag for testing only, recommend to use the default date(%s)", vervet.DefaultPivotDate.String()),
+				Value: vervet.DefaultPivotDate.String(),
 			},
 		},
 		Action: UpdateCatalog,
@@ -51,8 +52,8 @@ var BackstageCommand = cli.Command{
 				Aliases: []string{"P"},
 				Usage: fmt.Sprintf(
 					"Pivot version after which new strategy versioning is used."+
-						" Flag for testing only, recommend to use the default date(%s)", defaultPivotDate.String()),
-				Value: defaultPivotDate.String(),
+						" Flag for testing only, recommend to use the default date(%s)", vervet.DefaultPivotDate.String()),
+				Value: vervet.DefaultPivotDate.String(),
 			},
 		},
 		Action: PreviewCatalog,

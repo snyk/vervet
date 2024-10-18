@@ -324,6 +324,26 @@ func (vi *VersionIndex) Resolve(query Version) (Version, error) {
 	return Version{}, ErrNoMatchingVersion
 }
 
+// ResolveGAorBetaStability returns the GA or beta version effective on the query version date at
+// the given version date. Returns ErrNoMatchingVersion if no version matches or if query
+// stability is not GA.
+func (vi *VersionIndex) ResolveGAorBetaStability(query Version) (Version, error) {
+	i, err := vi.resolveIndex(query.Date)
+	if query.Stability != StabilityGA {
+		return Version{}, ErrNoMatchingVersion
+	}
+	if err != nil {
+		return Version{}, err
+	}
+	if stabDate := vi.effectiveVersions[i].stabilities[StabilityGA]; !stabDate.IsZero() {
+		return Version{Date: stabDate, Stability: StabilityGA}, nil
+	}
+	if stabDate := vi.effectiveVersions[i].stabilities[StabilityBeta]; !stabDate.IsZero() {
+		return Version{Date: stabDate, Stability: StabilityBeta}, nil
+	}
+	return Version{}, ErrNoMatchingVersion
+}
+
 // Versions returns each Version defined.
 func (vi *VersionIndex) Versions() VersionSlice {
 	vs := make(VersionSlice, len(vi.versions))
@@ -498,3 +518,6 @@ func defaultLifecycleAt() time.Time {
 	}
 	return timeNow().UTC()
 }
+
+// DefaultPivotDate is the default pivot date after which the versioning strategy changes.
+var DefaultPivotDate = MustParseVersion("2024-10-15")
