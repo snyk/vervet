@@ -76,6 +76,9 @@ type Output struct {
 // EffectivePaths returns a slice of effective configured output paths, whether
 // a single or multiple output paths have been configured.
 func (o *Output) ResolvePaths() []string {
+	if o == nil {
+		return []string{}
+	}
 	if o.Path != "" {
 		return []string{o.Path}
 	}
