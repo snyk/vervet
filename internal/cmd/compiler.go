@@ -12,7 +12,6 @@ import (
 	"github.com/snyk/vervet/v8/internal/simplebuild"
 )
 
-var defaultPivotDate = vervet.MustParseVersion("2024-10-15")
 var defaultVersioningUrl = "https://api.snyk.io/rest/openapi"
 
 var pivotDateCLIFlagName = "pivot-version"
@@ -34,8 +33,8 @@ var buildFlags = []cli.Flag{
 		Aliases: []string{"P"},
 		Usage: fmt.Sprintf(
 			"Pivot version after which new strategy versioning is used."+
-				" Flag for testing only, recommend to use the default date(%s)", defaultPivotDate.String()),
-		Value: defaultPivotDate.String(),
+				" Flag for testing only, recommend to use the default date(%s)", vervet.DefaultPivotDate.String()),
+		Value: vervet.DefaultPivotDate.String(),
 	},
 	&cli.StringFlag{
 		Name:    versioningUrlCLIFlagName,
