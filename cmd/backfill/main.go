@@ -73,6 +73,10 @@ func main() {
 }
 
 func matching(extension *openapi3cerb.Extension, endpoint Endpoint, opKey simplebuild.OpKey, version vervet.Version) {
+	if extension.Authorization.Resource.PathID == "" && !extension.Authorization.Skip {
+		fmt.Printf(" ! %s - %s [%s] \tmissing x-cerberus block\n", version.String(), opKey.Path, opKey.Method)
+		return
+	}
 	entA := extension.Authorization.Resource.Entitlements
 	entB := maps.Keys(endpoint.Entitlements)
 	slices.Sort(entA)
