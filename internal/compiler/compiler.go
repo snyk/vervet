@@ -161,7 +161,7 @@ func (c *Compiler) Build(apiName string, stopVersion vervet.Version) error {
 					version,
 				))
 			}
-			if version.Compare(stopVersion) >= 0 {
+			if version.Date.Compare(stopVersion.Date) >= 0 {
 				continue
 			}
 

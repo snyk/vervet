@@ -157,6 +157,67 @@ func TestCompilerSmokePaths(t *testing.T) {
 	}
 }
 
+func TestCompilerStopsAtStopDate(t *testing.T) {
+	c := qt.New(t)
+	setup(c)
+	ctx := context.Background()
+	outputPath := c.TempDir()
+	var configBuf bytes.Buffer
+	err := configTemplate.Execute(&configBuf, outputPath)
+	c.Assert(err, qt.IsNil)
+
+	// Create a file that should be removed prior to build
+	err = os.WriteFile(outputPath+path, []byte("goof"), 0777)
+	c.Assert(err, qt.IsNil)
+
+	proj, err := config.Load(bytes.NewBuffer(configBuf.Bytes()))
+	c.Assert(err, qt.IsNil)
+	compiler, err := New(ctx, proj)
+	c.Assert(err, qt.IsNil)
+
+	// Assert constructor set things up as expected
+	c.Assert(compiler.apis, qt.HasLen, 1)
+	restApi := compiler.apis["rest-api"]
+	c.Assert(restApi, qt.Not(qt.IsNil))
+	c.Assert(restApi.resources, qt.HasLen, 1)
+	c.Assert(restApi.resources[0].sourceFiles, qt.Contains, "testdata/resources/projects/2021-06-04/spec.yaml")
+	c.Assert(restApi.overlayIncludes, qt.HasLen, 1)
+	c.Assert(restApi.overlayIncludes[0].Paths.Len(), qt.Equals, 2)
+	c.Assert(
+		restApi.overlayInlines[0].Servers[0].URL,
+		qt.Contains,
+		"https://example.com/api/rest",
+		qt.Commentf("environment variable interpolation"),
+	)
+	c.Assert(restApi.output, qt.Not(qt.IsNil))
+
+	// Build stage
+	err = compiler.BuildAll(ctx, vervet.MustParseVersion("2021-06-04"))
+	c.Assert(err, qt.IsNil)
+
+	// Verify created files/folders are as expected
+	// Look for existence of /2021-06-01~experimental
+	refOutputPath := restApi.output.paths[0]
+	assertOutputsEqual(c, refOutputPath, outputPath)
+
+	// Look for absence of /2021-06-01 folder (ga)
+	_, err = os.Stat(outputPath + "/2021-06-01")
+	c.Assert(os.IsNotExist(err), qt.IsTrue)
+
+	// Look for presence of /2021-06-01~experimental folder
+	_, err = os.Stat(outputPath + "/2021-06-01~experimental")
+	c.Assert(err, qt.IsNil)
+
+	// Look for absence of /2021-06-04~experimental folder, as its on the stop date
+	_, err = os.Stat(outputPath + "/2021-06-04~experimental")
+	c.Assert(os.IsNotExist(err), qt.IsTrue,
+		qt.Commentf("2021-06-04~experimental should not be created, its after the stop date"))
+
+	// Build output was cleaned up
+	_, err = os.ReadFile(outputPath + path)
+	c.Assert(err, qt.ErrorMatches, ".*/goof: no such file or directory")
+}
+
 func assertOutputsEqual(c *qt.C, refDir, testDir string) {
 	pivotDate, err := time.Parse("2006-01-02", "2024-10-15")
 	c.Assert(err, qt.IsNil)
