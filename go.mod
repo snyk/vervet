@@ -148,6 +148,7 @@ require (
 	github.com/wI2L/jsondiff v0.6.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/yargevad/filepathx v1.0.0 // indirect
+	github.com/yuin/goldmark v1.7.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
