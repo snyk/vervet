@@ -82,6 +82,9 @@
             "description": "Returns a list of things"
           }
         },
+        "x-snyk-api-owners": [
+          "@snyk/api"
+        ],
         "x-snyk-api-releases": [
           "2021-11-08~experimental"
         ],
@@ -112,6 +115,9 @@
             "description": "Created things successfully"
           }
         },
+        "x-snyk-api-owners": [
+          "@snyk/api"
+        ],
         "x-snyk-api-releases": [
           "2021-11-01~experimental"
         ],
@@ -140,6 +146,9 @@
             "description": "Returns an instance of things"
           }
         },
+        "x-snyk-api-owners": [
+          "@snyk/api"
+        ],
         "x-snyk-api-releases": [
           "2021-11-01~experimental"
         ],

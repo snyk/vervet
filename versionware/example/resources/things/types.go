@@ -4,7 +4,7 @@ package things
 import (
 	"time"
 
-	"github.com/snyk/vervet/v6/versionware/example/store"
+	"github.com/snyk/vervet/v8/versionware/example/store"
 )
 
 // Attributes represents the data contents of a Thing resource.

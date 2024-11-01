@@ -6,7 +6,7 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/snyk/vervet/v6/testdata/output"
+	"github.com/snyk/vervet/v8/testdata/output"
 )
 
 func TestEmbedding(t *testing.T) {
