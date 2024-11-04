@@ -1,4 +1,4 @@
-# vervet
+# Vervet
 
 Vervet is an HTTP API version lifecycle management tool, allowing APIs to be designed, developed, versioned and released from [resources](https://github.com/snyk/sweater-comb/blob/main/docs/principles/api_program.md#resources) independently and concurrently.
 
@@ -112,7 +112,81 @@ versions/
     └── spec.yaml
 ```
 
-### Code generation
+### Simplified Versioning (from 2024-10-15)
+
+From 2024-10-15, Vervet introduced a new "simplified versioning" scheme.
+
+The main differences introduced by simplified versioning are:
+
+- **Stability dropped from the spec level to the individual path level**: Each API path can now be labeled as either `beta` or `GA` (general availability). The `experimental` stability level has been removed. This means that paths within the same version of the spec can have different stability statuses, allowing for greater flexibility and precision.
+
+- **No changes required from developers defining APIs**: Developers still define their APIs in the same way as before, and Vervet handles the collation and versioning of specs in the new format automatically. The way specs are defined, updated, and maintained remains familiar, ensuring a smooth transition.
+
+- **End-user API requests are simplified**: API consumers no longer need to specify the stability when calling a particular version. They can simply provide the date of the version they want, and Vervet will resolve whether each path is `GA` or `beta`. If a path has been promoted to `GA`, subsequent versions cannot publish it as `beta` again.
+
+This change is aimed at simplifying how users interact with versioned APIs while maintaining clear definitions and stabilities at the path level.
+
+#### Examples for Simplified Versioning
+
+To illustrate how simplified versioning works in practice, let’s consider some examples:
+
+##### Example 1: Requesting a Version without Specifying Stability
+
+Consider an API with paths `/pets` and `/owners`. Suppose the `/pets` path is `GA` and the `/owners` path is `beta` as of version date `2024-10-20`.
+
+- **Request:**
+
+  ```
+  GET /api/2024-10-20/pets
+  ```
+
+  - **Response:** This request will be handled by the GA version of `/pets`.
+
+- **Request:**
+  ```
+  GET /api/2024-10-20/owners
+  ```
+  - **Response:** This request will be handled by the beta version of `/owners`.
+
+The user does not need to specify the stability explicitly. Vervet determines the appropriate path stability (`GA` or `beta`) automatically.
+
+##### Example 2: Path Promotion to GA
+
+Let’s say that as of `2024-11-10`, the `/owners` path is promoted to `GA`.
+
+- **Request:**
+  ```
+  GET /api/2024-11-15/owners
+  ```
+  - **Response:** The request will be handled by the GA version of `/owners`.
+
+Once a path is promoted to GA, any subsequent version cannot publish it as `beta` again. Therefore, users can be confident that they are always accessing a stable version of a path if it is marked as GA.
+
+##### Example 3: Multiple Paths with Mixed Stability
+
+Consider an API version dated `2024-12-01` with the following paths:
+
+- `/pets`: GA
+- `/owners`: GA
+- `/appointments`: beta
+
+- **Request:**
+
+  ```
+  GET /api/2024-12-01/appointments
+  ```
+
+  - **Response:** The request will be handled by the beta version of `/appointments`.
+
+- **Request:**
+  ```
+  GET /api/2024-12-01/pets
+  ```
+  - **Response:** The request will be handled by the GA version of `/pets`.
+
+This approach allows different parts of an API to evolve at different paces, providing flexibility for developers and a clearer experience for end-users.
+
+## Code generation
 
 Since Vervet models the composition, construction and versioning of an API, it is well positioned to coordinate code and artifact generation through the use of templates.
 
@@ -240,17 +314,20 @@ A new version of `vervet` will automatically be generated for Github and `npm` w
 are introduced, i.e. when commits are merged that are marked with `feat:`.
 
 ## Deprecating a version
+
 After removing the endpoint version code and specs, you may see this issue:
+
 ```
 ENOENT: no such file or directory, open '.../spec.yaml'
 ```
+
 To solve this:
+
 1. Temporarily ignore the endpoint version code in `.vervet.yaml`
 2. Remove the endpoint versions from `catalog-info.yaml`
 3. Remove the old OpenAPI specs.
 
 [Example PR](https://github.com/snyk/registry/pull/33489/files)
-
 
 # Vervet Underground
 
@@ -266,20 +343,22 @@ Just as Vervet compiles a timeline of OpenAPI versions for a single service from
 
 To illustrate how this works in practice, let's deconstruct a pet store into two services:
 
-* `petfood.default.svc.cluster.local`, which knows about pet food.
-* `animals.default.svc.cluster.local`, which knows about animals.
+- `petfood.default.svc.cluster.local`, which knows about pet food.
+- `animals.default.svc.cluster.local`, which knows about animals.
 
 For sake of example, let's assume the following versions are published by each service:
 
 petfood has:
+
 - `2021-07-04~experimental`
 - `2021-08-09~beta`
 - `2021-08-09~experimental` (beta released, with some parts still experimental, so both are published)
-- `2021-09-14` .            (first GA)
+- `2021-09-14` . (first GA)
 - `2021-09-14~beta`
 - `2021-09-14~experimental`
 
 animals has:
+
 - `2021-09-10~experimental`
 - `2021-10-04~experimental`
 - `2021-10-12~beta`
@@ -384,10 +463,10 @@ If a version date after `2021-11-08` matches `2021-09-14~experimental`, let's sa
 VU aggregates OpenAPI specs from multiple services and serves them up in a single place for:
 
 - Docs
-    - Docs will likely either render public `/openapi` directly client-side or periodically scrape & update
+  - Docs will likely either render public `/openapi` directly client-side or periodically scrape & update
 - Routing public v3 `/openapi` to VU's aggregated OpenAPI versions
 - Add Akamai configuration to serve the blockstored specs initially for `/openapi`
-    - Formal frontend presentation will be later
+  - Formal frontend presentation will be later
 
 This unblocks docs for multi-service decomp.
 
@@ -396,4 +475,94 @@ This unblocks docs for multi-service decomp.
 - Could use block storage with a history of changes per service per version
 - Static config that tells VU where to scrape upstream OpenAPI from services (registry and friends)
 - Cron job to periodically scrape and update
-    - Or we can try to make this push and set up a webhook...
+  - Or we can try to make this push and set up a webhook...
+
+##### Simplified Versioning Integration
+
+From 2024-10-15, Vervet Underground also integrates the simplified versioning model. With simplified versioning:
+
+- API versions compiled by VU no longer require consumers to specify the stability level (`beta`, `GA`) in the request. Instead, consumers simply request a version by date, and the paths within that version automatically resolve to their correct stability levels (`beta` or `GA`).
+- Experimental stabilities are no longer supported; all paths are now either `beta` or `GA`.
+- Changes to a path's stability are reflected by date, ensuring consistent access to `GA` or `beta` versions without ambiguity.
+
+This results in a more straightforward API usage for clients, as they no longer need to be concerned with explicitly requesting stabilities, which reduces friction and simplifies interaction with the aggregated service APIs.
+
+##### Example: Pre and Post Pivot Date Behavior
+
+To better understand how simplified versioning works in comparison to the previous versioning model, let’s consider an example both before and after the pivot date of `2024-10-15`.
+
+###### Pre Pivot Date Example (before 2024-10-15)
+
+Consider a pet store API with services for `animals` and `petfood`. Assume the following versions:
+
+- `animals` has:
+
+  - `2024-10-01~beta`
+  - `2024-10-01~experimental`
+
+- `petfood` has:
+  - `2024-09-20~GA`
+  - `2024-10-01~beta`
+
+If a client requested:
+
+- **Request:**
+
+  ```
+  GET /api/2024-10-01~beta/animals
+  ```
+
+  - **Response:** This request would be served by the beta version of `/animals`.
+
+- **Request:**
+
+  ```
+  GET /api/2024-10-01~experimental/animals
+  ```
+
+  - **Response:** This request would be served by the experimental version of `/animals`.
+
+- **Request:**
+  ```
+  GET /api/2024-09-20~GA/petfood
+  ```
+  - **Response:** This request would be served by the GA version of `/petfood`.
+
+Here, users must explicitly specify the stability (`~beta`, `~experimental`, or `~GA`), which adds complexity to the request.
+
+###### Post Pivot Date Example (after 2024-10-15)
+
+After the pivot date of `2024-10-15`, the simplified versioning model takes effect, where all paths are collated into a single spec with individual stabilities (`beta` or `GA`). Consider the following scenario:
+
+- `animals` has:
+
+  - Path `/animals` marked as `beta` on `2024-10-20`.
+
+- `petfood` has:
+  - Path `/petfood` marked as `GA` on `2024-10-20`.
+
+If a client requested:
+
+- **Request:**
+
+  ```
+  GET /api/2024-10-20/animals
+  ```
+
+  - **Response:** This request will be handled by the beta version of `/animals` without specifying the stability explicitly.
+
+- **Request:**
+  ```
+  GET /api/2024-10-20/petfood
+  ```
+  - **Response:** This request will be handled by the GA version of `/petfood`.
+
+With the simplified model, clients simply provide the date, and VU handles the rest, resolving the correct stability for each path automatically.
+
+From 2024-10-15, Vervet Underground also integrates the simplified versioning model. With simplified versioning:
+
+- API versions compiled by VU no longer require consumers to specify the stability level (`beta`, `GA`) in the request. Instead, consumers simply request a version by date, and the paths within that version automatically resolve to their correct stability levels (`beta` or `GA`).
+- Experimental stabilities are no longer supported; all paths are now either `beta` or `GA`.
+- Changes to a path's stability are reflected by date, ensuring consistent access to `GA` or `beta` versions without ambiguity.
+
+This results in a more straightforward API usage for clients, as they no longer need to be concerned with explicitly requesting stabilities, which reduces friction and simplifies interaction with the aggregated service APIs.
