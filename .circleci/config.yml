@@ -106,6 +106,15 @@ jobs:
             ./scripts/release.bash
           fi
 
+  rebuild-tools:
+    <<: *defaults
+    steps:
+      - run: |-
+          curl -X POST https://circleci.com/api/v2/project/github/snyk/api-tooling/pipeline \
+              --header "Circle-Token: $CIRCLE_TOKEN" \
+              --header "content-type: application/json" \
+              --data '{"branch":"main"}'
+
 workflows:
   version: 2
   CI:
@@ -187,3 +196,10 @@ workflows:
             - snyk-bot-slack
           requires:
             - Build Docker Image
+
+      - rebuild-tools:
+          name: Rebuild api-tooling
+          context:
+            - manage-api-tooling
+          requires:
+            - Release
