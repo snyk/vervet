@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"crypto/md5"
 	"fmt"
-	"os"
-
+	"github.com/hashicorp/go-getter/v2"
 	"github.com/urfave/cli/v2"
+	"os"
+	"os/exec"
+	"path"
+	"runtime"
 
 	"github.com/snyk/vervet/v8"
 	"github.com/snyk/vervet/v8/config"
@@ -53,6 +57,15 @@ var BuildCommand = cli.Command{
 	Action:    CombinedBuild,
 }
 
+// LintCommand is the `vervet build` subcommand.
+var LintCommand = cli.Command{
+	Name:      "lint",
+	Usage:     "lint versioned resources into versioned OpenAPI specs",
+	ArgsUsage: "",
+	Flags:     buildFlags,
+	Action:    Lint,
+}
+
 // RetroBuild is the `vervet build` subcommand.
 var RetroBuildCommand = cli.Command{
 	Name:      "retrobuild",
@@ -85,6 +98,52 @@ func SimpleBuild(ctx *cli.Context) error {
 
 	err = simplebuild.Build(ctx.Context, project, pivotDate, versioningURL, false)
 	return err
+}
+
+type Linter struct {
+	RemotePath string
+	localPath  string
+	Command    string
+}
+
+func Lint(ctx *cli.Context) error {
+	linters := []*Linter{
+		{
+			RemotePath: "https://github.com/snyk/vervet/releases/download/v8.8.0/vervet_8.8.0_%s_%s.tar.gz",
+			Command:    "./vervet",
+		},
+	}
+	linterDir := os.Getenv("VERVET_LINTER_DIR")
+	if linterDir == "" {
+		linterDir = "/tmp/vervet-linters"
+		err := os.MkdirAll(linterDir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	//fetch
+	for _, linter := range linters {
+		sourcePath := fmt.Sprintf(linter.RemotePath, runtime.GOOS, runtime.GOARCH)
+		linterDest := path.Join(linterDir, fmt.Sprintf("%x", md5.Sum([]byte(linter.RemotePath))))
+		_, err := getter.DefaultClient.Get(ctx.Context, &getter.Request{
+			Src: sourcePath,
+			Dst: linterDest,
+		})
+		if err != nil {
+			return err
+		}
+		linter.localPath = path.Join(linterDest, linter.Command)
+	}
+
+	//run
+	for _, linter := range linters {
+		err := exec.Command(linter.localPath).Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // CombinedBuild compiles versioned resources into versioned API specs
