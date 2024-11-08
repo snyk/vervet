@@ -14,7 +14,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-//go:generate ../../scripts/genversion.bash
+// MANAGED BY scripts/genversion.bash DO NOT EDIT.
+const cmdVersion = "v8.8.0"
 
 // VervetParams contains configuration parameters for the Vervet CLI application.
 type VervetParams struct {
@@ -65,7 +66,7 @@ func NewApp(app *cli.App, vp VervetParams) *VervetApp {
 var CLIApp = cli.App{
 	Name:    "vervet",
 	Usage:   "OpenAPI resource versioning tool",
-	Version: "develop", // Set in init created with go generate.
+	Version: cmdVersion,
 	Flags: []cli.Flag{
 		&cli.BoolFlag{
 			Name:  "debug",

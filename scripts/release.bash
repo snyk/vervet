@@ -13,18 +13,6 @@ if [ -z "${GOPATH:-}" ]; then
 fi
 export PATH=$GOPATH/bin:$PATH
 
-# Push tags in CI environment
-if [ -z $(git config user.email) ]; then
-    git config credential.helper 'cache --timeout=120'
-    git config user.email "vervet-ci@noreply.snyk.io"
-    git config user.name "Vervet CI"
-fi
-
-go generate ./internal/cmd/...
-
-git tag ${VERSION}
-git push -q https://${GH_TOKEN}@github.com/snyk/vervet.git --tags
-
 # Publish npm package
 if [ ! -e "dist/.npmrc" ]; then
     echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > dist/.npmrc
