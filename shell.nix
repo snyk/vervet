@@ -1,20 +1,17 @@
-{ pkgs ? import <nixpkgs> { }, nodeEnv }:
+{
+  pkgs ? import <nixpkgs> { },
+}:
+with builtins;
 let
-  spectral = pkgs.callPackage ./spectral.nix {
-    inherit (pkgs) fetchurl;
-    buildNodePackage = nodeEnv.buildNodePackage;
-  };
-in pkgs.mkShell {
-  nativeBuildInputs = with pkgs.buildPackages; [
-    go_1_22
+  goMinorVersion = head (match ".*go 1\.\([0-9]+\)\(\.[0-9]+\)?\n.*" (readFile ./go.mod));
+  go = pkgs."go_1_${goMinorVersion}";
+in
+pkgs.mkShell {
+  packages = with pkgs; [
+    go
     gopls
     gotools
     golangci-lint
     envsubst
-    spectral
   ];
-  shellHook = ''
-    export GOPATH="$HOME/.cache/gopaths/$(sha256sum <<<$(pwd) | awk '{print $1}')"
-  '';
 }
-
