@@ -13,5 +13,6 @@ pkgs.mkShell {
     gotools
     golangci-lint
     envsubst
+    gomod2nix
   ];
 }

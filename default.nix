@@ -1,17 +1,16 @@
 {
-  buildGoModule,
+  buildGoApplication,
   lib,
 }:
 with builtins;
 let
   version = head (match ".*const cmdVersion = \"(.*)\"\n.*" (readFile ./internal/cmd/cmd.go));
 in
-buildGoModule {
+buildGoApplication {
   inherit version;
   pname = "vervet";
   src = ./.;
-
-  vendorHash = "sha256-9BxGg0tOToOJhuMaVBgW89qVxEOTLGJy7h8rwKHsDkE=";
+  modules = ./gomod2nix.toml;
 
   meta = with lib; {
     description = "API resource versioning tool";
