@@ -57,10 +57,6 @@ jobs:
   test:
     <<: *test_defaults
     steps:
-      - node/install
-      - run:
-          name: Install spectral
-          command: npm install -g @stoplight/spectral@6.5.0
       - checkout
       - go/install:
           version: 1.22.5
