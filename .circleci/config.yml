@@ -201,6 +201,7 @@ workflows:
 
       - prepare-release:
           name: Prepare Release
+          context: nodejs-app-release
           requires:
             - Test
             - Security Scans
