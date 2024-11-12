@@ -199,7 +199,7 @@ func LoadResourceVersions(epPath string) (*ResourceVersions, error) {
 	for _, spec := range specs {
 		dir := filepath.Dir(spec)
 		if _, ok := specDirs[dir]; ok {
-			return nil, fmt.Errorf("duplicate spec found in " + dir)
+			return nil, fmt.Errorf("duplicate spec found in %s", dir)
 		} else {
 			specDirs[dir] = struct{}{}
 		}
