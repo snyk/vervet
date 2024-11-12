@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/urfave/cli/v2"
 
@@ -144,34 +143,26 @@ func projectFromContext(ctx *cli.Context) (*config.Project, error) {
 		} else {
 			configPath = ".vervet.yaml"
 		}
-		f, err := os.Open(configPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open %q: %w", configPath, err)
-		}
-		defer f.Close()
-		project, err = config.Load(f)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		api := &config.API{
-			Resources: []*config.ResourceSet{{
-				Path: ctx.Args().Get(0),
-			}},
-			Output: &config.Output{
-				Path: ctx.Args().Get(1),
-			},
-		}
-		if includePath := ctx.String("include"); includePath != "" {
-			api.Overlays = append(api.Overlays, &config.Overlay{
-				Include: includePath,
-			})
-		}
-		project = &config.Project{
-			APIs: map[string]*config.API{
-				"": api,
-			},
-		}
+		return config.FromFile(configPath)
+	}
+
+	api := &config.API{
+		Resources: []*config.ResourceSet{{
+			Path: ctx.Args().Get(0),
+		}},
+		Output: &config.Output{
+			Path: ctx.Args().Get(1),
+		},
+	}
+	if includePath := ctx.String("include"); includePath != "" {
+		api.Overlays = append(api.Overlays, &config.Overlay{
+			Include: includePath,
+		})
+	}
+	project = &config.Project{
+		APIs: map[string]*config.API{
+			"": api,
+		},
 	}
 	return project, nil
 }
