@@ -1,10 +1,16 @@
-{ buildGoModule, lib, lastMod }:
-buildGoModule rec {
+{
+  buildGoApplication,
+  lib,
+}:
+with builtins;
+let
+  version = head (match ".*const cmdVersion = \"(.*)\"\n.*" (readFile ./internal/cmd/cmd.go));
+in
+buildGoApplication {
+  inherit version;
   pname = "vervet";
-  version = builtins.substring 0 8 lastMod;
   src = ./.;
-
-  vendorHash = "sha256-h9EhXURMl9FtB694iRxkgxsJjwatCvn6+mXHKSaOzfM=";
+  modules = ./gomod2nix.toml;
 
   meta = with lib; {
     description = "API resource versioning tool";

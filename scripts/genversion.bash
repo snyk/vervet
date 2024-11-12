@@ -4,12 +4,4 @@ cd $(dirname $0)/..
 
 [ -n "${VERSION}" ]
 
-cat << EOF > internal/cmd/generate_version_init.go
-// THIS IS A GENERATED FILE. DO NOT EDIT.
-
-package cmd
-
-func init() {
-    Vervet.App.Version = "${VERSION}"
-}
-EOF
+sed -i -r "s/^(const cmdVersion = )\".*\"$/\1\"${VERSION}\"/" internal/cmd/cmd.go

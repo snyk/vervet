@@ -32,6 +32,13 @@ only_main_branch_filter: &only_main_branch_filter
         - main
         - v7
 
+only_tags_filter: &only_tags_filter
+  filters:
+    tags:
+      only: /^v.*/
+    branches:
+      ignore: /.*/
+
 commands:
   gcr_auth:
     description: Auth GCR
@@ -50,10 +57,6 @@ jobs:
   test:
     <<: *test_defaults
     steps:
-      - node/install
-      - run:
-          name: Install spectral
-          command: npm install -g @stoplight/spectral@6.5.0
       - checkout
       - go/install:
           version: 1.22.5
@@ -94,7 +97,7 @@ jobs:
       - publish/save-image:
           image_name: vervet-underground
 
-  release:
+  prepare-release:
     <<: *defaults
     steps:
       - checkout
@@ -102,9 +105,29 @@ jobs:
           go install github.com/caarlos0/svu@latest
           export VERSION=$(svu next)
           if [ -z $(git tag -l ${VERSION}) ]; then
-            ./scripts/dist.bash
-            ./scripts/release.bash
+            ./scripts/genversion.bash
+            # Sync dependencies to the nix package, will be a no-op if
+            # dependencies haven't changed
+            go run github.com/nix-community/gomod2nix@latest
+            if [ -z $(git config user.email) ]; then
+                git config credential.helper 'cache --timeout=120'
+                git config user.email "vervet-ci@noreply.snyk.io"
+                git config user.name "Vervet CI"
+            fi
+            git add internal/cmd/cmd.go gomod2nix.toml
+            git commit -m "chore: prepare release ${VERSION}"
+            git tag ${VERSION}
+            git push -q https://${GH_TOKEN}@github.com/snyk/vervet.git main --tags
           fi
+
+  release:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: |-
+          export VERSION=$CIRCLE_TAG
+          ./scripts/dist.bash
+          ./scripts/release.bash
 
   rebuild-tools:
     <<: *defaults
@@ -117,7 +140,7 @@ jobs:
 
 workflows:
   version: 2
-  CI:
+  branch:
     jobs:
       - test:
           name: Test
@@ -159,7 +182,7 @@ workflows:
           requires:
             - Build Docker Image
 
-  CD:
+  main:
     jobs:
       - test:
           name: Test
@@ -176,11 +199,25 @@ workflows:
           context: snyk-docker-build
           <<: *only_main_branch_filter
 
+      - prepare-release:
+          name: Prepare Release
+          requires:
+            - Test
+            - Security Scans
+            - Build Docker Image
+          <<: *only_main_branch_filter
+
+  release:
+    jobs:
       - release:
           name: Release
           context: nodejs-app-release
-          requires:
-            - Test
+          <<: *only_tags_filter
+
+      - build-vu:
+          name: Build Docker Image
+          context: snyk-docker-build
+          <<: *only_tags_filter
 
       - publish/publish:
           name: Publish Docker Image
@@ -196,6 +233,7 @@ workflows:
             - snyk-bot-slack
           requires:
             - Build Docker Image
+          <<: *only_tags_filter
 
       - rebuild-tools:
           name: Rebuild api-tooling
@@ -203,3 +241,5 @@ workflows:
             - manage-api-tooling
           requires:
             - Release
+            - Publish Docker Image
+          <<: *only_tags_filter
