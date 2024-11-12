@@ -14,14 +14,7 @@ import (
 // It will resolve all references in the spec so the output can be consumed by
 // tooling unaware applications.
 func GetInputSpecs(ctx context.Context, api *config.API) ([]*vervet.Document, error) {
-	docs := []*vervet.Document{}
-	for doc, err := range GetInputSpecsItr(ctx, api) {
-		if err != nil {
-			return nil, err
-		}
-		docs = append(docs, doc)
-	}
-	return docs, nil
+	return gather(GetInputSpecsItr(ctx, api))
 }
 
 // GetInputSpecsItr is a iterator version of GetInputSpecs. It is preferred for
@@ -50,4 +43,44 @@ func GetInputSpecsItr(ctx context.Context, api *config.API) iter.Seq2[*vervet.Do
 			}
 		}
 	}
+}
+
+// GetOutputSpecs returns a list of all of the compiled specs for a given
+// project. Assumes that the specs have already been compiled by vervet and are
+// up to date.
+func GetOutputSpecs(ctx context.Context, api *config.API) ([]*vervet.Document, error) {
+	return gather(GetOutputSpecsItr(ctx, api))
+}
+
+// GetOutputSpecsItr is a iterator version of GetOutputSpecs. It is preferred for
+// lazy operations.
+func GetOutputSpecsItr(ctx context.Context, api *config.API) iter.Seq2[*vervet.Document, error] {
+	return func(yield func(*vervet.Document, error) bool) {
+		resource := &config.ResourceSet{
+			Path: api.Output.Path,
+		}
+		paths, err := files.LocalFSSource{}.Match(resource)
+		if err != nil {
+			if !yield(nil, err) {
+				return
+			}
+		}
+		for _, path := range paths {
+			doc, err := vervet.NewDocumentFile(path)
+			if !yield(doc, err) {
+				return
+			}
+		}
+	}
+}
+
+func gather(itr iter.Seq2[*vervet.Document, error]) ([]*vervet.Document, error) {
+	docs := []*vervet.Document{}
+	for doc, err := range itr {
+		if err != nil {
+			return nil, err
+		}
+		docs = append(docs, doc)
+	}
+	return docs, nil
 }
