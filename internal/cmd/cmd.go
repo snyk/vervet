@@ -15,7 +15,7 @@ import (
 )
 
 // MANAGED BY scripts/genversion.bash DO NOT EDIT.
-const cmdVersion = "v8.8.0"
+const cmdVersion = "v8.9.0"
 
 // VervetParams contains configuration parameters for the Vervet CLI application.
 type VervetParams struct {
