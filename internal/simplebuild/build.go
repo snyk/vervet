@@ -22,6 +22,7 @@ import (
 	"github.com/snyk/vervet/v8"
 	"github.com/snyk/vervet/v8/config"
 	"github.com/snyk/vervet/v8/internal/files"
+	"github.com/snyk/vervet/v8/specs"
 )
 
 // Build compiles the versioned resources in a project configuration based on
@@ -250,60 +251,44 @@ func LoadPaths(ctx context.Context, api *config.API) (Operations, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	for _, resource := range api.Resources {
-		paths, err := ResourceSpecFiles(resource)
+	for doc, err := range specs.GetInputSpecsItr(ctx, api) {
 		if err != nil {
 			return nil, err
 		}
-		for _, path := range paths {
-			versionDir := filepath.Dir(path)
-			versionStr := filepath.Base(versionDir)
-			resourceName := filepath.Base(filepath.Dir(filepath.Dir(path)))
 
-			doc, err := vervet.NewDocumentFile(path)
-			if err != nil {
-				return nil, fmt.Errorf("failed to load spec from %q: %w", path, err)
-			}
+		version, err := doc.Version()
+		if err != nil {
+			return nil, fmt.Errorf("invalid version on path %q", doc.Location().String())
+		}
+		stabilityStr, err := vervet.ExtensionString(doc.T.Extensions, vervet.ExtSnykApiStability)
+		if err != nil {
+			return nil, err
+		}
+		version.Stability, err = vervet.ParseStability(stabilityStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid stability %q", stabilityStr)
+		}
+		resourceName := filepath.Base(filepath.Dir(doc.RelativePath()))
 
-			stabilityStr, err := vervet.ExtensionString(doc.T.Extensions, vervet.ExtSnykApiStability)
-			if err != nil {
-				return nil, err
-			}
-			if stabilityStr != "ga" {
-				versionStr = fmt.Sprintf("%s~%s", versionStr, stabilityStr)
-			}
-			version, err := vervet.ParseVersion(versionStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid version %q", versionStr)
-			}
-
-			doc.InternalizeRefs(ctx, vervet.ResolveRefsWithoutSourceName)
-			err = doc.ResolveRefs()
-			if err != nil {
-				return nil, fmt.Errorf("failed to localize refs: %w", err)
-			}
-
-			for _, pathName := range doc.T.Paths.InMatchingOrder() {
-				pathDef := doc.T.Paths.Value(pathName)
-				for opName, opDef := range pathDef.Operations() {
-					if opDef.Extensions == nil {
-						opDef.Extensions = make(map[string]interface{})
-					}
-					opDef.Extensions[vervet.ExtSnykApiOwner] = ownerFinder.Owners(path)
-					k := OpKey{
-						Path:   pathName,
-						Method: opName,
-					}
-					if operations[k] == nil {
-						operations[k] = []VersionedOp{}
-					}
-					operations[k] = append(operations[k], VersionedOp{
-						Version:      version,
-						Operation:    opDef,
-						ResourceName: resourceName,
-					})
+		for _, pathName := range doc.T.Paths.InMatchingOrder() {
+			pathDef := doc.T.Paths.Value(pathName)
+			for opName, opDef := range pathDef.Operations() {
+				if opDef.Extensions == nil {
+					opDef.Extensions = make(map[string]interface{})
 				}
+				opDef.Extensions[vervet.ExtSnykApiOwner] = ownerFinder.Owners(doc.Location().String())
+				k := OpKey{
+					Path:   pathName,
+					Method: opName,
+				}
+				if operations[k] == nil {
+					operations[k] = []VersionedOp{}
+				}
+				operations[k] = append(operations[k], VersionedOp{
+					Version:      version,
+					Operation:    opDef,
+					ResourceName: resourceName,
+				})
 			}
 		}
 	}
