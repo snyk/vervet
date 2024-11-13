@@ -101,6 +101,9 @@ jobs:
     <<: *defaults
     steps:
       - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - SHA256:8/K40kKZXhfGUPDuibC3fluK0DaJq8dLX2+JqS16o78
       - run: |-
           go install github.com/caarlos0/svu@latest
           export VERSION=$(svu next)
@@ -117,7 +120,7 @@ jobs:
             git add internal/cmd/cmd.go gomod2nix.toml
             git commit -m "chore: prepare release ${VERSION}"
             git tag ${VERSION}
-            git push -q https://${GH_TOKEN}@github.com/snyk/vervet.git main --tags
+            git push main --tags --atomic
           fi
 
   release:
@@ -201,7 +204,6 @@ workflows:
 
       - prepare-release:
           name: Prepare Release
-          context: nodejs-app-release
           requires:
             - Test
             - Security Scans
