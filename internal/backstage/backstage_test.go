@@ -115,7 +115,7 @@ func TestLoadVersionsNoApis(t *testing.T) {
 	catalog, err := LoadCatalogInfo(bytes.NewBufferString(catalogSrc))
 	c.Assert(err, qt.IsNil)
 	versionsRoot := testdata.Path("output")
-	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC))
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC), "rest")
 	c.Assert(err, qt.IsNil)
 
 	var saveOutput bytes.Buffer
@@ -123,16 +123,16 @@ func TestLoadVersionsNoApis(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(saveOutput.String(), qt.Equals, catalogSrc+`
   providesApis:
-    - Registry_2021-06-01_experimental
-    - Registry_2021-06-04_experimental
-    - Registry_2021-06-07_experimental
-    - Registry_2021-06-13_beta
-    - Registry_2021-06-13_experimental
-    - Registry_2021-08-20_experimental
-    - Registry_2023-06-01_experimental
-    - Registry_2023-06-02_experimental
-    - Registry_2023-06-03_experimental
-    - Registry_2024-10-15_ga
+    - Registry_rest_2021-06-01_experimental
+    - Registry_rest_2021-06-04_experimental
+    - Registry_rest_2021-06-07_experimental
+    - Registry_rest_2021-06-13_beta
+    - Registry_rest_2021-06-13_experimental
+    - Registry_rest_2021-08-20_experimental
+    - Registry_rest_2023-06-01_experimental
+    - Registry_rest_2023-06-02_experimental
+    - Registry_rest_2023-06-03_experimental
+    - Registry_rest_2024-10-15_ga
 ---
 `[1:]+string(vervetAPIs))
 }
@@ -148,7 +148,7 @@ func TestLoadVersionsSomeApis(t *testing.T) {
 `[1:]))
 	c.Assert(err, qt.IsNil)
 	versionsRoot := testdata.Path("output")
-	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC))
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC), "rest")
 	c.Assert(err, qt.IsNil)
 
 	var saveOutput bytes.Buffer
@@ -156,16 +156,16 @@ func TestLoadVersionsSomeApis(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(saveOutput.String(), qt.Equals, catalogSrc+`
   providesApis:
-    - Registry_2021-06-01_experimental
-    - Registry_2021-06-04_experimental
-    - Registry_2021-06-07_experimental
-    - Registry_2021-06-13_beta
-    - Registry_2021-06-13_experimental
-    - Registry_2021-08-20_experimental
-    - Registry_2023-06-01_experimental
-    - Registry_2023-06-02_experimental
-    - Registry_2023-06-03_experimental
-    - Registry_2024-10-15_ga
+    - Registry_rest_2021-06-01_experimental
+    - Registry_rest_2021-06-04_experimental
+    - Registry_rest_2021-06-07_experimental
+    - Registry_rest_2021-06-13_beta
+    - Registry_rest_2021-06-13_experimental
+    - Registry_rest_2021-08-20_experimental
+    - Registry_rest_2023-06-01_experimental
+    - Registry_rest_2023-06-02_experimental
+    - Registry_rest_2023-06-03_experimental
+    - Registry_rest_2024-10-15_ga
     - someOtherApi
 ---
 `[1:]+string(vervetAPIs))
@@ -178,7 +178,7 @@ func TestDoesNotOutputStabilitiesAfterPivotDate(t *testing.T) {
 	catalog, err := LoadCatalogInfo(bytes.NewBufferString(catalogSrc))
 	c.Assert(err, qt.IsNil)
 	versionsRoot := testdata.Path("output")
-	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC))
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), "rest")
 	c.Assert(err, qt.IsNil)
 
 	var saveOutput bytes.Buffer
@@ -186,16 +186,16 @@ func TestDoesNotOutputStabilitiesAfterPivotDate(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(saveOutput.String(), qt.Equals, catalogSrc+`
   providesApis:
-    - Registry_2021-06-01_experimental
-    - Registry_2021-06-04_experimental
-    - Registry_2021-06-07_experimental
-    - Registry_2021-06-13_beta
-    - Registry_2021-06-13_experimental
-    - Registry_2021-08-20_experimental
-    - Registry_2023-06-01
-    - Registry_2023-06-02
-    - Registry_2023-06-03
-    - Registry_2024-10-15
+    - Registry_rest_2021-06-01_experimental
+    - Registry_rest_2021-06-04_experimental
+    - Registry_rest_2021-06-07_experimental
+    - Registry_rest_2021-06-13_beta
+    - Registry_rest_2021-06-13_experimental
+    - Registry_rest_2021-08-20_experimental
+    - Registry_rest_2023-06-01
+    - Registry_rest_2023-06-02
+    - Registry_rest_2023-06-03
+    - Registry_rest_2024-10-15
 ---
 `[1:]+string(vervetAPIs))
 }
@@ -205,9 +205,9 @@ func TestWarnsAboutConflictingNames(t *testing.T) {
 	catalog, err := LoadCatalogInfo(bytes.NewBufferString(catalogSrc))
 	c.Assert(err, qt.IsNil)
 	versionsRoot := testdata.Path("output")
-	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC))
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), "rest")
 	c.Assert(err, qt.IsNil)
 
-	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC))
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), "rest")
 	c.Assert(err, qt.IsNotNil)
 }

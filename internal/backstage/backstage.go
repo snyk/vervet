@@ -180,7 +180,7 @@ func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
 
 // LoadVervetAPIs loads all the compiled versioned OpenAPI specs and adds them
 // to the catalog as API components.
-func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time) error {
+func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time, apiName string) error {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return err
@@ -204,7 +204,7 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time)
 		if err != nil {
 			return err
 		}
-		api, err := c.vervetAPI(doc, root, pivotDate)
+		api, err := c.vervetAPI(doc, root, pivotDate, apiName)
 		if err != nil {
 			return err
 		}
@@ -261,7 +261,7 @@ To resolve this error change the Name attribute in one of the spec files`,
 }
 
 // vervetAPI adds an OpenAPI spec document to the catalog.
-func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate time.Time) (*API, error) {
+func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate time.Time, apiName string) (*API, error) {
 	version, err := doc.Version()
 	if err != nil {
 		return nil, err
@@ -271,7 +271,7 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate tim
 		return nil, err
 	}
 
-	name := toBackstageName(doc.Info.Title) + "_" + version.DateString()
+	name := fmt.Sprintf("%s_%s_%s", toBackstageName(doc.Info.Title), toBackstageName(apiName), version.DateString())
 	title := doc.Info.Title + " " + version.DateString()
 	labels := map[string]string{
 		snykApiVersionDate: version.DateString(),

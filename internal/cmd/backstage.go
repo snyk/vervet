@@ -194,7 +194,7 @@ func processCatalog(ctx *cli.Context, w io.Writer) error {
 		for _, outputPath := range outputPaths {
 			outputPath = filepath.Join(projectDir, outputPath)
 			if matchPath(outputPath) {
-				if err := catalogInfo.LoadVervetAPIs(projectDir, outputPath, pivotDate.Date); err != nil {
+				if err := catalogInfo.LoadVervetAPIs(projectDir, outputPath, pivotDate.Date, apiName); err != nil {
 					return err
 				}
 				break
