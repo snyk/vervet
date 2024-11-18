@@ -5,6 +5,7 @@ package backstage
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -167,6 +168,7 @@ func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
 	if catalog.service != nil {
 		var apiNames []string
 		for _, apiName := range catalog.serviceComponent.Spec.ProvidesAPIs {
+			// Preserve manually added entries, things are are NOT vervet APIs
 			if _, ok := vervetAPINames[apiName]; !ok {
 				apiNames = append(apiNames, apiName)
 			}
@@ -205,6 +207,13 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time)
 		api, err := c.vervetAPI(doc, root, pivotDate)
 		if err != nil {
 			return err
+		}
+		if _, ok := apiUniqueNames[api.Metadata.Name]; ok {
+			return fmt.Errorf(`
+there are multiple apis named %s, only one will be available on Backstage.
+To resolve this error change the Name attribute in one of the spec files`,
+				api.Metadata.Name,
+			)
 		}
 		c.VervetAPIs = append(c.VervetAPIs, api)
 		apiUniqueNames[api.Metadata.Name] = struct{}{}

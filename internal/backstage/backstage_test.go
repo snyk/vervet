@@ -199,3 +199,15 @@ func TestDoesNotOutputStabilitiesAfterPivotDate(t *testing.T) {
 ---
 `[1:]+string(vervetAPIs))
 }
+
+func TestWarnsAboutConflictingNames(t *testing.T) {
+	c := qt.New(t)
+	catalog, err := LoadCatalogInfo(bytes.NewBufferString(catalogSrc))
+	c.Assert(err, qt.IsNil)
+	versionsRoot := testdata.Path("output")
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC))
+	c.Assert(err, qt.IsNil)
+
+	err = catalog.LoadVervetAPIs(testdata.Path("."), versionsRoot, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC))
+	c.Assert(err, qt.IsNotNil)
+}
