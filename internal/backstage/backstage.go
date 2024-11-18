@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -211,7 +212,8 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time,
 		if _, ok := apiUniqueNames[api.Metadata.Name]; ok {
 			return fmt.Errorf(`
 there are multiple apis named %s, only one will be available on Backstage.
-To resolve this error change the Name attribute in one of the spec files`,
+To resolve this error change the Name attribute in one of the spec files.
+Note names may be truncated to fit the Backstage 63 character limit`,
 				api.Metadata.Name,
 			)
 		}
@@ -271,7 +273,10 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate tim
 		return nil, err
 	}
 
-	name := fmt.Sprintf("%s_%s_%s", toBackstageName(doc.Info.Title), toBackstageName(apiName), version.DateString())
+	name_suffix := fmt.Sprintf("_%s_%s", toBackstageName(apiName), version.DateString())
+	// Backstage names can only be a maximum of 63 characters
+	name_len := 63 - len(name_suffix)
+	name := fmt.Sprintf("%."+strconv.Itoa(name_len)+"s%s", toBackstageName(doc.Info.Title), name_suffix)
 	title := doc.Info.Title + " " + version.DateString()
 	labels := map[string]string{
 		snykApiVersionDate: version.DateString(),
