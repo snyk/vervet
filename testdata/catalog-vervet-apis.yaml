@@ -2,7 +2,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2021-06-01_experimental
+  name: Registry_rest_2021-06-01_experimental
   title: Registry 2021-06-01 experimental
   annotations:
     api.snyk.io/generated-by: vervet
@@ -25,7 +25,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2021-06-04_experimental
+  name: Registry_rest_2021-06-04_experimental
   title: Registry 2021-06-04 experimental
   annotations:
     api.snyk.io/generated-by: vervet
@@ -48,7 +48,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2021-06-07_experimental
+  name: Registry_rest_2021-06-07_experimental
   title: Registry 2021-06-07 experimental
   annotations:
     api.snyk.io/generated-by: vervet
@@ -71,7 +71,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2021-06-13_beta
+  name: Registry_rest_2021-06-13_beta
   title: Registry 2021-06-13 beta
   annotations:
     api.snyk.io/generated-by: vervet
@@ -94,7 +94,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2021-06-13_experimental
+  name: Registry_rest_2021-06-13_experimental
   title: Registry 2021-06-13 experimental
   annotations:
     api.snyk.io/generated-by: vervet
@@ -117,7 +117,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2021-08-20_experimental
+  name: Registry_rest_2021-08-20_experimental
   title: Registry 2021-08-20 experimental
   annotations:
     api.snyk.io/generated-by: vervet
@@ -140,7 +140,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2023-06-01_experimental
+  name: Registry_rest_2023-06-01_experimental
   title: Registry 2023-06-01 experimental
   annotations:
     api.snyk.io/generated-by: vervet
@@ -163,7 +163,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2023-06-02_experimental
+  name: Registry_rest_2023-06-02_experimental
   title: Registry 2023-06-02 experimental
   annotations:
     api.snyk.io/generated-by: vervet
@@ -186,7 +186,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2023-06-03_experimental
+  name: Registry_rest_2023-06-03_experimental
   title: Registry 2023-06-03 experimental
   annotations:
     api.snyk.io/generated-by: vervet
@@ -209,7 +209,7 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: Registry_2024-10-15_ga
+  name: Registry_rest_2024-10-15_ga
   title: Registry 2024-10-15 ga
   annotations:
     api.snyk.io/generated-by: vervet

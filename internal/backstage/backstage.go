@@ -5,11 +5,13 @@ package backstage
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -167,6 +169,7 @@ func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
 	if catalog.service != nil {
 		var apiNames []string
 		for _, apiName := range catalog.serviceComponent.Spec.ProvidesAPIs {
+			// Preserve manually added entries, things are are NOT vervet APIs
 			if _, ok := vervetAPINames[apiName]; !ok {
 				apiNames = append(apiNames, apiName)
 			}
@@ -178,7 +181,7 @@ func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
 
 // LoadVervetAPIs loads all the compiled versioned OpenAPI specs and adds them
 // to the catalog as API components.
-func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time) error {
+func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time, apiName string) error {
 	root, err := filepath.Abs(root)
 	if err != nil {
 		return err
@@ -202,9 +205,17 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time)
 		if err != nil {
 			return err
 		}
-		api, err := c.vervetAPI(doc, root, pivotDate)
+		api, err := c.vervetAPI(doc, root, pivotDate, apiName)
 		if err != nil {
 			return err
+		}
+		if _, ok := apiUniqueNames[api.Metadata.Name]; ok {
+			return fmt.Errorf(`
+there are multiple apis named %s, only one will be available on Backstage.
+To resolve this error change the Name attribute in one of the spec files.
+Note names may be truncated to fit the Backstage 63 character limit`,
+				api.Metadata.Name,
+			)
 		}
 		c.VervetAPIs = append(c.VervetAPIs, api)
 		apiUniqueNames[api.Metadata.Name] = struct{}{}
@@ -252,7 +263,7 @@ func (c *CatalogInfo) LoadVervetAPIs(root, versions string, pivotDate time.Time)
 }
 
 // vervetAPI adds an OpenAPI spec document to the catalog.
-func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate time.Time) (*API, error) {
+func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate time.Time, apiName string) (*API, error) {
 	version, err := doc.Version()
 	if err != nil {
 		return nil, err
@@ -262,7 +273,10 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate tim
 		return nil, err
 	}
 
-	name := toBackstageName(doc.Info.Title) + "_" + version.DateString()
+	name_suffix := fmt.Sprintf("_%s_%s", toBackstageName(apiName), version.DateString())
+	// Backstage names can only be a maximum of 63 characters
+	name_len := 63 - len(name_suffix)
+	name := fmt.Sprintf("%."+strconv.Itoa(name_len)+"s%s", toBackstageName(doc.Info.Title), name_suffix)
 	title := doc.Info.Title + " " + version.DateString()
 	labels := map[string]string{
 		snykApiVersionDate: version.DateString(),
