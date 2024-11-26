@@ -34,6 +34,15 @@ func (v Version) String() string {
 	return d
 }
 
+// RoutableString returns the string representation of the version that can used while setting up the router.
+// If the version is before the DefaultPivotDate, it will return the stability in the string.
+func (v Version) RoutableString() string {
+	if v.Date.Before(DefaultPivotDate.Date) {
+		return v.String()
+	}
+	return v.DateString()
+}
+
 // AddDays returns the version corresponding to adding the given number of days
 // to the version date.
 func (v Version) AddDays(days int) Version {
