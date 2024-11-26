@@ -557,3 +557,54 @@ func TestVersionIndex_ResolveGAorBetaStability(t *testing.T) {
 		})
 	}
 }
+
+func TestVersion_RoutableString(t *testing.T) {
+	tests := []struct {
+		name string
+		v    Version
+		want string
+	}{
+		{
+			name: "ga before pivot date",
+			v:    MustParseVersion("2021-06-07"),
+			want: "2021-06-07",
+		},
+		{
+			name: "beta before pivot date",
+			v:    MustParseVersion("2021-06-07~beta"),
+			want: "2021-06-07~beta",
+		},
+		{
+			name: "beta before pivot date",
+			v:    MustParseVersion("2021-06-07~experimental"),
+			want: "2021-06-07~experimental",
+		},
+		{
+			name: "ga on pivot date",
+			v:    MustParseVersion("2024-10-15"),
+			want: "2024-10-15",
+		},
+		{
+			name: "beta on pivot date",
+			v:    MustParseVersion("2024-10-15~beta"),
+			want: "2024-10-15",
+		},
+		{
+			name: "ga after pivot date",
+			v:    MustParseVersion("2024-11-15"),
+			want: "2024-11-15",
+		},
+		{
+			name: "beta after pivot date",
+			v:    MustParseVersion("2024-11-15~beta"),
+			want: "2024-11-15",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.v.RoutableString(); got != tt.want {
+				t.Errorf("RoutableString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
