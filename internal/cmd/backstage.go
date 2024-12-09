@@ -190,6 +190,10 @@ func processCatalog(ctx *cli.Context, w io.Writer) error {
 	for _, apiName := range apiNames {
 		apiConf := proj.APIs[apiName]
 		outputPaths := apiConf.Output.ResolvePaths()
+		if len(outputPaths) == 0 {
+			log.Printf("API %q has no output paths, this command will have no effect", apiName)
+			continue
+		}
 		for _, outputPath := range outputPaths {
 			outputPath = filepath.Join(projectDir, outputPath)
 			if matchPath(outputPath) {
