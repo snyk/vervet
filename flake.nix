@@ -5,7 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     gomod2nix = {
-      url = "github:nix-community/gomod2nix";
+      url = "github:obreitwi/gomod2nix/9048c4bd5c1c1a48f55760d920617cc3ce6c685b";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
