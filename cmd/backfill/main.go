@@ -27,6 +27,7 @@ type Endpoint struct {
 	Method       string
 	Permissions  map[authz.Permission]interface{}
 	Entitlements map[authz.Entitlement]interface{}
+	Audit        bool
 }
 
 func main() {
@@ -114,6 +115,22 @@ func matching(extension *openapi3cerb.Extension, endpoint Endpoint, opKey simple
 			permA,
 			permB,
 		)
+	}
+
+	// Auditing relies on authn
+	if !extension.Authorization.Skip {
+		if extension.EnableAccessAudit != endpoint.Audit {
+			fmt.Printf(
+				" ! %s - %s [%s] \taudit mismatch - spec: %t, csv: %t\n",
+				version.String(),
+				opKey.Path,
+				opKey.Method,
+				extension.EnableAccessAudit,
+				endpoint.Audit,
+			)
+		}
+	} else if endpoint.Audit {
+		fmt.Printf(" - %s - %s [%s] \taudit skipped\n", version.String(), opKey.Path, opKey.Method)
 	}
 }
 
@@ -229,6 +246,7 @@ func getEndpoints(csvPath string) (map[string][]Endpoint, error) {
 				Method:       method,
 				Permissions:  make(map[authz.Permission]interface{}),
 				Entitlements: make(map[authz.Entitlement]interface{}),
+				Audit:        hasAuditMiddleware(data[4]),
 			}
 			apiEndpoints = append(apiEndpoints, *ep)
 		}
@@ -247,6 +265,15 @@ func getEndpoints(csvPath string) (map[string][]Endpoint, error) {
 		endpoints[apiName] = apiEndpoints
 	}
 	return endpoints, nil
+}
+
+func hasAuditMiddleware(middlewares string) bool {
+	for _, middleware := range strings.Split(middlewares, ">") {
+		if middleware == "accessLogHandler" {
+			return true
+		}
+	}
+	return false
 }
 
 func findByStr(path, method string, haystack []Endpoint) *Endpoint {
