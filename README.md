@@ -456,6 +456,15 @@ If a version date prior to `2021-11-08` resolves to `2021-09-14~experimental`, y
 
 If a version date after `2021-11-08` matches `2021-09-14~experimental`, let's say a request for `2021-12-10~experimental`, then you should see it as it would appear after the non-breaking change, `2021-11-08_13_14_15.spec.yaml`.
 
+# Phase-out of experimental versions
+
+We are phasing out the support for experimental versions. Starting now, Vervet Underground will no longer scrape dates that should not be publicly documented. This means that
+
+- Vervet Undergrounds scraper will no longer scrape experimental versions newer than 2024-09-08 
+- Older versions will continue to be scraped and documented as usual, we have opted to keep the older versions as not to break any existing integrations.
+
+This change ensures that our API documentation remains clear and focused on stable, reliable versions that are ready for public use. It helps maintain the integrity and quality of our publicly available APIs, ensuring that consumers are not exposed to experimental and potentially unstable features.
+
 # Roadmap
 
 ## Minimum Viable
