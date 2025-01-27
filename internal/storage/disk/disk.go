@@ -30,8 +30,8 @@ type Storage struct {
 type Option func(*Storage)
 
 type objectMeta struct {
-	blob    []byte
-	lastMod time.Time
+	Blob    []byte
+	LastMod time.Time
 }
 
 func New(path string, options ...Option) storage.Storage {
@@ -88,7 +88,7 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 
 	// all specs are stored as: "service-versions/{service_name}/{version}/{digest}.json"
 	for _, revKey := range serviceRevisions {
-		service, version, digest, err := parseServiceVersionRevisionKey(revKey)
+		service, version, digest, err := ParseServiceVersionRevisionKey(revKey)
 		if err != nil {
 			return err
 		}
@@ -109,9 +109,9 @@ func (s *Storage) CollateVersions(ctx context.Context, serviceFilter map[string]
 		revision := storage.ContentRevision{
 			Service:   service,
 			Version:   parsedVersion,
-			Timestamp: rev.lastMod,
+			Timestamp: rev.LastMod,
 			Digest:    storage.Digest(digest),
-			Blob:      rev.blob,
+			Blob:      rev.Blob,
 		}
 		aggregate.Add(service, revision)
 	}
@@ -179,7 +179,7 @@ func (s *Storage) VersionIndex(ctx context.Context) (vervet.VersionIndex, error)
 	}
 	vs := make(vervet.VersionSlice, len(objects))
 	for idx, obj := range objects {
-		_, versionStr, _, err := parseServiceVersionRevisionKey(obj)
+		_, versionStr, _, err := ParseServiceVersionRevisionKey(obj)
 		if err != nil {
 			return vervet.VersionIndex{}, err
 		}
@@ -269,7 +269,7 @@ func (s *Storage) ListObjects(ctx context.Context, key string) ([]string, error)
 	return objects, err
 }
 
-func parseServiceVersionRevisionKey(key string) (string, string, string, error) {
+func ParseServiceVersionRevisionKey(key string) (string, string, string, error) {
 	digestB64 := filepath.Base(key)
 	digestB64 = strings.TrimSuffix(digestB64, ".json")
 	digest, err := base64.StdEncoding.DecodeString(digestB64)
@@ -292,8 +292,8 @@ func (s *Storage) GetObjectWithMetadata(key string) (*objectMeta, error) {
 	lastMod := info.ModTime()
 	body, err := os.ReadFile(key)
 	return &objectMeta{
-		lastMod: lastMod,
-		blob:    body,
+		LastMod: lastMod,
+		Blob:    body,
 	}, err
 }
 

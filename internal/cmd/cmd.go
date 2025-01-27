@@ -83,6 +83,7 @@ var CLIApp = cli.App{
 		&LocalizeCommand,
 		&ResourceCommand,
 		&ResolveCommand,
+		&SanitizeCommand,
 	},
 }
 
