@@ -63,6 +63,8 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 }
 
 func (ex *excluder) apply() error {
+	// Remove top-level extensions
+	ex.applyExtensions(ex.doc.Extensions)
 	for _, pathItem := range ex.doc.Paths.Map() {
 		ex.applyExtensions(pathItem.Extensions)
 		for _, operation := range pathItem.Operations() {
