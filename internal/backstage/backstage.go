@@ -169,7 +169,7 @@ func LoadCatalogInfo(r io.Reader) (*CatalogInfo, error) {
 	if catalog.service != nil {
 		var apiNames []string
 		for _, apiName := range catalog.serviceComponent.Spec.ProvidesAPIs {
-			// Preserve manually added entries, things are are NOT vervet APIs
+			// Preserve manually added entries, things that are NOT vervet APIs
 			if _, ok := vervetAPINames[apiName]; !ok {
 				apiNames = append(apiNames, apiName)
 			}
@@ -273,27 +273,22 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate tim
 		return nil, err
 	}
 
-	name_suffix := fmt.Sprintf("_%s_%s", toBackstageName(apiName), version.DateString())
-	// Backstage names can only be a maximum of 63 characters
-	name_len := 63 - len(name_suffix)
-	name := fmt.Sprintf("%."+strconv.Itoa(name_len)+"s%s", toBackstageName(doc.Info.Title), name_suffix)
-	title := doc.Info.Title + " " + version.DateString()
+	apiNameBS := toBackstageName(apiName)
+	docTitleBS := toBackstageName(doc.Info.Title)
+	dateStr := version.DateString()
+	nameSuffix := fmt.Sprintf("_%s_%s", apiNameBS, dateStr)
+
+	title := doc.Info.Title + " " + dateStr
 	labels := map[string]string{
-		snykApiVersionDate: version.DateString(),
+		snykApiVersionDate: dateStr,
 	}
 	tags := []string{version.Date.Format("2006-01")}
-	spec := APISpec{
-		Type:      "openapi",
-		Owner:     c.serviceComponent.Spec.Owner,
-		Lifecycle: "production",
-		Definition: DefinitionRef{
-			Text: ref,
-		},
-	}
+	specLifecycle := "production"
 
 	// Specs generated after the pivot date have per operation stability, so
 	// there is no global stability for the whole document. To preserve
 	// backwards compatibility we still output metadata for the older specs.
+	var name string
 	if version.Date.Before(pivotDate) {
 		lifecycle := version.LifecycleAt(time.Time{})
 		var backstageLifecycle string
@@ -302,13 +297,26 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate tim
 		} else {
 			backstageLifecycle = lifecycle.String()
 		}
+		specLifecycle = backstageLifecycle
 
-		name = name + "_" + version.Stability.String()
-		title = title + " " + version.Stability.String()
-		labels[snykApiStability] = version.Stability.String()
+		stabilityStr := version.Stability.String()
+		stabilitySuffix := "_" + stabilityStr
+
+		// Backstage names can only be a maximum of 63 characters
+		availableTitleLen := 63 - len(nameSuffix) - len(stabilitySuffix)
+		if availableTitleLen < 0 {
+			availableTitleLen = 0
+		}
+		name = fmt.Sprintf("%."+strconv.Itoa(availableTitleLen)+"s%s%s", docTitleBS, nameSuffix, stabilitySuffix)
+		title = title + " " + stabilityStr
+
+		labels[snykApiStability] = stabilityStr
 		labels[snykApiLifecycle] = lifecycle.String()
-		tags = append(tags, version.Stability.String(), lifecycle.String())
-		spec.Lifecycle = backstageLifecycle
+		tags = append(tags, stabilityStr, lifecycle.String())
+	} else {
+		// Backstage names can only be a maximum of 63 characters
+		availableTitleLen := 63 - len(nameSuffix)
+		name = fmt.Sprintf("%."+strconv.Itoa(availableTitleLen)+"s%s", docTitleBS, nameSuffix)
 	}
 
 	return &API{
@@ -324,7 +332,14 @@ func (c *CatalogInfo) vervetAPI(doc *vervet.Document, root string, pivotDate tim
 				snykApiGeneratedBy: "vervet",
 			},
 		},
-		Spec: spec,
+		Spec: APISpec{
+			Type:      "openapi",
+			Owner:     c.serviceComponent.Spec.Owner,
+			Lifecycle: specLifecycle,
+			Definition: DefinitionRef{
+				Text: ref,
+			},
+		},
 	}, nil
 }
 
