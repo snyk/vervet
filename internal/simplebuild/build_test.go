@@ -1,6 +1,8 @@
 package simplebuild_test
 
 import (
+	"context"
+	"os"
 	"slices"
 	"testing"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/snyk/vervet/v8"
+	"github.com/snyk/vervet/v8/config"
 	"github.com/snyk/vervet/v8/internal/simplebuild"
 )
 
@@ -829,4 +832,50 @@ func TestMapStabilityLevel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildSkipsVersionCheckWhenFetchFails(t *testing.T) {
+	c := qt.New(t)
+	ctx := context.Background()
+
+	// Create a temporary working directory.
+	tempDir := t.TempDir()
+
+	origWD, err := os.Getwd()
+	c.Assert(err, qt.IsNil)
+	err = os.Chdir(tempDir)
+	c.Assert(err, qt.IsNil)
+
+	defer func() {
+		if err := os.Chdir(origWD); err != nil {
+			t.Errorf("failed to change directory back: %v", err)
+		}
+	}()
+
+	// Create an empty CODEOWNERS file to satisfy codeowners.FromFile.
+	err = os.WriteFile("CODEOWNERS", []byte(""), 0644)
+	c.Assert(err, qt.IsNil)
+
+	dummyOutput := &config.Output{
+		Path: tempDir,
+	}
+	dummyAPI := &config.API{
+		Name:      "dummy-api",
+		Output:    dummyOutput,
+		Resources: []*config.ResourceSet{},
+	}
+	dummyProject := &config.Project{
+		APIs: config.APIs{
+			"dummy-api": dummyAPI,
+		},
+	}
+
+	startDate := vervet.MustParseVersion("2020-01-01")
+
+	// Versioning URL that will fail
+	failingURL := "http://localhost:0"
+
+	// Even though fetching the latest version fails, the build should continue and return nil.
+	err = simplebuild.Build(ctx, dummyProject, startDate, failingURL, false)
+	c.Assert(err, qt.IsNil)
 }
