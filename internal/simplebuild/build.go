@@ -38,9 +38,10 @@ func Build(
 		return nil
 	}
 
-	latestVersion, err := fetchLatestVersion(versioningUrl)
-	if err != nil {
-		return err
+	latestVersion, fetchErr := fetchLatestVersion(versioningUrl)
+	if fetchErr != nil {
+		fmt.Printf("[WARNING] Could not fetch latest version from %q: %v\n", versioningUrl, fetchErr)
+		fmt.Println("[WARNING] Proceeding with the build without validating resources against the global latest version.")
 	}
 
 	for _, apiConfig := range project.APIs {
@@ -54,9 +55,10 @@ func Build(
 			if err != nil {
 				return err
 			}
-
-			if err := CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion); err != nil {
-				return err
+			if fetchErr == nil {
+				if err := CheckSingleVersionResourceToBeBeforeLatestVersion(paths, latestVersion); err != nil {
+					return err
+				}
 			}
 		}
 
