@@ -33,13 +33,16 @@ func TestRemoveElementsExact(t *testing.T) {
 		"x-private-matter",
 	)
 
+	// PATH-LEVEL EXTENSION
 	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.Not(qt.IsNil))
+
+	// DOC-LEVEL EXTENSION (Root of the OpenAPI)
 	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))
 
 	// Remove some of them
 
 	err = vervet.RemoveElements(doc.T, vervet.ExcludePatterns{
-		ExtensionPatterns: []string{"x-snyk-api-releases", "x-snyk-api-resource"},
+		ExtensionPatterns: []string{"x-snyk-api-releases", "x-snyk-api-resource", "x-snyk-api-lifecycle"},
 		HeaderPatterns:    []string{"snyk-request-id", "x-private-matter"},
 		Paths:             []string{"/examples/hello-world", "/examples/hello-world/{id}"},
 	})
@@ -60,8 +63,11 @@ func TestRemoveElementsExact(t *testing.T) {
 	c.Assert(doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").
 		Delete.Parameters, qt.HasLen, 3) // x-private-matter removed
 
-	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.IsNil) // now removed
-	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))                              // still there
+	// PATH-LEVEL EXTENSION removed
+	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.IsNil)
+
+	// DOC-LEVEL EXTENSION removed
+	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.IsNil)
 }
 
 func TestRemoveElementsRegex(t *testing.T) {
@@ -91,12 +97,17 @@ func TestRemoveElementsRegex(t *testing.T) {
 	)
 
 	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.Not(qt.IsNil))
+
+	// DOC-LEVEL EXTENSION (root)
 	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))
 
-	// Remove some of them
-
+	// Remove using regex patterns
+	// - "x-snyk-api-r.*" matches "x-snyk-api-resource"
+	// - "snyk-version-.*" matches "snyk-version-served" header
+	// - "x-private-.*" matches "x-private-matter"
+	// - "x-snyk-api-lifecycle" for doc-level extension
 	err = vervet.RemoveElements(doc.T, vervet.ExcludePatterns{
-		ExtensionPatterns: []string{"x-snyk-api-r.*"},
+		ExtensionPatterns: []string{"x-snyk-api-r.*", "x-snyk-api-lifecycle"},
 		HeaderPatterns:    []string{"snyk-version-.*", "x-private-.*"},
 	})
 	c.Assert(err, qt.IsNil)
@@ -115,8 +126,11 @@ func TestRemoveElementsRegex(t *testing.T) {
 		doc.Paths.Value("/orgs/{org_id}/projects/{project_id}").Delete.Parameters,
 		qt.HasLen,
 		3,
-	) // x-private-matter removed
+	)
 
-	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.IsNil) // now removed
-	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.Not(qt.IsNil))                              // still there
+	// PATH-LEVEL EXTENSION "x-snyk-api-resource" removed
+	c.Assert(doc.Paths.Value("/orgs/{orgId}/projects").Extensions["x-snyk-api-resource"], qt.IsNil)
+
+	// DOC-LEVEL EXTENSION "x-snyk-api-lifecycle" removed
+	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.IsNil)
 }
