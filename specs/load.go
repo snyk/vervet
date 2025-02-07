@@ -56,8 +56,14 @@ func GetOutputSpecs(ctx context.Context, api *config.API) ([]*vervet.Document, e
 // lazy operations.
 func GetOutputSpecsItr(ctx context.Context, api *config.API) iter.Seq2[*vervet.Document, error] {
 	return func(yield func(*vervet.Document, error) bool) {
+		path := api.Output.ResolvePaths()
+		if len(path) == 0 {
+			// No output defined for this api
+			return
+		}
 		resource := &config.ResourceSet{
-			Path: api.Output.Path,
+			// All output paths should have the same contents
+			Path: path[0],
 		}
 		paths, err := files.LocalFSSource{}.Match(resource)
 		if err != nil {
