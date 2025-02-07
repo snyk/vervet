@@ -857,7 +857,7 @@ func TestBuildSkipsVersionCheckWhenFetchFails(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	dummyOutput := &config.Output{
-		Path: tempDir,
+		Paths: []string{tempDir},
 	}
 	dummyAPI := &config.API{
 		Name:      "dummy-api",

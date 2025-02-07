@@ -36,7 +36,7 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 			name: "write the doc sets to outputs",
 			args: args{
 				cfg: config.Output{
-					Path: t.TempDir(),
+					Paths: []string{t.TempDir()},
 				},
 			},
 			docs: DocSet{
@@ -47,10 +47,10 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 			},
 			assert: func(t *testing.T, args args) {
 				t.Helper()
-				files, err := filepath.Glob(filepath.Join(args.cfg.Path, "*"))
+				files, err := filepath.Glob(filepath.Join(args.cfg.Paths[0], "*"))
 				c.Assert(err, qt.IsNil)
 				c.Assert(files, qt.HasLen, 2)
-				goEmbedContents, err := os.ReadFile(path.Join(args.cfg.Path, "embed.go"))
+				goEmbedContents, err := os.ReadFile(path.Join(args.cfg.Paths[0], "embed.go"))
 				c.Assert(err, qt.IsNil)
 				c.Assert(string(goEmbedContents), qt.Contains, "2024-01-01")
 			},
@@ -59,7 +59,7 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 			name: "clears dir if appendOutputFiles is false",
 			args: args{
 				cfg: config.Output{
-					Path: t.TempDir(),
+					Paths: []string{t.TempDir()},
 				},
 				appendOutputFiles: false,
 			},
@@ -71,15 +71,15 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 			},
 			setup: func(t *testing.T, args args) {
 				t.Helper()
-				err = os.WriteFile(path.Join(args.cfg.Path, "existing-file"), []byte("existing"), 0644)
+				err = os.WriteFile(path.Join(args.cfg.Paths[0], "existing-file"), []byte("existing"), 0644)
 				c.Assert(err, qt.IsNil)
 			},
 			assert: func(t *testing.T, args args) {
 				t.Helper()
-				files, err := filepath.Glob(filepath.Join(args.cfg.Path, "*"))
+				files, err := filepath.Glob(filepath.Join(args.cfg.Paths[0], "*"))
 				c.Assert(err, qt.IsNil)
 				c.Assert(files, qt.HasLen, 2)
-				goEmbedContents, err := os.ReadFile(path.Join(args.cfg.Path, "embed.go"))
+				goEmbedContents, err := os.ReadFile(path.Join(args.cfg.Paths[0], "embed.go"))
 				c.Assert(err, qt.IsNil)
 				c.Assert(string(goEmbedContents), qt.Contains, "2024-01-01")
 			},
@@ -89,7 +89,7 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 			name: "merges files if appendOutputFiles is true, embeds existing files",
 			args: args{
 				cfg: config.Output{
-					Path: t.TempDir(),
+					Paths: []string{t.TempDir()},
 				},
 				appendOutputFiles: true,
 			},
@@ -101,19 +101,19 @@ func TestDocSet_WriteOutputs(t *testing.T) {
 			},
 			setup: func(t *testing.T, args args) {
 				t.Helper()
-				err = os.WriteFile(path.Join(args.cfg.Path, "2024-02-01"), []byte("existing"), 0644)
+				err = os.WriteFile(path.Join(args.cfg.Paths[0], "2024-02-01"), []byte("existing"), 0644)
 				c.Assert(err, qt.IsNil)
-				err = os.WriteFile(path.Join(args.cfg.Path, "2024-02-02"), []byte("existing"), 0644)
+				err = os.WriteFile(path.Join(args.cfg.Paths[0], "2024-02-02"), []byte("existing"), 0644)
 				c.Assert(err, qt.IsNil)
-				err = os.WriteFile(path.Join(args.cfg.Path, "2024-02-03"), []byte("existing"), 0644)
+				err = os.WriteFile(path.Join(args.cfg.Paths[0], "2024-02-03"), []byte("existing"), 0644)
 				c.Assert(err, qt.IsNil)
 			},
 			assert: func(t *testing.T, args args) {
 				t.Helper()
-				files, err := filepath.Glob(filepath.Join(args.cfg.Path, "*"))
+				files, err := filepath.Glob(filepath.Join(args.cfg.Paths[0], "*"))
 				c.Assert(err, qt.IsNil)
 				c.Assert(files, qt.HasLen, 2+3)
-				goEmbedContents, err := os.ReadFile(path.Join(args.cfg.Path, "embed.go"))
+				goEmbedContents, err := os.ReadFile(path.Join(args.cfg.Paths[0], "embed.go"))
 				c.Assert(err, qt.IsNil)
 				c.Assert(string(goEmbedContents), qt.Contains, "2024-01-01")
 				c.Assert(string(goEmbedContents), qt.Contains, "2024-02-01")

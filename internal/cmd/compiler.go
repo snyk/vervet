@@ -151,7 +151,7 @@ func projectFromContext(ctx *cli.Context) (*config.Project, error) {
 			Path: ctx.Args().Get(0),
 		}},
 		Output: &config.Output{
-			Path: ctx.Args().Get(1),
+			Paths: []string{ctx.Args().Get(1)},
 		},
 	}
 	if includePath := ctx.String("include"); includePath != "" {

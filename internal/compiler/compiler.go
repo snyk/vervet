@@ -102,9 +102,6 @@ func New(ctx context.Context, proj *config.Project, options ...CompilerOption) (
 		// Build output
 		if apiConfig.Output != nil {
 			paths := apiConfig.Output.Paths
-			if len(paths) == 0 && apiConfig.Output.Path != "" {
-				paths = []string{apiConfig.Output.Path}
-			}
 			if len(paths) > 0 {
 				a.output = &output{
 					paths: paths,

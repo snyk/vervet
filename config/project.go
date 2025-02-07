@@ -45,7 +45,7 @@ func (p *Project) validate() error {
 	if err != nil {
 		return err
 	}
-	err = p.APIs.init(p)
+	err = p.APIs.init()
 	if err != nil {
 		return err
 	}

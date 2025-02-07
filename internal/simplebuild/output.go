@@ -27,7 +27,7 @@ type DocWriter struct {
 // NewWriter initialises any output paths, removing existing files and
 // directories if they are present.
 func NewWriter(cfg config.Output, appendOutputFiles bool) (*DocWriter, error) {
-	paths := getOutputPaths(cfg)
+	paths := cfg.Paths
 	toClear := paths
 	if appendOutputFiles {
 		// We treat the first path as the source of truth and copy the whole
@@ -126,22 +126,6 @@ func (out *DocWriter) Finalize() error {
 		}
 	}
 	return nil
-}
-
-// Some services have a need to write specs to multiple destinations. This
-// tends to happen in Typescript services in which we want to write specs to
-// two places:
-//   - src/** for committing into git and ingesting into Backstage
-//   - dist/** for runtime module access to compiled specs.
-//
-// To maintain backwards compatibility we still allow a single path in the
-// config file then normalise that here to an array.
-func getOutputPaths(cfg config.Output) []string {
-	paths := cfg.Paths
-	if len(paths) == 0 && cfg.Path != "" {
-		paths = []string{cfg.Path}
-	}
-	return paths
 }
 
 func getExisingSpecFiles(dir string) ([]string, error) {
