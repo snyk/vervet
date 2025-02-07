@@ -190,7 +190,7 @@ func processCatalog(ctx *cli.Context, w io.Writer) error {
 	sort.Strings(apiNames)
 	for _, apiName := range apiNames {
 		apiConf := proj.APIs[apiName]
-		outputPaths := apiConf.Output.ResolvePaths()
+		outputPaths := apiConf.Output.Paths
 		if len(outputPaths) == 0 {
 			log.Printf("API %q has no output paths, this command will have no effect", apiName)
 			continue

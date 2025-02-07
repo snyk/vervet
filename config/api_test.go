@@ -1,44 +1,56 @@
 package config_test
 
 import (
-	"reflect"
+	"encoding/json"
 	"testing"
+
+	qt "github.com/frankban/quicktest"
 
 	"github.com/snyk/vervet/v8/config"
 )
 
-func TestOutput_ResolvePaths(t *testing.T) {
+func TestOutput_deserialise(t *testing.T) {
 	tests := []struct {
-		name    string
-		subject *config.Output
-		want    []string
+		name        string
+		subject     string
+		wantPaths   []string
+		expectedErr string
 	}{
 		{
-			name:    "nil",
-			subject: nil,
-			want:    []string{},
+			name:        "nil",
+			subject:     "{}",
+			wantPaths:   []string(nil),
+			expectedErr: "",
 		},
 		{
-			name: "returns path if exists",
-			subject: &config.Output{
-				Path:  "path",
-				Paths: []string{"path1", "path2"},
-			},
-			want: []string{"path"},
+			name:        "returns path if exists",
+			subject:     `{"path": "path1"}`,
+			wantPaths:   []string{"path1"},
+			expectedErr: "",
 		},
 		{
-			name: "return paths if path is empty",
-			subject: &config.Output{
-				Path:  "",
-				Paths: []string{"path1", "path2"},
-			},
-			want: []string{"path1", "path2"},
+			name:        "return paths if exists",
+			subject:     `{"paths": ["path1", "path2"]}`,
+			wantPaths:   []string{"path1", "path2"},
+			expectedErr: "",
+		},
+		{
+			name:        "errors if both path and paths exist",
+			subject:     `{"path": "path1", "paths": ["path1", "path2"]}`,
+			wantPaths:   []string{},
+			expectedErr: "output should specify one of 'path' or 'paths', not both",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.subject.ResolvePaths(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ResolvePaths() = %v, want %v", got, tt.want)
+			c := qt.New(t)
+			out := config.Output{}
+			err := json.Unmarshal([]byte(tt.subject), &out)
+			if tt.expectedErr != "" {
+				c.Assert(err.Error(), qt.Equals, tt.expectedErr)
+			} else {
+				c.Assert(err, qt.IsNil)
+				c.Assert(out.Paths, qt.DeepEquals, tt.wantPaths)
 			}
 		})
 	}

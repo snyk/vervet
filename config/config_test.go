@@ -52,7 +52,7 @@ servers:
     description: Test API`[1:],
 				}},
 				Output: &config.Output{
-					Path: "testdata/output",
+					Paths: []string{"testdata/output"},
 				},
 			},
 		},
@@ -90,7 +90,9 @@ apis:
         - /another/place
         - /and/another
 `[1:],
-		err: `output should specify one of 'path' or 'paths', not both \(apis\.testapi\.output\)`,
+		err: "failed to unmarshal project configuration: " +
+			"error unmarshaling JSON: " +
+			"output should specify one of 'path' or 'paths', not both",
 	}, {
 		err: `no apis defined`,
 	}}

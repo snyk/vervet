@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -69,23 +70,36 @@ type Overlay struct {
 // Output defines where the aggregate versioned OpenAPI specs should be created
 // during compilation.
 type Output struct {
+	Paths []string
+}
+
+// outputJSON exists for historical purposes, we allowed both Path and Paths to
+// be specified in the api spec config. This makes handling internally more
+// complex as we have to deal with both, instead we can deal with it at
+// deserialisation time.
+type outputJSON struct {
 	Path  string   `json:"path,omitempty"`
 	Paths []string `json:"paths,omitempty"`
 }
 
-// EffectivePaths returns a slice of effective configured output paths, whether
-// a single or multiple output paths have been configured.
-func (o *Output) ResolvePaths() []string {
-	if o == nil {
-		return []string{}
+func (o *Output) UnmarshalJSON(data []byte) error {
+	oj := outputJSON{}
+	err := json.Unmarshal(data, &oj)
+	if err != nil {
+		return err
 	}
-	if o.Path != "" {
-		return []string{o.Path}
+	if oj.Path != "" {
+		if len(oj.Paths) > 0 {
+			return fmt.Errorf("output should specify one of 'path' or 'paths', not both")
+		}
+		o.Paths = []string{oj.Path}
+		return nil
 	}
-	return o.Paths
+	o.Paths = oj.Paths
+	return nil
 }
 
-func (a APIs) init(p *Project) error {
+func (a APIs) init() error {
 	if len(a) == 0 {
 		return fmt.Errorf("no apis defined")
 	}
@@ -98,12 +112,6 @@ func (a APIs) init(p *Project) error {
 		for rcIndex, resource := range api.Resources {
 			if err := resource.validate(); err != nil {
 				return fmt.Errorf("%w (apis.%s.resources[%d])", err, api.Name, rcIndex)
-			}
-		}
-		if api.Output != nil {
-			if len(api.Output.Paths) > 0 && api.Output.Path != "" {
-				return fmt.Errorf("output should specify one of 'path' or 'paths', not both (apis.%s.output)",
-					api.Name)
 			}
 		}
 	}
