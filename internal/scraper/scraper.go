@@ -215,16 +215,6 @@ func (s *Scraper) getNewVersion(ctx context.Context,
 	isNew bool,
 	err error,
 ) {
-	// TODO: Services don't emit HEAD currently with compiled vervet
-	//       will need to enforce down the line
-	isNew, err = s.hasNewVersion(ctx, svc, version)
-	if err != nil {
-		return nil, false, errors.WithStack(err)
-	}
-	if !isNew {
-		return nil, isNew, nil
-	}
-
 	req, err := http.NewRequestWithContext(ctx, "GET", svc.url.String()+"/"+version, http.NoBody)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to create request")
@@ -252,37 +242,6 @@ func (s *Scraper) getNewVersion(ctx context.Context,
 		return nil, false, errors.WithStack(err)
 	}
 	return respContents, true, nil
-}
-
-func (s *Scraper) hasNewVersion(ctx context.Context, svc service, version string) (bool, error) {
-	// Check Digest to see if there's a new version
-	req, err := http.NewRequestWithContext(ctx, "HEAD", svc.url.String()+"/"+version, http.NoBody)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to create request")
-	}
-	resp, err := s.http.Do(req)
-	if err != nil {
-		return false, errors.Wrap(err, "request failed")
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusMethodNotAllowed {
-		// Not supporting HEAD is fine, we'll just come back with a GET
-		return true, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		return false, httpError(resp)
-	}
-
-	// Can be formed similarly: "application/json; charset: utf-8"
-	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
-		return false, errors.Errorf("unexpected content type: %s", ct)
-	}
-	digest := storage.DigestHeader(resp.Header.Get("Digest"))
-	if digest == "" {
-		// Not providing a digest is fine, we'll just come back with a GET
-		return true, nil
-	}
-	return s.storage.HasVersion(ctx, svc.name, version, digest)
 }
 
 // isLegacyVersion is used to identify legacy APIs which should be excluded.
