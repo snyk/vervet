@@ -46,7 +46,7 @@ lint-docker:
 build-docker:
 	docker build \
 		-t ${APP}:${CIRCLE_WORKFLOW_ID} \
-		-t gcr.io/snyk-main/${APP}:${CIRCLE_SHA1} .
+		-t us-docker.pkg.dev/polaris-gcp-gar/polaris/${APP}:${CIRCLE_SHA1} .
 
 #----------------------------------------------------------------------------------
 #  Ignores the test cache and forces a full test suite execution
