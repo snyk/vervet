@@ -40,14 +40,6 @@ only_tags_filter: &only_tags_filter
       ignore: /.*/
 
 commands:
-  gcr_auth:
-    description: Auth GCR
-    steps:
-      - setup_remote_docker
-      - run:
-          name: GCR auth
-          command: echo $GCLOUD_GCR_BUILDER | docker login -u _json_key --password-stdin https://gcr.io/snyk-main
-
   setup_build_remote_docker:
     steps:
       - setup_remote_docker:
@@ -90,7 +82,8 @@ jobs:
     steps:
       - checkout:
           path: ~/vervet
-      - gcr_auth
+      - setup_build_remote_docker
+      - publish/auth-build
       - run:
           name: Build Docker Image
           command: make build-docker APP=vervet-underground

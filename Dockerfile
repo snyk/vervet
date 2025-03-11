@@ -31,7 +31,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # we're not changing anything, only making it explicit.
 # Thanks to emulation, this will also run on ARM Macs.
 # Advised to move from distroless to the secure base image - https://docs.google.com/document/d/1I-vxsuHlmBlM8JHSDpvOmVMGeQQcbPgb8jH1ELEE9wo/edit#heading=h.1xke9mez8zov
-FROM --platform=amd64 gcr.io/snyk-main/ubuntu-20:2.4.0_202501141014
+FROM --platform=amd64 us-docker.pkg.dev/polaris-gcp-gar/polaris/ubuntu-20-golang-1-cis-stig-fips:3.3.0_202503041258
 
 COPY config.*.json /
 COPY --from=builder /go/bin/app /
