@@ -17,6 +17,7 @@ import (
 	"github.com/hairyhenderson/go-codeowners"
 	"github.com/tufin/oasdiff/checker"
 	"github.com/tufin/oasdiff/diff"
+	"github.com/tufin/oasdiff/formatters"
 	"github.com/tufin/oasdiff/load"
 
 	"github.com/snyk/vervet/v8"
@@ -407,8 +408,18 @@ func CheckBreakingChanges(docs DocSet) error {
 			}
 		}
 		if !breakingChange {
-			return fmt.Errorf("no breaking change detected between versions %s and %s: \n %s",
-				prevDoc.VersionDate, currDoc.VersionDate, changes)
+			formatter, err := formatters.Lookup(string(formatters.FormatText), formatters.FormatterOpts{})
+			if err != nil {
+				return err
+			}
+			diffDetails, err := formatter.RenderDiff(diffReport, formatters.RenderOpts{})
+			if err != nil {
+				return err
+			}
+			return fmt.Errorf("no breaking changes detected between versions %s and %s, "+
+				"%s should not be created, merge changes into %s\n %s",
+				prevDoc.VersionDate.Format(time.DateOnly), currDoc.VersionDate.Format(time.DateOnly),
+				currDoc.VersionDate.Format(time.DateOnly), prevDoc.VersionDate.Format(time.DateOnly), string(diffDetails))
 		}
 	}
 	return nil
