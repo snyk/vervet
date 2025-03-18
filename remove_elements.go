@@ -59,7 +59,7 @@ func RemoveElements(doc *openapi3.T, excludes ExcludePatterns) error {
 	if err := ex.apply(); err != nil {
 		return err
 	}
-	return nil
+	return RemoveUnusedRefs(doc)
 }
 
 func (ex *excluder) apply() error {
