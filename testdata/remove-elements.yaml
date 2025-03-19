@@ -1,0 +1,44 @@
+paths:
+  /foo:
+    get:
+      responses:
+        200:
+          headers:
+            x-to-remove:
+              $ref: "#/components/headers/Ref"
+            x-to-remove-shared:
+              $ref: "#/components/headers/SharedRef"
+            x-to-keep:
+              $ref: "#/components/headers/SharedRef"
+  /x-to-remove:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ref"
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharedRef"
+  /x-to-keep:
+    get:
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharedRef"
+components:
+  schemas:
+    Ref:
+      type: object
+    SharedRef:
+      type: object
+  headers:
+    Ref:
+      type: object
+    SharedRef:
+      type: object

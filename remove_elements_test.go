@@ -134,3 +134,42 @@ func TestRemoveElementsRegex(t *testing.T) {
 	// DOC-LEVEL EXTENSION "x-snyk-api-lifecycle" removed
 	c.Assert(doc.Extensions["x-snyk-api-lifecycle"], qt.IsNil)
 }
+
+func TestRemoveElementsRemovesComponents(t *testing.T) {
+	c := qt.New(t)
+	doc, err := vervet.NewDocumentFile(testdata.Path("remove-elements.yaml"))
+	c.Assert(err, qt.IsNil)
+
+	c.Assert(doc.Paths.Value("/foo").Get.Responses.Status(200).Value.Headers["x-to-remove"], qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/foo").Get.Responses.Status(200).Value.Headers["x-to-remove-shared"], qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/foo").Get.Responses.Status(200).Value.Headers["x-to-keep"], qt.Not(qt.IsNil))
+
+	c.Assert(doc.Paths.Value("/x-to-remove"), qt.Not(qt.IsNil))
+	c.Assert(doc.Paths.Value("/x-to-keep"), qt.Not(qt.IsNil))
+
+	c.Assert(doc.Components.Schemas["Ref"], qt.Not(qt.IsNil))
+	c.Assert(doc.Components.Schemas["SharedRef"], qt.Not(qt.IsNil))
+	c.Assert(doc.Components.Headers["Ref"], qt.Not(qt.IsNil))
+	c.Assert(doc.Components.Headers["SharedRef"], qt.Not(qt.IsNil))
+
+	err = vervet.RemoveElements(doc.T, vervet.ExcludePatterns{
+		ExtensionPatterns: []string{},
+		HeaderPatterns:    []string{"x-to-remove", "x-to-remove-shared"},
+		Paths:             []string{"/x-to-remove"},
+	})
+	c.Assert(err, qt.IsNil)
+
+	c.Assert(doc.Paths.Value("/foo").Get.Responses.Status(200).Value.Headers["x-to-remove"], qt.IsNil)
+	c.Assert(doc.Paths.Value("/foo").Get.Responses.Status(200).Value.Headers["x-to-remove-shared"], qt.IsNil)
+	c.Assert(doc.Paths.Value("/foo").Get.Responses.Status(200).Value.Headers["x-to-keep"], qt.Not(qt.IsNil))
+
+	c.Assert(doc.Paths.Value("/x-to-remove"), qt.IsNil)
+	c.Assert(doc.Paths.Value("/x-to-keep"), qt.Not(qt.IsNil))
+
+	// Removed unused components
+	c.Assert(doc.Components.Schemas["Ref"], qt.IsNil)
+	c.Assert(doc.Components.Headers["Ref"], qt.IsNil)
+	// Keep components that are still referenced
+	c.Assert(doc.Components.Schemas["SharedRef"], qt.Not(qt.IsNil))
+	c.Assert(doc.Components.Headers["SharedRef"], qt.Not(qt.IsNil))
+}
