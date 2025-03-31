@@ -394,7 +394,7 @@ schema = 3
   [mod."github.com/tklauser/numcpus"]
     version = "v0.6.1"
     hash = "sha256-8eFcw4YI0w6+GPhU5xMMQjiio94q/O5PpNO3QsvXve0="
-  [mod."github.com/tufin/oasdiff"]
+  [mod."github.com/oasdiff/oasdiff"]
     version = "v1.10.16"
     hash = "sha256-3sBOM0cQQNmsHU1NGhXcnZWv1/HJHtCt/E66uCD4FH8="
   [mod."github.com/urfave/cli/v2"]

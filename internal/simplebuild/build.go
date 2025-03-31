@@ -15,9 +15,9 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/hairyhenderson/go-codeowners"
-	"github.com/tufin/oasdiff/checker"
-	"github.com/tufin/oasdiff/diff"
-	"github.com/tufin/oasdiff/load"
+	"github.com/oasdiff/oasdiff/checker"
+	"github.com/oasdiff/oasdiff/diff"
+	"github.com/oasdiff/oasdiff/load"
 
 	"github.com/snyk/vervet/v8"
 	"github.com/snyk/vervet/v8/config"
@@ -399,7 +399,7 @@ func CheckBreakingChanges(docs DocSet) error {
 			return err
 		}
 		changes := checker.CheckBackwardCompatibilityUntilLevel(
-			checker.GetDefaultChecks(), diffReport, sourcesMap, checker.INFO)
+			checker.NewConfig(checker.GetAllChecks()), diffReport, sourcesMap, checker.INFO)
 		breakingChange := false
 		for _, change := range changes {
 			if change.IsBreaking() {
