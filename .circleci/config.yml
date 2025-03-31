@@ -10,7 +10,7 @@ defaults: &defaults
   resource_class: small
   working_directory: ~/vervet
   docker:
-    - image: cimg/go:1.23-node
+    - image: cimg/go:1.24-node
 
 test_defaults: &test_defaults
   resource_class: medium
@@ -51,7 +51,7 @@ jobs:
     steps:
       - checkout
       - go/install:
-          version: 1.23.2
+          version: 1.24.1
       - go/mod-download-cached
       - run:
           name: Verify testdata/output up to date
@@ -62,7 +62,7 @@ jobs:
 
   lint:
     docker:
-      - image: golangci/golangci-lint:v1.61.0
+      - image: golangci/golangci-lint:v1.64.7
     steps:
       - checkout
       - run:
