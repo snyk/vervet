@@ -96,7 +96,7 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints:
-            - SHA256:8/K40kKZXhfGUPDuibC3fluK0DaJq8dLX2+JqS16o78
+            - SHA256:j5zf7um5WhoRvBWFk6X1TDfz+ltmlCOEEBfUHm6fLB8
       - run: |-
           go install github.com/caarlos0/svu@latest
           export VERSION=$(svu next)
