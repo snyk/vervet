@@ -97,24 +97,71 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - SHA256:j5zf7um5WhoRvBWFk6X1TDfz+ltmlCOEEBfUHm6fLB8
-      - run: |-
-          go install github.com/caarlos0/svu@latest
-          export VERSION=$(svu next)
-          if [ -z $(git tag -l ${VERSION}) ]; then
-            ./scripts/genversion.bash
-            # Sync dependencies to the nix package, will be a no-op if
-            # dependencies haven't changed
-            go run github.com/nix-community/gomod2nix@latest
-            if [ -z $(git config user.email) ]; then
-                git config credential.helper 'cache --timeout=120'
-                git config user.email "vervet-ci@noreply.snyk.io"
-                git config user.name "Vervet CI"
+      - run:
+          name: Prepare and Tag Release on a Branch
+          command: |
+            go install github.com/caarlos0/svu@latest
+            export VERSION=$(svu next)
+
+            echo "Checking for existing tag ${VERSION}..."
+            if [ -z "$(git tag -l "${VERSION}")" ]; then
+              export BRANCH_NAME="chore/prepare-release-${VERSION}"
+              echo "Tag ${VERSION} not found. Preparing release on branch ${BRANCH_NAME}..."
+
+              # Configure Git user if not already set
+              if [ -z "$(git config user.email)" ]; then
+                  echo "Configuring Git user..."
+                  git config credential.helper 'cache --timeout=120'
+                  git config user.email "vervet-ci@noreply.snyk.io"
+                  git config user.name "Vervet CI"
+              fi
+
+              echo "Creating and checking out branch ${BRANCH_NAME}..."
+              git checkout -b ${BRANCH_NAME}
+
+              echo "Running scripts..."
+              ./scripts/genversion.bash
+              # Sync dependencies to the nix package, will be a no-op if
+              # dependencies haven't changed
+              go run github.com/nix-community/gomod2nix@latest
+
+              echo "Adding changes..."
+              # Use git status to check if there are changes before attempting to add/commit
+              if ! git diff --quiet internal/cmd/cmd.go gomod2nix.toml; then
+                git add internal/cmd/cmd.go gomod2nix.toml
+                echo "Committing changes to ${BRANCH_NAME}..."
+                git commit -m "chore: prepare release ${VERSION}"
+              else
+                echo "No changes detected in generated files."
+              fi
+
+              echo "Pushing branch ${BRANCH_NAME}..."
+              git push origin ${BRANCH_NAME}
+
+              echo "Checking out main branch..."
+              git checkout main
+
+              echo "Pulling latest main branch..."
+              # Pull main to avoid potential merge conflicts if main advanced
+              git pull origin main
+
+              echo "Merging ${BRANCH_NAME} into main..."
+              # Use --no-ff to ensure a merge commit is created for tagging
+              git merge --no-ff ${BRANCH_NAME} -m "chore: Merge branch '${BRANCH_NAME}' for release ${VERSION}"
+
+              echo "Tagging merge commit on main with ${VERSION}..."
+              git tag ${VERSION}
+
+              echo "Pushing main and tag ${VERSION} atomically..."
+              git push origin main --tags --atomic
+
+              echo "Cleaning up remote branch ${BRANCH_NAME}..."
+              git push origin --delete ${BRANCH_NAME}
+
+              echo "Release ${VERSION} preparation complete."
+            else
+              echo "Tag ${VERSION} already exists. Skipping preparation."
             fi
-            git add internal/cmd/cmd.go gomod2nix.toml
-            git commit -m "chore: prepare release ${VERSION}"
-            git tag ${VERSION}
-            git push origin main --tags --atomic
-          fi
 
   release:
     <<: *defaults
