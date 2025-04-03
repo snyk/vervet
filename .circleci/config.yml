@@ -129,7 +129,7 @@ jobs:
               # Use git status to check if there are changes before attempting to add/commit
               if ! git diff --quiet internal/cmd/cmd.go gomod2nix.toml; then
                 git add internal/cmd/cmd.go gomod2nix.toml
-                echo "Committing changes to ${BRANCH_NAME}..."
+                echo "Committing changes to ${BRANCH_NAME} with message 'chore: prepare release ${VERSION}'..."
                 git commit -m "chore: prepare release ${VERSION}"
               else
                 echo "No changes detected in generated files."
@@ -146,8 +146,8 @@ jobs:
               git pull origin main
 
               echo "Merging ${BRANCH_NAME} into main..."
-              # Use --no-ff to ensure a merge commit is created for tagging
-              git merge --no-ff ${BRANCH_NAME} -m "chore: Merge branch '${BRANCH_NAME}' for release ${VERSION}"
+              # Use squash to ensure a single commit is created for tagging
+              git merge --squash ${BRANCH_NAME}
 
               echo "Tagging merge commit on main with ${VERSION}..."
               git tag ${VERSION}
