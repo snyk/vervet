@@ -108,3 +108,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set(HeaderSnykVersionServed, resolved.String())
 	handler.ServeHTTP(w, req)
 }
+
+// WithErrorHandler is a convenience wrapper around HandleErrors which
+// returns the handler. This is especially handy when chained with the
+// NewHandler function.
+func (h *Handler) WithErrorHandler(errFunc VersionErrorHandler) *Handler {
+	h.HandleErrors(errFunc)
+	return h
+}
