@@ -235,3 +235,32 @@ func TestHandler_BetaEndpoints(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_WithErrorHandler(t *testing.T) {
+	c := qt.New(t)
+
+	h := versionware.NewHandler(versionware.VersionHandler{
+		Version: vervet.MustParseVersion("2022-08-01~experimental"),
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte("aug beta"))
+			c.Assert(err, qt.IsNil)
+		}),
+	}).
+		WithErrorHandler(func(w http.ResponseWriter, r *http.Request, status int, err error) {
+			w.WriteHeader(status)
+			w.Header().Set("Content-Type", "application/json")
+			_, werr := w.Write([]byte(`{"errors":[{"title":"boo!"}]}`))
+			c.Assert(werr, qt.IsNil)
+		})
+
+	s := httptest.NewServer(h)
+	req, err := http.NewRequest("GET", s.URL+"?version=2024-10-15", nil)
+	c.Assert(err, qt.IsNil)
+	resp, err := s.Client().Do(req)
+	c.Assert(err, qt.IsNil)
+	defer resp.Body.Close()
+	c.Assert(resp.StatusCode, qt.Equals, http.StatusNotFound)
+	contents, err := io.ReadAll(resp.Body)
+	c.Assert(err, qt.IsNil)
+	c.Assert(string(contents), qt.Equals, `{"errors":[{"title":"boo!"}]}`)
+}
