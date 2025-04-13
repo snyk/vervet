@@ -106,6 +106,171 @@ paths:
           description: Get OpenAPI at version
 `
 
+const serviceDSpecWithMixedSunset = `
+openapi: 3.0.0
+info:
+  title: ServiceD API
+  version: 0.0.0
+tags:
+  - name: example
+    description: service d example
+paths:
+  /sunset:
+    get:
+      x-snyk-sunset-eligible: 2023-01-01
+      summary: Sunset endpoint
+      responses:
+        '200':
+          description: An empty response
+  /notsunset:
+    get:
+      summary: Not Sunset endpoint
+      responses:
+        '200':
+          description: An empty response
+  /latersunset:
+    get:
+      x-snyk-sunset-eligible: 2025-01-01
+      summary: Later Sunset endpoint
+      responses:
+        '200':
+          description: An empty response
+`
+
+func TestCollator_Collate_MixedSunset(t *testing.T) {
+	c := qt.New(t)
+
+	v20230101_ga := vervet.Version{
+		Date:      time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityGA,
+	}
+
+	collator, err := storage.NewCollator()
+	c.Assert(err, qt.IsNil)
+
+	collator.Add("service-d", storage.ContentRevision{
+		Version: v20230101_ga,
+		Blob:    []byte(serviceDSpecWithMixedSunset),
+	})
+
+	specs, err := collator.Collate()
+	c.Assert(err, qt.IsNil)
+
+	// Assert that the sunset endpoint is not present in the collated specs
+	_, exists := specs[v20230101_ga].Paths["/sunset"]
+	c.Assert(exists, qt.IsFalse)
+
+	// Assert that the not sunset endpoint is still present
+	_, exists = specs[v20230101_ga].Paths["/notsunset"]
+	c.Assert(exists, qt.IsTrue)
+
+	// Assert that the later sunset endpoint is still present
+	_, exists = specs[v20230101_ga].Paths["/latersunset"]
+	c.Assert(exists, qt.IsTrue)
+}
+
+const serviceDSpecAllSunset = `
+openapi: 3.0.0
+info:
+  title: ServiceD API
+  version: 0.0.0
+tags:
+  - name: example
+    description: service d example
+paths:
+  /sunset1:
+    get:
+      x-snyk-sunset-eligible: 2023-01-01
+      summary: Sunset endpoint 1
+      responses:
+        '200':
+          description: An empty response
+  /sunset2:
+    get:
+      x-snyk-sunset-eligible: 2022-12-31
+      summary: Sunset endpoint 2
+      responses:
+        '200':
+          description: An empty response
+`
+
+func TestCollator_Collate_AllSunset(t *testing.T) {
+	c := qt.New(t)
+
+	v20230101_ga := vervet.Version{
+		Date:      time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityGA,
+	}
+
+	collator, err := storage.NewCollator()
+	c.Assert(err, qt.IsNil)
+
+	collator.Add("service-d", storage.ContentRevision{
+		Version: v20230101_ga,
+		Blob:    []byte(serviceDSpecAllSunset),
+	})
+
+	specs, err := collator.Collate()
+	c.Assert(err, qt.IsNil)
+
+	// Assert that all sunset endpoints are not present in the collated specs
+	_, exists := specs[v20230101_ga].Paths["/sunset1"]
+	c.Assert(exists, qt.IsFalse)
+
+	_, exists = specs[v20230101_ga].Paths["/sunset2"]
+	c.Assert(exists, qt.IsFalse)
+}
+
+const serviceDSpecNoSunset = `
+openapi: 3.0.0
+info:
+  title: ServiceD API
+  version: 0.0.0
+tags:
+  - name: example
+    description: service d example
+paths:
+  /active1:
+    get:
+      summary: Active endpoint 1
+      responses:
+        '200':
+          description: An empty response
+  /active2:
+    get:
+      summary: Active endpoint 2
+      responses:
+        '200':
+          description: An empty response
+`
+
+func TestCollator_Collate_NoSunset(t *testing.T) {
+	c := qt.New(t)
+
+	v20230101_ga := vervet.Version{
+		Date:      time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+		Stability: vervet.StabilityGA,
+	}
+
+	collator, err := storage.NewCollator()
+	c.Assert(err, qt.IsNil)
+
+	collator.Add("service-d", storage.ContentRevision{
+		Version: v20230101_ga,
+		Blob:    []byte(serviceDSpecNoSunset),
+	})
+
+	specs, err := collator.Collate()
+	c.Assert(err, qt.IsNil)
+
+	// Assert that all active endpoints are still present in the collated specs
+	_, exists := specs[v20230101_ga].Paths["/active1"]
+	c.Assert(exists, qt.IsTrue)
+
+	_, exists = specs[v20230101_ga].Paths["/active2"]
+	c.Assert(exists, qt.IsTrue)
+}
+
 func TestCollator_Collate(t *testing.T) {
 	c := qt.New(t)
 
